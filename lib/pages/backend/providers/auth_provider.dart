@@ -53,13 +53,13 @@ class AuthProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
   ApiServiceLogin get apiService => _apiService;
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({required String identifier, required String password}) async {
     try {
       print('Starting login process');
-      
+
       final tempApiService = ApiServiceLogin(token: null);
       final response = await tempApiService.login(
-        email: email,
+        identifier: identifier,
         password: password,
       );
 

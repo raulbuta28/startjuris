@@ -19,16 +19,16 @@ class ApiServiceLogin extends ApiService {
   ApiServiceLogin({super.token});
 
   Future<Map<String, dynamic>> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
-    print('Attempting login for email: $email');
+    print('Attempting login for identifier: $identifier');
     try {
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl}/auth/login'),
         headers: headers,
         body: jsonEncode({
-          'email': email,
+          identifier.contains('@') ? 'email' : 'username': identifier,
           'password': password,
         }),
       );
