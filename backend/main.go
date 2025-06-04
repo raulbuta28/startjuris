@@ -57,11 +57,36 @@ var wsClients = make(map[string]*websocket.Conn)
 // getDashboardPath returns an absolute path to the React control panel
 // directory so the server works regardless of the working directory.
 func getDashboardPath() string {
-	exe, err := os.Executable()
-	if err != nil {
-		return "../dashbord"
+	// first try paths relative to the current working directory as this
+	// is the common case when running `go run .` during development
+	if wd, err := os.Getwd(); err == nil {
+		candidates := []string{
+			filepath.Join(wd, "dashbord"),
+			filepath.Join(wd, "..", "dashbord"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
 	}
-	return filepath.Join(filepath.Dir(exe), "..", "dashbord")
+
+	// fall back to paths relative to the executable. This helps when the
+	// server is built and executed from another directory.
+	if exe, err := os.Executable(); err == nil {
+		candidates := []string{
+			filepath.Join(filepath.Dir(exe), "dashbord"),
+			filepath.Join(filepath.Dir(exe), "..", "dashbord"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+
+	// final fallback keeps previous behaviour
+	return "../dashbord"
 }
 
 func saveBooks(c *gin.Context) {
