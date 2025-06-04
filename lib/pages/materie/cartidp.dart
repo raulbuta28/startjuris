@@ -1,59 +1,10 @@
 import 'package:flutter/material.dart';
 import '../poveste_page.dart';
+import '../../services/book_service.dart';
 
 class CartiDP extends StatelessWidget {
-  const CartiDP({Key? key}) : super(key: key);
-
-  static const List<Map<String, String>> _carti = [
-    {
-      'id': 'dp_1',
-      'titlu': 'Drept penal - Partea generală',
-      'imagine': 'assets/carti/cartidp/11.png',
-      'continut': 'Conținutul despre dreptul penal - partea generală va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_2',
-      'titlu': 'Drept penal - Partea specială',
-      'imagine': 'assets/carti/cartidp/12.png',
-      'continut': 'Conținutul despre dreptul penal - partea specială va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_3',
-      'titlu': 'Infracțiuni contra persoanei',
-      'imagine': 'assets/carti/cartidp/13.png',
-      'continut': 'Conținutul despre infracțiunile contra persoanei va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_4',
-      'titlu': 'Infracțiuni contra patrimoniului',
-      'imagine': 'assets/carti/cartidp/14.png',
-      'continut': 'Conținutul despre infracțiunile contra patrimoniului va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_5',
-      'titlu': 'Infracțiuni de corupție',
-      'imagine': 'assets/carti/cartidp/15.png',
-      'continut': 'Conținutul despre infracțiunile de corupție va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_6',
-      'titlu': 'Infracțiuni de serviciu',
-      'imagine': 'assets/carti/cartidp/16.png',
-      'continut': 'Conținutul despre infracțiunile de serviciu va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_7',
-      'titlu': 'Infracțiuni contra înfăptuirii justiției',
-      'imagine': 'assets/carti/cartidp/17.png',
-      'continut': 'Conținutul despre infracțiunile contra înfăptuirii justiției va fi disponibil în curând...',
-    },
-    {
-      'id': 'dp_8',
-      'titlu': 'Infracțiuni de fals',
-      'imagine': 'assets/carti/cartidp/18.png',
-      'continut': 'Conținutul despre infracțiunile de fals va fi disponibil în curând...',
-    },
-  ];
+  final List<AdminBook> carti;
+  const CartiDP({Key? key, required this.carti}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +14,9 @@ class CartiDP extends StatelessWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _carti.length,
+        itemCount: carti.length,
         itemBuilder: (context, index) {
-          final carte = _carti[index];
+          final carte = carti[index];
           
           return Container(
             width: 160,
@@ -88,9 +39,9 @@ class CartiDP extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PovesterePage(
-                        titlu: carte['titlu']!,
-                        imagine: carte['imagine']!,
-                        continut: carte['continut']!,
+                        titlu: carte.title,
+                        imagine: carte.image,
+                        continut: carte.content,
                         progress: 0.0,
                       ),
                     ),
@@ -107,7 +58,7 @@ class CartiDP extends StatelessWidget {
                           top: Radius.circular(12),
                         ),
                         child: Image.asset(
-                          carte['imagine']!,
+                          carte.image,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
@@ -138,7 +89,7 @@ class CartiDP extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              carte['titlu']!,
+                              carte.title,
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

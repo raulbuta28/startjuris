@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
+       "encoding/json"
+       "io/ioutil"
+       "github.com/gin-gonic/gin"
+       "github.com/google/uuid"
+       "github.com/gorilla/websocket"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -45,6 +47,38 @@ type Conversation struct {
 var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
+
+func saveBooks(c *gin.Context) {
+       var books []map[string]interface{}
+       if err := c.BindJSON(&books); err != nil {
+               c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+               return
+       }
+       data, err := json.MarshalIndent(books, "", "  ")
+       if err != nil {
+               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+               return
+       }
+       if err := os.WriteFile("../dashbord/books.json", data, 0644); err != nil {
+               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+               return
+       }
+       c.Status(http.StatusOK)
+}
+
+func listBooks(c *gin.Context) {
+       data, err := ioutil.ReadFile("../dashbord/books.json")
+       if err != nil {
+               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+               return
+       }
+       var books []map[string]interface{}
+       if err := json.Unmarshal(data, &books); err != nil {
+               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+               return
+       }
+       c.JSON(http.StatusOK, books)
+}
 
 func register(c *gin.Context) {
 	var u User
@@ -359,7 +393,13 @@ func main() {
 		api.POST("/messages/send/:id", sendMessageHandler)
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
-	}
+
+               api.GET("/books", listBooks)
+               api.POST("/save-books", saveBooks)
+       }
+
+	// serve React control panel
+	r.Static("/controlpanel", "../dashbord")
 
 	r.Run(":8080")
 }
