@@ -511,6 +511,155 @@ func getOnlineUsersHandler(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{"onlineUsers": users})
 }
 
+func searchUsersHandler(c *gin.Context) {
+	query := strings.ToLower(c.Query("query"))
+	if query == "" {
+		c.JSON(http.StatusOK, []User{})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	var results []User
+	for _, u := range users {
+		if strings.Contains(strings.ToLower(u.Username), query) ||
+			(u.Email != "" && strings.Contains(strings.ToLower(u.Email), query)) {
+			results = append(results, u)
+		}
+	}
+	c.JSON(http.StatusOK, results)
+}
+
+func getUserByID(id string) (User, bool) {
+	for _, u := range users {
+		if u.ID == id {
+			return u, true
+		}
+	}
+	return User{}, false
+}
+
+func getUserHandler(c *gin.Context) {
+	id := c.Param("id")
+	mu.Lock()
+	user, ok := getUserByID(id)
+	mu.Unlock()
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func toggleFollowHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	current, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	targetID := c.Param("id")
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	target, exists := getUserByID(targetID)
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// check if already following
+	following := false
+	for _, id := range current.Following {
+		if id == targetID {
+			following = true
+			break
+		}
+	}
+
+	if following {
+		// unfollow
+		var newFollowing []string
+		for _, id := range current.Following {
+			if id != targetID {
+				newFollowing = append(newFollowing, id)
+			}
+		}
+		current.Following = newFollowing
+
+		var newFollowers []string
+		for _, id := range target.Followers {
+			if id != current.ID {
+				newFollowers = append(newFollowers, id)
+			}
+		}
+		target.Followers = newFollowers
+		following = false
+	} else {
+		current.Following = append(current.Following, targetID)
+		target.Followers = append(target.Followers, current.ID)
+		following = true
+	}
+
+	users[current.Username] = current
+	users[target.Username] = target
+
+	c.JSON(http.StatusOK, gin.H{"user": current, "isFollowing": following})
+}
+
+func getFollowersHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	var followers []User
+	for _, id := range user.Followers {
+		if u, ok := getUserByID(id); ok {
+			followers = append(followers, u)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"followers": followers})
+}
+
+func getFollowingHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	var following []User
+	for _, id := range user.Following {
+		if u, ok := getUserByID(id); ok {
+			following = append(following, u)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"following": following})
+}
+
+func onlineUsersHandler(c *gin.Context) {
+	var ids []string
+	for id := range wsClients {
+		ids = append(ids, id)
+	}
+	c.JSON(http.StatusOK, gin.H{"onlineUsers": ids})
+}
+
 func main() {
 	r := gin.Default()
 
@@ -547,6 +696,13 @@ func main() {
                 api.PUT("/utils", updateUtilsHandler)
 
                 api.GET("/users/online", getOnlineUsersHandler)
+
+		api.GET("/users/search", searchUsersHandler)
+		api.GET("/users/:id", getUserHandler)
+		api.POST("/users/:id/follow", toggleFollowHandler)
+		api.GET("/users/followers", getFollowersHandler)
+		api.GET("/users/following", getFollowingHandler)
+		api.GET("/users/online", onlineUsersHandler)
 
 		api.GET("/conversations", getConversationsHandler)
 		api.GET("/conversations/:id/messages", getMessagesHandler)
