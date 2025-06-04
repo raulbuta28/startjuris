@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'models/workout_models.dart';
 import 'data/workout_data.dart';
 import 'widgets/modern_workout_widgets.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/utils_provider.dart' as utils;
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -608,6 +610,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
         onPressed: () {
           setState(() => _isExercising = !_isExercising);
           if (!_isExercising) {
+            context.read<utils.UtilsProvider>().logWorkout(
+                  exercise.name,
+                  exercise.duration,
+                );
             Navigator.pop(context);
           }
         },

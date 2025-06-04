@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/utils_provider.dart';
+import '../../../pages/backend/providers/auth_provider.dart';
+import '../../../services/user_utils_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:just_audio/just_audio.dart';
@@ -131,7 +132,7 @@ class _WaterPageState extends State<WaterPage> with TickerProviderStateMixin {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _settings = WaterSettings.fromJson(
@@ -142,14 +143,40 @@ class _WaterPageState extends State<WaterPage> with TickerProviderStateMixin {
       );
       _isLoading = false;
     });
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      final data = await service.fetchUtils();
+      if (data['water_settings'] != null) {
+        _settings = WaterSettings.fromJson(
+            data['water_settings'] as Map<String, dynamic>);
+      }
+      if (data['water_stats'] != null) {
+        _stats = WaterStats.fromJson(
+            data['water_stats'] as Map<String, dynamic>);
+      }
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveData() async {
     if (!mounted) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('water_settings', jsonEncode(_settings.toJson()));
     await prefs.setString('water_stats', jsonEncode(_stats.toJson()));
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      await service.saveUtils({
+        'water_settings': _settings.toJson(),
+        'water_stats': _stats.toJson(),
+      });
+    }
   }
 
   Future<void> _checkFirstLaunch() async {

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../backend/providers/auth_provider.dart';
+import '../../../services/user_utils_service.dart';
 import 'models/pomodoro_settings.dart';
 import 'models/pomodoro_stats.dart';
 
@@ -46,6 +49,23 @@ class _PomodoroPageState extends State<PomodoroPage> with TickerProviderStateMix
       );
       _minutes = _settings.workDuration;
     });
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      final data = await service.fetchUtils();
+      if (data['pomodoro_settings'] != null) {
+        _settings = PomodoroSettings.fromJson(
+            data['pomodoro_settings'] as Map<String, dynamic>);
+      }
+      if (data['pomodoro_stats'] != null) {
+        _stats = PomodoroStats.fromJson(
+            data['pomodoro_stats'] as Map<String, dynamic>);
+      }
+      setState(() {
+        _minutes = _settings.workDuration;
+      });
+    }
   }
 
   Future<void> _saveData() async {
@@ -53,6 +73,15 @@ class _PomodoroPageState extends State<PomodoroPage> with TickerProviderStateMix
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pomodoro_settings', jsonEncode(_settings.toJson()));
     await prefs.setString('pomodoro_stats', jsonEncode(_stats.toJson()));
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      await service.saveUtils({
+        'pomodoro_settings': _settings.toJson(),
+        'pomodoro_stats': _stats.toJson(),
+      });
+    }
   }
 
   void _startTimer() {

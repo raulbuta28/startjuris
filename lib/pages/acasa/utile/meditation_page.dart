@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../pages/backend/providers/auth_provider.dart';
+import '../../../services/user_utils_service.dart';
 import '../../../providers/utils_provider.dart';
 import 'dart:async';
 import 'dart:math' as math;

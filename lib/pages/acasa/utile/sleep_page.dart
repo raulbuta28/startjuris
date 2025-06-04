@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../pages/backend/providers/auth_provider.dart';
+import '../../../services/user_utils_service.dart';
 import '../../../providers/utils_provider.dart' as utils;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -91,6 +93,23 @@ class _SleepPageState extends State<SleepPage> with TickerProviderStateMixin {
       );
       _isLoading = false;
     });
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      final data = await service.fetchUtils();
+      if (data['sleep_settings'] != null) {
+        _settings = SleepSettings.fromJson(
+            data['sleep_settings'] as Map<String, dynamic>);
+      }
+      if (data['sleep_history'] != null) {
+        final h = data['sleep_history'] as Map<String, dynamic>;
+        _sleepHistory = h.map((k, v) => MapEntry(k, SleepData.fromJson(v)));
+      }
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveData() async {
@@ -102,6 +121,15 @@ class _SleepPageState extends State<SleepPage> with TickerProviderStateMixin {
         _sleepHistory.entries.map((e) => MapEntry(e.key, e.value.toJson())),
       )),
     );
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      await service.saveUtils({
+        'sleep_settings': _settings.toJson(),
+        'sleep_history': _sleepHistory.map((k, v) => MapEntry(k, v.toJson())),
+      });
+    }
   }
 
   void _startBedtimeTimer() {

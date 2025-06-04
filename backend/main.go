@@ -25,6 +25,7 @@ type User struct {
 var users = make(map[string]User)
 var tokens = make(map[string]string) // token -> username
 var mu sync.Mutex
+var userUtils = make(map[string]map[string]interface{})
 
 type Message struct {
 	ID             string    `json:"id"`
@@ -407,6 +408,52 @@ func markReadHandler(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{"error": "message not found"})
 }
 
+func getUtilsHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	mu.Lock()
+	data, exists := userUtils[user.ID]
+	mu.Unlock()
+	if !exists {
+		data = map[string]interface{}{}
+	}
+
+	c.JSON(http.StatusOK, data)
+}
+
+func updateUtilsHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var payload map[string]interface{}
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	mu.Lock()
+	existing, ok := userUtils[user.ID]
+	if !ok {
+		existing = make(map[string]interface{})
+	}
+	for k, v := range payload {
+		existing[k] = v
+	}
+	userUtils[user.ID] = existing
+	mu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
 func main() {
 	r := gin.Default()
 
@@ -438,6 +485,9 @@ func main() {
 		api.POST("/profile/avatar", uploadAvatar)
 		api.GET("/files", listFiles)
 		api.GET("/codes/:id", getCode)
+
+		api.GET("/utils", getUtilsHandler)
+		api.PUT("/utils", updateUtilsHandler)
 
 		api.GET("/conversations", getConversationsHandler)
 		api.GET("/conversations/:id/messages", getMessagesHandler)
