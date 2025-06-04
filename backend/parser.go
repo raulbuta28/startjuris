@@ -64,7 +64,7 @@ type ParsedCode struct {
 	Articles      []Article         `json:"articles"`
 }
 
-func parseCodeFile(path string) (*ParsedCode, error) {
+func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -80,9 +80,9 @@ func parseCodeFile(path string) (*ParsedCode, error) {
 	articleRe := regexp.MustCompile(`(?i)^Articolul\s+(\d+)`)
 
 	code := &ParsedCode{
-		ID:       "civil",
-		Title:    "Codul Civil",
-		Type:     "civil",
+		ID:       codeID,
+		Title:    codeTitle,
+		Type:     codeID,
 		Books:    []Book{},
 		Metadata: map[string]string{},
 	}
@@ -92,6 +92,7 @@ func parseCodeFile(path string) (*ParsedCode, error) {
 	var currentChapter *Chapter
 	var currentSection *CodeSection
 	var currentArticle *Article
+	var expectTitle bool
 
 	var bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder int
 
@@ -185,13 +186,19 @@ func parseCodeFile(path string) (*ParsedCode, error) {
 			if len(matches) > 1 {
 				num = matches[1]
 			}
-			currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Title: line, Order: articleOrder}
+			currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Order: articleOrder}
+			expectTitle = true
 		default:
 			if currentArticle != nil {
-				if currentArticle.Content != "" {
-					currentArticle.Content += "\n" + line
+				if expectTitle {
+					currentArticle.Title = line
+					expectTitle = false
 				} else {
-					currentArticle.Content = line
+					if currentArticle.Content != "" {
+						currentArticle.Content += "\n" + line
+					} else {
+						currentArticle.Content = line
+					}
 				}
 			}
 		}

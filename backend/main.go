@@ -89,12 +89,24 @@ func listFiles(c *gin.Context) {
 
 func getCode(c *gin.Context) {
 	id := c.Param("id")
-	if id != "civil" {
+
+	files := map[string]struct {
+		path  string
+		title string
+	}{
+		"civil":      {"codes/codulcivil.txt", "Codul Civil"},
+		"penal":      {"codes/codulpenal.txt", "Codul Penal"},
+		"proc_civil": {"codes/coduldeproceduracivila.txt", "Codul de Procedură Civilă"},
+		"proc_penal": {"codes/coduldeprocedurapenala.txt", "Codul de Procedură Penală"},
+	}
+
+	f, ok := files[id]
+	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
 		return
 	}
 
-	code, err := parseCodeFile("codes/codulcivil.txt")
+	code, err := parseCodeFile(f.path, id, f.title)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
