@@ -3,7 +3,7 @@
 This simple backend provides:
 
 - **/auth/register**: POST JSON `{"username":"user","email":"e","password":"pass"}` to create a user. Legacy `/register` remains for compatibility.
-- **/auth/login**: POST JSON to authenticate. Legacy `/login` also works.
+ - **/auth/login**: POST JSON to authenticate using either `username` or `email` along with `password`. Legacy `/login` also works.
 - **/profile**: GET returns the authenticated user's data using an `Authorization: Bearer <token>` header.
 - **/files**: GET list of all files in the project directory.
 

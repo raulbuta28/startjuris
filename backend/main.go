@@ -46,7 +46,24 @@ func login(c *gin.Context) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	stored, exists := users[u.Username]
+
+	var stored User
+	var exists bool
+
+	// Allow login using either username or email for convenience
+	if u.Username != "" {
+		stored, exists = users[u.Username]
+	}
+	if !exists && u.Email != "" {
+		for _, usr := range users {
+			if usr.Email == u.Email {
+				stored = usr
+				exists = true
+				break
+			}
+		}
+	}
+
 	if !exists || stored.Password != u.Password {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
