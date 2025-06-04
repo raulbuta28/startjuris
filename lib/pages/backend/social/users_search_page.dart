@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import 'user_profile_page.dart';
 import '../../../pages/chat/chat2.dart';
 import 'dart:async';
+import '../../../services/url_utils.dart';
 
 class UsersSearchPage extends StatefulWidget {
   const UsersSearchPage({super.key});
@@ -286,7 +287,7 @@ class _UsersSearchPageState extends State<UsersSearchPage> {
             borderRadius: BorderRadius.circular(12),
             child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
                 ? CachedNetworkImage(
-                    imageUrl: user.avatarUrl!,
+                    imageUrl: resolveUrl(user.avatarUrl!),
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       decoration: BoxDecoration(

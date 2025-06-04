@@ -62,13 +62,73 @@ class ChatProvider with ChangeNotifier {
     _reconnectTimer?.cancel();
     _channel?.sink.close();
 
-    final wsUrl = Uri.parse('ws://192.168.8.123:8080/api/ws');
-    
+    final baseUrl = 'ws://192.168.8.123:8080/api/ws';
+
     try {
-      print('Connecting to WebSocket: ${wsUrl.toString()}');
-      
+      print('Connecting to WebSocket: $baseUrl');
+
+      if (kIsWeb) {
+        final url = Uri.parse(baseUrl).replace(queryParameters: {
+          'token': _apiService.token,
+        });
+        _channel = WebSocketChannel.connect(url);
+        _reconnectAttempts = 0;
+
+        _channel!.stream.listen(
+          (dynamic message) {
+            if (_disposed) return;
+
+            print('Received WebSocket message: $message');
+            try {
+              final data = jsonDecode(message.toString());
+              if (data['type'] == 'new_message') {
+                final newMessage = Message.fromJson(data['message']);
+                final conversation =
+                    Conversation.fromJson(data['conversation']);
+
+                print('Processing new message: ${newMessage.text}');
+
+                final index =
+                    _conversations.indexWhere((c) => c.id == conversation.id);
+                if (index != -1) {
+                  _conversations[index] = conversation;
+                } else {
+                  _conversations.insert(0, conversation);
+                }
+
+                if (_conversations[index != -1 ? index : 0].messages == null) {
+                  _conversations[index != -1 ? index : 0].messages = [];
+                }
+                _conversations[index != -1 ? index : 0]
+                    .messages
+                    ?.insert(0, newMessage);
+
+                if (!_messageController.isClosed) {
+                  _messageController.add(newMessage);
+                }
+                if (!_disposed) {
+                  notifyListeners();
+                }
+              }
+            } catch (e) {
+              print('Error processing WebSocket message: $e');
+            }
+          },
+          onError: (error) {
+            print('WebSocket error: $error');
+            _scheduleReconnect();
+          },
+          onDone: () {
+            print('WebSocket connection closed');
+            _scheduleReconnect();
+          },
+          cancelOnError: false,
+        );
+        return;
+      }
+
       WebSocket.connect(
-        wsUrl.toString(),
+        baseUrl,
         headers: {
           'Authorization': 'Bearer ${_apiService.token}',
         },

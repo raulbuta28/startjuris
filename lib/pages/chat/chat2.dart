@@ -9,6 +9,7 @@ import '../backend/models/chat_models.dart';
 import '../backend/providers/auth_provider.dart';
 import '../backend/providers/chat_provider.dart';
 import '../backend/services/api_service.dart';
+import '../services/url_utils.dart';
 
 class Chat2Page extends StatefulWidget {
   final String contactName;
@@ -172,7 +173,7 @@ class _Chat2PageState extends State<Chat2Page> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
                                 child: Image.network(
-                                  recipientDetails!.avatarUrl!,
+                                  resolveUrl(recipientDetails!.avatarUrl!),
                                   fit: BoxFit.cover,
                                   width: MediaQuery.of(context).size.width * 0.8,
                                   height: MediaQuery.of(context).size.width * 0.8,
@@ -211,7 +212,7 @@ class _Chat2PageState extends State<Chat2Page> {
                     ),
                     child: widget.isGroup
                         ? _buildGroupAvatar()
-                        : _buildUserAvatar(recipientDetails?.avatarUrl ?? widget.contactAvatar),
+                        : _buildUserAvatar(resolveUrl(recipientDetails?.avatarUrl ?? widget.contactAvatar)),
                   ),
                 ),
                 const SizedBox(width: 12),

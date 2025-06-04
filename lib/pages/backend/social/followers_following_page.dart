@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import 'user_profile_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:animate_do/animate_do.dart';
+import '../../../services/url_utils.dart';
 
 class FollowersFollowingPage extends StatefulWidget {
   final User user;
@@ -230,7 +231,7 @@ class _FollowersFollowingPageState extends State<FollowersFollowingPage> {
                                             borderRadius: BorderRadius.circular(25),
                                             child: user.avatarUrl != null
                                                 ? CachedNetworkImage(
-                                                    imageUrl: user.avatarUrl!,
+                                                    imageUrl: resolveUrl(user.avatarUrl!),
                                                     fit: BoxFit.cover,
                                                     placeholder: (context, url) =>
                                                         Container(

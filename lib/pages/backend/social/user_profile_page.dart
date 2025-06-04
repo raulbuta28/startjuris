@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../../chat/chat2.dart';
+import '../../../services/url_utils.dart';
 
 class UserProfilePage extends StatelessWidget {
   final User user;
@@ -65,7 +66,7 @@ class UserProfilePage extends StatelessWidget {
             CircleAvatar(
               radius: 50,
               backgroundImage: user.avatarUrl != null
-                  ? NetworkImage(user.avatarUrl!)
+                  ? NetworkImage(resolveUrl(user.avatarUrl!))
                   : null,
               child: user.avatarUrl == null
                   ? const Icon(Icons.person, size: 50, color: Colors.grey)

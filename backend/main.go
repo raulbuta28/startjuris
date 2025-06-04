@@ -296,17 +296,20 @@ func uploadAvatar(c *gin.Context) {
 }
 
 func wsHandler(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	user, ok := getUserFromToken(token)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
+        token := c.GetHeader("Authorization")
+        if token == "" {
+                token = c.Query("token")
+        }
+        user, ok := getUserFromToken(token)
+        if !ok {
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }
 
-	conn, err := websocket.Upgrade(c.Writer, c.Request, nil, 1024, 1024)
-	if err != nil {
-		return
-	}
+        conn, err := websocket.Upgrade(c.Writer, c.Request, nil, 1024, 1024)
+        if err != nil {
+                return
+        }
 
 	wsClients[user.ID] = conn
 
@@ -485,7 +488,17 @@ func updateUtilsHandler(c *gin.Context) {
 	userUtils[user.ID] = existing
 	mu.Unlock()
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+        c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func getOnlineUsersHandler(c *gin.Context) {
+        mu.Lock()
+        users := make([]string, 0, len(wsClients))
+        for id := range wsClients {
+                users = append(users, id)
+        }
+        mu.Unlock()
+        c.JSON(http.StatusOK, gin.H{"onlineUsers": users})
 }
 
 func main() {
@@ -520,8 +533,10 @@ func main() {
 		api.GET("/files", listFiles)
 		api.GET("/codes/:id", getCode)
 
-		api.GET("/utils", getUtilsHandler)
-		api.PUT("/utils", updateUtilsHandler)
+                api.GET("/utils", getUtilsHandler)
+                api.PUT("/utils", updateUtilsHandler)
+
+                api.GET("/users/online", getOnlineUsersHandler)
 
 		api.GET("/conversations", getConversationsHandler)
 		api.GET("/conversations/:id/messages", getMessagesHandler)

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../backend/providers/auth_provider.dart';
 import '../backend/models/user_model.dart';
+import '../../services/url_utils.dart';
 import '../backend/social/users_search_page.dart';
 import '../backend/social/followers_following_page.dart';
 import 'edit_profile_screen.dart';
@@ -509,7 +510,7 @@ class _ProfilPageState extends State<ProfilPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(20),
         child: user.avatarUrl != null
             ? CachedNetworkImage(
-                imageUrl: user.avatarUrl!,
+                imageUrl: resolveUrl(user.avatarUrl),
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.grey.shade200,

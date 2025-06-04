@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../backend/models/user_model.dart';
 import '../backend/providers/auth_provider.dart';
+import '../../services/url_utils.dart';
 import 'dart:io';
 
 class EditProfileScreen extends StatefulWidget {
@@ -57,19 +59,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (image != null) {
         print('Selected image path: ${image.path}');
         
-        final file = File(image.path);
-        if (!await file.exists()) {
-          throw Exception('Fișierul nu există la calea: ${image.path}');
+        if (!kIsWeb) {
+          final file = File(image.path);
+          if (!await file.exists()) {
+            throw Exception('Fișierul nu există la calea: ${image.path}');
+          }
+
+          final fileSize = await file.length();
+          print('File size before compression: ${fileSize} bytes');
+
+          if (fileSize > 5 * 1024 * 1024) {
+            throw Exception('Imaginea este prea mare. Vă rugăm să alegeți o imagine mai mică.');
+          }
         }
-        
-        final fileSize = await file.length();
-        print('File size before compression: ${fileSize} bytes');
-        
-        if (fileSize > 5 * 1024 * 1024) {
-          throw Exception('Imaginea este prea mare. Vă rugăm să alegeți o imagine mai mică.');
-        }
-        
-        await context.read<AuthProvider>().updateAvatar(image.path);
+
+        await context.read<AuthProvider>().updateAvatar(image);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -302,9 +306,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(60),
-                        child: widget.user.avatarUrl != null
+                        child: context.watch<AuthProvider>().currentUser?.avatarUrl != null
                             ? Image.network(
-                                widget.user.avatarUrl!,
+                                resolveUrl(context.watch<AuthProvider>().currentUser!.avatarUrl!),
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => const Icon(
                                   Icons.person,
