@@ -516,7 +516,19 @@ func updateUtilsHandler(c *gin.Context) {
 }
 
 func main() {
-	r := gin.Default()
+       // ensure a default admin user exists for the control panel
+       mu.Lock()
+       if _, ok := users["admin"]; !ok {
+               users["admin"] = User{
+                       ID:       uuid.New().String(),
+                       Username: "admin",
+                       Password: "admin",
+                       Email:    "admin@example.com",
+               }
+       }
+       mu.Unlock()
+
+       r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
