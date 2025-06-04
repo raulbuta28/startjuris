@@ -1,14 +1,15 @@
 package main
 
 import (
-       "encoding/json"
-       "io/ioutil"
-       "github.com/gin-gonic/gin"
-       "github.com/google/uuid"
-       "github.com/gorilla/websocket"
+	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -52,36 +53,47 @@ var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
 
+// getDashboardPath returns an absolute path to the React control panel
+// directory so the server works regardless of the working directory.
+func getDashboardPath() string {
+	// use the source path of this file so it works with `go run`
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "../dashbord"
+	}
+	return filepath.Join(filepath.Dir(file), "..", "dashbord")
+}
+
 func saveBooks(c *gin.Context) {
-       var books []map[string]interface{}
-       if err := c.BindJSON(&books); err != nil {
-               c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-               return
-       }
-       data, err := json.MarshalIndent(books, "", "  ")
-       if err != nil {
-               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-               return
-       }
-       if err := os.WriteFile("../dashbord/books.json", data, 0644); err != nil {
-               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-               return
-       }
-       c.Status(http.StatusOK)
+	var books []map[string]interface{}
+	if err := c.BindJSON(&books); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(books, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile("../dashbord/books.json", data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
 }
 
 func listBooks(c *gin.Context) {
-       data, err := ioutil.ReadFile("../dashbord/books.json")
-       if err != nil {
-               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-               return
-       }
-       var books []map[string]interface{}
-       if err := json.Unmarshal(data, &books); err != nil {
-               c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-               return
-       }
-       c.JSON(http.StatusOK, books)
+	data, err := ioutil.ReadFile("../dashbord/books.json")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var books []map[string]interface{}
+	if err := json.Unmarshal(data, &books); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, books)
 }
 
 func register(c *gin.Context) {
@@ -529,12 +541,12 @@ func main() {
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
 
-               api.GET("/books", listBooks)
-               api.POST("/save-books", saveBooks)
-       }
+		api.GET("/books", listBooks)
+		api.POST("/save-books", saveBooks)
+	}
 
 	// serve React control panel
-	r.Static("/controlpanel", "../dashbord")
+	r.Static("/controlpanel", getDashboardPath())
 
 	r.Static("/uploads", "./uploads")
 

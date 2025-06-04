@@ -21,3 +21,9 @@ This compiles all Go files in the directory, including `parser.go` which
 defines helper functions used by `main.go`.
 
 The server listens on `localhost:8080`.
+
+## Control panel
+
+Static files for a simple admin panel live under `dashbord/`. When the
+server is running, you can open `http://localhost:8080/controlpanel/` in
+your browser to access it. The default credentials are `admin`/`admin`.
