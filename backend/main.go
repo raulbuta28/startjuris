@@ -61,10 +61,31 @@ func listFiles(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 
+func getCode(c *gin.Context) {
+	id := c.Param("id")
+	if id != "civil" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
+		return
+	}
+
+	code, err := parseCodeFile("codes/codulcivil.txt")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, code)
+}
+
 func main() {
 	r := gin.Default()
-	r.POST("/register", register)
-	r.POST("/login", login)
-	r.GET("/files", listFiles)
+
+	api := r.Group("/api")
+	{
+		api.POST("/register", register)
+		api.POST("/login", login)
+		api.GET("/files", listFiles)
+		api.GET("/codes/:id", getCode)
+	}
+
 	r.Run(":8080")
 }
