@@ -422,14 +422,17 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
 
   Widget _buildArticleLink(code_service.Article article) {
     return ListTile(
-      contentPadding: const EdgeInsets.only(left: 32),
+      contentPadding: const EdgeInsets.only(left: 32, right: 8),
       dense: true,
       title: Text(
-        'Art. ${article.number}',
+        'Art. ${article.number} - ${article.title}',
         style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w500,
+          height: 1.2,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
       onTap: () {
         final index = _allArticles.indexWhere((a) => a.id == article.id);
