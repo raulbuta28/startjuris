@@ -70,10 +70,12 @@ flutter:
     - assets/carti/cartidp/
     - assets/carti/cartidpp/
     - assets/sounds/
+    - assets/sounds/sleep/
     - assets/animations/
     - assets/icons/
     - assets/clasament/
     - assets/utile/
+    - assets/utile/peisaj/
     - assets/icon/
     - assets/level/
     - assets/carusel/

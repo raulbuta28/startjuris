@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:convert';
+import '../services/user_utils_service.dart';
 
 class PomodoroSettings {
   int workDuration; // in minutes
@@ -303,6 +304,20 @@ class UtilsProvider extends ChangeNotifier {
     await prefs.setString('reflections', jsonEncode(_reflections.map((e) => e.toJson()).toList()));
     await prefs.setString('meditationHistory', jsonEncode(_meditationHistory.map((e) => e.toJson()).toList()));
     await prefs.setString('workoutHistory', jsonEncode(_workoutHistory.map((e) => e.toJson()).toList()));
+
+    final auth = await SharedPreferences.getInstance();
+    final token = auth.getString('auth_token');
+    if (token != null) {
+      final service = UserUtilsService(token);
+      await service.saveUtils({
+        'pomodoro_settings': _pomodoroSettings.toJson(),
+        'waterIntake': _waterIntake.toJson(),
+        'sleepHistory': _sleepHistory.map((k, v) => MapEntry(k.toIso8601String(), v.toJson())),
+        'reflections': _reflections.map((e) => e.toJson()).toList(),
+        'meditationHistory': _meditationHistory.map((e) => e.toJson()).toList(),
+        'workoutHistory': _workoutHistory.map((e) => e.toJson()).toList(),
+      });
+    }
   }
   
   // Pomodoro methods

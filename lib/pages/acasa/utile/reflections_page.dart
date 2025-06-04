@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../../../pages/backend/providers/auth_provider.dart';
+import '../../../services/user_utils_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,6 +61,18 @@ class _ReflectionsPageState extends State<ReflectionsPage> with SingleTickerProv
     setState(() {
       _isLoading = false;
     });
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      final data = await service.fetchUtils();
+      if (data['reflections'] != null) {
+        _reflections
+          ..clear()
+          ..addAll(List<Map<String, dynamic>>.from(data['reflections'] as List));
+      }
+      setState(() {});
+    }
   }
 
   Future<void> _saveReflection(String text) async {
@@ -77,6 +92,12 @@ class _ReflectionsPageState extends State<ReflectionsPage> with SingleTickerProv
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('reflections', json.encode(_reflections));
     _textController.clear();
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      await service.saveUtils({'reflections': _reflections});
+    }
   }
 
   Color _getRandomPastelColor() {
@@ -98,6 +119,12 @@ class _ReflectionsPageState extends State<ReflectionsPage> with SingleTickerProv
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('reflections', json.encode(_reflections));
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final service = UserUtilsService(auth.token!);
+      await service.saveUtils({'reflections': _reflections});
+    }
   }
 
   @override
