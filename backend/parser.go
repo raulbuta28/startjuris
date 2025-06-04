@@ -179,6 +179,30 @@ func parseCodeFile(path string) (*ParsedCode, error) {
 			if currentArticle != nil && currentSection != nil {
 				currentSection.Articles = append(currentSection.Articles, *currentArticle)
 			}
+			if currentSection == nil {
+				// create a default section if none exists
+				sectionOrder++
+				if currentChapter == nil {
+					// ensure we have a chapter
+					chapterOrder++
+					if currentTitle == nil {
+						// ensure we have a title and book
+						titleOrder++
+						if currentBook == nil {
+							bookOrder++
+							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+							currentBook = &code.Books[len(code.Books)-1]
+						}
+						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+						currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
+					}
+					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder})
+					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
+				}
+				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder}
+				currentChapter.Sections = append(currentChapter.Sections, sec)
+				currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
+			}
 			articleOrder++
 			matches := articleRe.FindStringSubmatch(line)
 			num := ""
