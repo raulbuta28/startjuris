@@ -139,7 +139,7 @@ class ApiServiceLogin extends ApiService {
     }
   }
 
-  Future<User> updateAvatar(String filePath) async {
+  Future<User> updateAvatar(String filePath, {Uint8List? bytes, String? filename}) async {
     try {
       print('Token being used: $token');
       final url = Uri.parse('${ApiService.baseUrl}/profile/avatar');
@@ -153,15 +153,26 @@ class ApiServiceLogin extends ApiService {
 
       print('Request headers: ${request.headers}');
 
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw Exception('Fișierul nu există: $filePath');
+      if (kIsWeb) {
+        if (bytes == null) {
+          throw Exception('No image data provided');
+        }
+        request.files.add(http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename: filename ?? 'avatar.png',
+        ));
+      } else {
+        final file = File(filePath);
+        if (!await file.exists()) {
+          throw Exception('Fișierul nu există: $filePath');
+        }
+
+        final fileSize = await file.length();
+        print('File size: ${fileSize} bytes');
+
+        request.files.add(await http.MultipartFile.fromPath('avatar', filePath));
       }
-
-      final fileSize = await file.length();
-      print('File size: ${fileSize} bytes');
-
-      request.files.add(await http.MultipartFile.fromPath('avatar', filePath));
 
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 30),

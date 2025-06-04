@@ -6,6 +6,7 @@ import '../services/api_service_login.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _currentUser;
@@ -224,14 +225,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateAvatar(String filePath) async {
+  Future<void> updateAvatar(XFile image) async {
     try {
       if (_token == null) {
         throw Exception('Nu sunteți autentificat');
       }
 
-      print('Attempting to update avatar with file: $filePath');
-      final updatedUser = await _apiService.updateAvatar(filePath);
+      print('Attempting to update avatar with file: ${image.path}');
+      final updatedUser = await _apiService.updateAvatar(
+        image.path,
+        bytes: kIsWeb ? await image.readAsBytes() : null,
+        filename: image.name,
+      );
       _currentUser = updatedUser;
       print('Avatar updated successfully');
       notifyListeners();
