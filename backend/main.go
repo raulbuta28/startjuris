@@ -15,13 +15,15 @@ import (
 )
 
 type User struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Bio       string `json:"bio,omitempty"`
-	AvatarURL string `json:"avatarUrl,omitempty"`
-	Phone     string `json:"phone,omitempty"`
+	ID        string   `json:"id"`
+	Username  string   `json:"username"`
+	Email     string   `json:"email"`
+	Password  string   `json:"password"`
+	Bio       string   `json:"bio,omitempty"`
+	AvatarURL string   `json:"avatarUrl,omitempty"`
+	Phone     string   `json:"phone,omitempty"`
+	Followers []string `json:"followers,omitempty"`
+	Following []string `json:"following,omitempty"`
 }
 
 var users = make(map[string]User)
@@ -95,26 +97,26 @@ func listBooks(c *gin.Context) {
 }
 
 func register(c *gin.Context) {
-        var u User
-        if err := c.BindJSON(&u); err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-                return
-        }
-        mu.Lock()
-        defer mu.Unlock()
-        if _, exists := users[u.Username]; exists {
-                c.JSON(http.StatusConflict, gin.H{"error": "user exists"})
-                return
-        }
-        for _, existing := range users {
-                if existing.Email == u.Email {
-                        c.JSON(http.StatusConflict, gin.H{"error": "email exists"})
-                        return
-                }
-        }
-        u.ID = uuid.New().String()
-        users[u.Username] = u
-        c.JSON(http.StatusCreated, gin.H{"user": u})
+	var u User
+	if err := c.BindJSON(&u); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if _, exists := users[u.Username]; exists {
+		c.JSON(http.StatusConflict, gin.H{"error": "user exists"})
+		return
+	}
+	for _, existing := range users {
+		if existing.Email == u.Email {
+			c.JSON(http.StatusConflict, gin.H{"error": "email exists"})
+			return
+		}
+	}
+	u.ID = uuid.New().String()
+	users[u.Username] = u
+	c.JSON(http.StatusCreated, gin.H{"user": u})
 }
 
 func login(c *gin.Context) {
@@ -312,20 +314,28 @@ func uploadAvatar(c *gin.Context) {
 }
 
 func wsHandler(c *gin.Context) {
-        token := c.GetHeader("Authorization")
-        if token == "" {
-                token = c.Query("token")
-        }
-        user, ok := getUserFromToken(token)
-        if !ok {
-                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-                return
-        }
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		token = c.Query("token")
+	}
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
-        conn, err := websocket.Upgrade(c.Writer, c.Request, nil, 1024, 1024)
-        if err != nil {
-                return
-        }
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		return
+	}
 
 	wsClients[user.ID] = conn
 
@@ -504,17 +514,17 @@ func updateUtilsHandler(c *gin.Context) {
 	userUtils[user.ID] = existing
 	mu.Unlock()
 
-        c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func getOnlineUsersHandler(c *gin.Context) {
-        mu.Lock()
-        users := make([]string, 0, len(wsClients))
-        for id := range wsClients {
-                users = append(users, id)
-        }
-        mu.Unlock()
-        c.JSON(http.StatusOK, gin.H{"onlineUsers": users})
+	mu.Lock()
+	users := make([]string, 0, len(wsClients))
+	for id := range wsClients {
+		users = append(users, id)
+	}
+	mu.Unlock()
+	c.JSON(http.StatusOK, gin.H{"onlineUsers": users})
 }
 
 func searchUsersHandler(c *gin.Context) {
@@ -698,10 +708,10 @@ func main() {
 		api.GET("/files", listFiles)
 		api.GET("/codes/:id", getCode)
 
-                api.GET("/utils", getUtilsHandler)
-                api.PUT("/utils", updateUtilsHandler)
+		api.GET("/utils", getUtilsHandler)
+		api.PUT("/utils", updateUtilsHandler)
 
-                api.GET("/users/online", getOnlineUsersHandler)
+		api.GET("/users/online", getOnlineUsersHandler)
 
 		api.GET("/users/search", searchUsersHandler)
 		api.GET("/users/:id", getUserHandler)
