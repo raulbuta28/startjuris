@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -78,6 +79,7 @@ func getCode(c *gin.Context) {
 
 func main() {
 	r := gin.Default()
+	r.Use(cors.Default())
 
 	api := r.Group("/api")
 	{
