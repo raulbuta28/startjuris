@@ -1,0 +1,94 @@
+name: startjuris
+description: A modern law exam preparation app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  lottie: ^3.1.0
+  fl_chart: ^0.66.2
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2
+  provider: ^6.1.1
+  uuid: ^4.0.0
+  intl: ^0.19.0
+  carousel_slider: ^5.0.0
+  font_awesome_flutter: ^10.7.0
+  cached_network_image: ^3.3.0
+  animate_do: ^3.1.2
+  flutter_animate: ^4.5.0
+  camera: ^0.10.0
+  flutter_markdown: ^0.6.20
+  scrollable_positioned_list: ^0.3.8
+  flutter_highlight: ^0.7.0
+  rive: ^0.12.4
+  flutter_slidable: ^4.0.0
+  flutter_staggered_animations: ^1.1.1
+  simple_animations: ^5.0.0+3
+  flutter_svg: ^2.0.9
+  share_plus: ^11.0.0
+  flutter_tts: ^4.2.2
+  just_audio: ^0.9.36
+  flutter_inappwebview: ^6.1.5
+  path_provider: ^2.1.2
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  flutter_local_notifications: ^16.3.2
+  flutter_staggered_grid_view: ^0.7.0
+  http: ^1.2.2
+  json_annotation: ^4.8.1
+  image_picker: ^1.0.4
+  permission_handler: ^11.3.0
+  web_socket_channel: ^2.4.0
+  pull_to_refresh: ^2.0.0
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.14.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/videos/
+    - assets/carti/
+    - assets/carti/cartidpc/
+    - assets/carti/cartidp/
+    - assets/carti/cartidpp/
+    - assets/sounds/
+    - assets/animations/
+    - assets/icons/
+    - assets/clasament/
+    - assets/utile/
+    - assets/icon/
+    - assets/level/
+    - assets/carusel/
+    - assets/poze/
+    # Legal code files now served via backend API
+    # No longer needed as assets:
+    # - lib/pages/acasa/codurileactualizate/
+
+  # Custom fonts removed - using Google Fonts only
+  # google_fonts package handles all font loading automatically
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icon.png"
