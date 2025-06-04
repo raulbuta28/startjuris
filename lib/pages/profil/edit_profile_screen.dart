@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../backend/models/user_model.dart';
 import '../backend/providers/auth_provider.dart';
 import 'dart:io';
@@ -57,19 +58,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (image != null) {
         print('Selected image path: ${image.path}');
         
-        final file = File(image.path);
-        if (!await file.exists()) {
-          throw Exception('Fișierul nu există la calea: ${image.path}');
+        if (!kIsWeb) {
+          final file = File(image.path);
+          if (!await file.exists()) {
+            throw Exception('Fișierul nu există la calea: ${image.path}');
+          }
+
+          final fileSize = await file.length();
+          print('File size before compression: ${fileSize} bytes');
+
+          if (fileSize > 5 * 1024 * 1024) {
+            throw Exception('Imaginea este prea mare. Vă rugăm să alegeți o imagine mai mică.');
+          }
         }
-        
-        final fileSize = await file.length();
-        print('File size before compression: ${fileSize} bytes');
-        
-        if (fileSize > 5 * 1024 * 1024) {
-          throw Exception('Imaginea este prea mare. Vă rugăm să alegeți o imagine mai mică.');
-        }
-        
-        await context.read<AuthProvider>().updateAvatar(image.path);
+
+        await context.read<AuthProvider>().updateAvatar(image);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

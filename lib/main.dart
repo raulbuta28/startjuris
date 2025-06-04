@@ -7,6 +7,7 @@ import 'pages/modern_code_reader.dart';
 import 'pages/backend/providers/auth_provider.dart';
 import 'pages/backend/providers/chat_provider.dart';
 import 'pages/backend/providers/level_provider.dart';
+import 'providers/obiective_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ObiectiveProvider()),
         ChangeNotifierProvider(
           create: (context) => ChatProvider(context.read<AuthProvider>().token),
         ),
