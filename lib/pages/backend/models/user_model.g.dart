@@ -30,8 +30,12 @@ User _$UserFromJson(Map<String, dynamic> json) {
             ?.map((e) => e as String)
             .toList() ??
         [],
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    createdAt: json['createdAt'] == null
+        ? null
+        : DateTime.parse(json['createdAt'] as String),
+    updatedAt: json['updatedAt'] == null
+        ? null
+        : DateTime.parse(json['updatedAt'] as String),
     conversations: (json['conversations'] as List<dynamic>?)
             ?.map((e) => e as String)
             .toList() ??
@@ -52,7 +56,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'isPrivate': instance.isPrivate,
       'followers': instance.followers,
       'following': instance.following,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
       'conversations': instance.conversations,
     };
