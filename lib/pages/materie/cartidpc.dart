@@ -1,71 +1,10 @@
 import 'package:flutter/material.dart';
 import '../poveste_page.dart';
+import '../../services/book_service.dart';
 
 class CartiDPC extends StatelessWidget {
-  const CartiDPC({Key? key}) : super(key: key);
-
-  static const List<Map<String, String>> _carti = [
-    {
-      'id': 'dpc_1',
-      'titlu': 'Principiile procesului civil',
-      'imagine': 'assets/carti/cartidpc/1.png',
-      'continut': 'Conținutul despre principiile procesului civil va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_2',
-      'titlu': 'Competența instanțelor judecătorești',
-      'imagine': 'assets/carti/cartidpc/2.png',
-      'continut': 'Conținutul despre competența instanțelor judecătorești va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_3',
-      'titlu': 'Participanții la procesul civil',
-      'imagine': 'assets/carti/cartidpc/3.png',
-      'continut': 'Conținutul despre participanții la procesul civil va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_4',
-      'titlu': 'Actele de procedură',
-      'imagine': 'assets/carti/cartidpc/4.png',
-      'continut': 'Conținutul despre actele de procedură va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_5',
-      'titlu': 'Termenele procedurale',
-      'imagine': 'assets/carti/cartidpc/5.png',
-      'continut': 'Conținutul despre termenele procedurale va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_6',
-      'titlu': 'Judecata în primă instanță',
-      'imagine': 'assets/carti/cartidpc/6.png',
-      'continut': 'Conținutul despre judecata în primă instanță va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_7',
-      'titlu': 'Căile de atac',
-      'imagine': 'assets/carti/cartidpc/7.png',
-      'continut': 'Conținutul despre căile de atac va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_8',
-      'titlu': 'Proceduri speciale',
-      'imagine': 'assets/carti/cartidpc/8.png',
-      'continut': 'Conținutul despre procedurile speciale va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_9',
-      'titlu': 'Executarea silită',
-      'imagine': 'assets/carti/cartidpc/9.png',
-      'continut': 'Conținutul despre executarea silită va fi disponibil în curând...',
-    },
-    {
-      'id': 'dpc_10',
-      'titlu': 'Arbitrajul',
-      'imagine': 'assets/carti/cartidpc/10.png',
-      'continut': 'Conținutul despre arbitraj va fi disponibil în curând...',
-    },
-  ];
+  final List<AdminBook> carti;
+  const CartiDPC({Key? key, required this.carti}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -75,9 +14,9 @@ class CartiDPC extends StatelessWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _carti.length,
+        itemCount: carti.length,
         itemBuilder: (context, index) {
-          final carte = _carti[index];
+          final carte = carti[index];
           
           return Container(
             width: 160,
@@ -100,9 +39,9 @@ class CartiDPC extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PovesterePage(
-                        titlu: carte['titlu']!,
-                        imagine: carte['imagine']!,
-                        continut: carte['continut']!,
+                        titlu: carte.title,
+                        imagine: carte.image,
+                        continut: carte.content,
                         progress: 0.0,
                       ),
                     ),
@@ -119,7 +58,7 @@ class CartiDPC extends StatelessWidget {
                           top: Radius.circular(12),
                         ),
                         child: Image.asset(
-                          carte['imagine']!,
+                          carte.image,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
@@ -150,7 +89,7 @@ class CartiDPC extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              carte['titlu']!,
+                              carte.title,
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

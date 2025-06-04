@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import 'baradecautare.dart';
 import 'carticivil.dart';
@@ -16,12 +15,43 @@ import 'admiteresng.dart';
 import 'colectiastartjuris.dart';
 import 'carusel.dart';
 import '../modern_code_reader.dart';
+import '../../services/book_service.dart';
 
-class MateriePage extends StatelessWidget {
+class MateriePage extends StatefulWidget {
   const MateriePage({super.key});
 
   @override
+  State<MateriePage> createState() => _MateriePageState();
+}
+
+class _MateriePageState extends State<MateriePage> {
+  List<AdminBook> _books = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    BookService.fetchBooks().then((b) {
+      setState(() {
+        _books = b;
+        _loading = false;
+      });
+    }).catchError((_) {
+      setState(() => _loading = false);
+    });
+  }
+
+  List<AdminBook> _filter(String prefix) {
+    return _books.where((b) => b.id.startsWith(prefix)).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     const imageHeight = 220.0 + 6 + 16 + 6 + 6 + 36 + 6;
 
     return Scaffold(
@@ -116,7 +146,7 @@ class MateriePage extends StatelessWidget {
             ),
             SizedBox(
               height: imageHeight,
-              child: const CartiCivil(),
+              child: CartiCivil(carti: _filter('civil')),
             ),
 
             // Drept procesual civil
@@ -133,7 +163,7 @@ class MateriePage extends StatelessWidget {
             ),
             SizedBox(
               height: imageHeight,
-              child: const CartiDPC(),
+              child: CartiDPC(carti: _filter('dpc')),
             ),
 
             // Drept penal
@@ -150,7 +180,7 @@ class MateriePage extends StatelessWidget {
             ),
             SizedBox(
               height: imageHeight,
-              child: const CartiDP(),
+              child: CartiDP(carti: _filter('dp_')),
             ),
 
             // Drept procesual penal
@@ -167,7 +197,7 @@ class MateriePage extends StatelessWidget {
             ),
             SizedBox(
               height: imageHeight,
-              child: const CartiDPP(),
+              child: CartiDPP(carti: _filter('dpp')),
             ),
 
             // Admitere INM
