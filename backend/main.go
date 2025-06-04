@@ -561,9 +561,17 @@ func main() {
 	}
 
 	// serve React control panel
-	r.Static("/controlpanel", getDashboardPath())
+	dashboard := getDashboardPath()
+	r.StaticFS("/controlpanel", gin.Dir(dashboard, false))
 	r.GET("/controlpanel", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/controlpanel/")
+	})
+	r.NoRoute(func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/controlpanel/") {
+			c.File(filepath.Join(dashboard, "index.html"))
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 	})
 
 	r.Static("/uploads", "./uploads")
