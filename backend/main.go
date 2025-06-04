@@ -13,10 +13,13 @@ import (
 )
 
 type User struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Bio       string `json:"bio,omitempty"`
+	AvatarURL string `json:"avatarUrl,omitempty"`
+	Phone     string `json:"phone,omitempty"`
 }
 
 var users = make(map[string]User)
@@ -175,6 +178,86 @@ func getUserFromToken(token string) (User, bool) {
 	}
 	user, exists := users[username]
 	return user, exists
+}
+
+func updateProfile(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var payload struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Bio      string `json:"bio"`
+		Phone    string `json:"phone"`
+	}
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+
+	mu.Lock()
+	original := user.Username
+	if payload.Username != "" && payload.Username != user.Username {
+		user.Username = payload.Username
+	}
+	if payload.Email != "" {
+		user.Email = payload.Email
+	}
+	if payload.Bio != "" {
+		user.Bio = payload.Bio
+	}
+	if payload.Phone != "" {
+		user.Phone = payload.Phone
+	}
+
+	// update maps if username changed
+	if original != user.Username {
+		for t, u := range tokens {
+			if u == original {
+				tokens[t] = user.Username
+			}
+		}
+		delete(users, original)
+	}
+	users[user.Username] = user
+	mu.Unlock()
+
+	c.JSON(http.StatusOK, user)
+}
+
+func uploadAvatar(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	user, ok := getUserFromToken(token)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+		return
+	}
+
+	os.MkdirAll("uploads/avatars", os.ModePerm)
+	filename := uuid.New().String() + filepath.Ext(file.Filename)
+	path := filepath.Join("uploads", "avatars", filename)
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+		return
+	}
+
+	user.AvatarURL = "/uploads/avatars/" + filename
+
+	mu.Lock()
+	users[user.Username] = user
+	mu.Unlock()
+
+	c.JSON(http.StatusOK, user)
 }
 
 func wsHandler(c *gin.Context) {
@@ -351,6 +434,8 @@ func main() {
 		}
 
 		api.GET("/profile", profile)
+		api.PUT("/profile", updateProfile)
+		api.POST("/profile/avatar", uploadAvatar)
 		api.GET("/files", listFiles)
 		api.GET("/codes/:id", getCode)
 
@@ -360,6 +445,8 @@ func main() {
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
 	}
+
+	r.Static("/uploads", "./uploads")
 
 	r.Run(":8080")
 }
