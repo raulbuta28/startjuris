@@ -409,7 +409,7 @@ class ChatProvider with ChangeNotifier {
       _channel = null;
       
       _reconnectTimer?.cancel();
-      _refreshTimer?.cancel;
+      _refreshTimer?.cancel();
       
       _reconnectAttempts = 0;
       
