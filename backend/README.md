@@ -2,7 +2,7 @@
 
 This simple backend provides:
 
-- **/auth/register**: POST JSON `{"username":"user","email":"e","password":"pass"}` to create a user. Legacy `/register` remains for compatibility.
+- **/auth/register**: POST JSON `{"username":"user","email":"e","password":"pass"}` to create a user.  Usernames and emails must be unique. Legacy `/register` remains for compatibility.
 - **/auth/login**: POST JSON to authenticate using either `username` or `email` along with `password`. Legacy `/login` also works.
 - **/profile**: GET returns the authenticated user's data using an `Authorization: Bearer <token>` header.
 - **/profile**: PUT updates the user's profile fields (`username`, `email`, `bio`, `phone`).

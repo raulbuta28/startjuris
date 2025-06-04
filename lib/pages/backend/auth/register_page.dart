@@ -60,7 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
       // Autentificare automată după înregistrare
       if (mounted) {
         await context.read<AuthProvider>().login(
-          email: _emailController.text,
+          identifier: _emailController.text,
           password: _passwordController.text,
         );
 
@@ -86,6 +86,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           'Înregistrare',

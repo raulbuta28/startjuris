@@ -13,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -27,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Te rugăm să completezi toate câmpurile')),
       );
@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
       print('Attempting login from LoginPage'); // Debug print
       final authProvider = context.read<AuthProvider>();
       await authProvider.login(
-        email: _emailController.text,
+        identifier: _identifierController.text,
         password: _passwordController.text,
       );
       print('Login successful, checking authentication status'); // Debug print
@@ -84,6 +84,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -110,15 +111,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 48),
               TextField(
-                controller: _emailController,
+                controller: _identifierController,
                 decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
+                  labelText: 'Email sau Nume utilizator',
+                  prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                keyboardType: TextInputType.emailAddress,
+                keyboardType: TextInputType.text,
               ),
               const SizedBox(height: 16),
               TextField(

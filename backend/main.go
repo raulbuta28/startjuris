@@ -95,20 +95,26 @@ func listBooks(c *gin.Context) {
 }
 
 func register(c *gin.Context) {
-	var u User
-	if err := c.BindJSON(&u); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-		return
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	if _, exists := users[u.Username]; exists {
-		c.JSON(http.StatusConflict, gin.H{"error": "user exists"})
-		return
-	}
-	u.ID = uuid.New().String()
-	users[u.Username] = u
-	c.JSON(http.StatusCreated, gin.H{"user": u})
+        var u User
+        if err := c.BindJSON(&u); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+                return
+        }
+        mu.Lock()
+        defer mu.Unlock()
+        if _, exists := users[u.Username]; exists {
+                c.JSON(http.StatusConflict, gin.H{"error": "user exists"})
+                return
+        }
+        for _, existing := range users {
+                if existing.Email == u.Email {
+                        c.JSON(http.StatusConflict, gin.H{"error": "email exists"})
+                        return
+                }
+        }
+        u.ID = uuid.New().String()
+        users[u.Username] = u
+        c.JSON(http.StatusCreated, gin.H{"user": u})
 }
 
 func login(c *gin.Context) {
