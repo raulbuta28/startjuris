@@ -24,6 +24,8 @@ The server listens on `localhost:8080`.
 
 ## Control panel
 
-Static files for a simple admin panel live under `dashbord/`. When the
-server is running, you can open `http://localhost:8080/controlpanel/` in
-your browser to access it. The default credentials are `admin`/`admin`.
+Static files for a simple admin panel live under `dashbord/`. The backend
+locates this directory next to the built executable, falling back to the
+source tree when run with `go run`. Open
+`http://localhost:8080/controlpanel/` in your browser to access it. The
+default credentials are `admin`/`admin`.
