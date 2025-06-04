@@ -668,14 +668,6 @@ func getFollowingHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"following": following})
 }
 
-func onlineUsersHandler(c *gin.Context) {
-	var ids []string
-	for id := range wsClients {
-		ids = append(ids, id)
-	}
-	c.JSON(http.StatusOK, gin.H{"onlineUsers": ids})
-}
-
 func main() {
 	r := gin.Default()
 
@@ -718,7 +710,6 @@ func main() {
 		api.POST("/users/:id/follow", toggleFollowHandler)
 		api.GET("/users/followers", getFollowersHandler)
 		api.GET("/users/following", getFollowingHandler)
-		api.GET("/users/online", onlineUsersHandler)
 
 		api.GET("/conversations", getConversationsHandler)
 		api.GET("/conversations/:id/messages", getMessagesHandler)
