@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../../../main_container.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -49,7 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Înregistrare
+      // Înregistrare utilizator
       await context.read<AuthProvider>().register(
         username: _usernameController.text,
         email: _emailController.text,
@@ -62,9 +63,15 @@ class _RegisterPageState extends State<RegisterPage> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+
+        // Dacă autentificarea a reușit, navigăm direct în aplicație
+        final auth = context.read<AuthProvider>();
+        if (auth.isAuthenticated) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MainContainer()),
+          );
+        }
       }
-      
-      // Nu mai este nevoie să navigăm înapoi, AuthWrapper va gestiona navigarea
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
