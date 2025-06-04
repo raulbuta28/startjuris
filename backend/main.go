@@ -75,7 +75,8 @@ func saveBooks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile("../dashbord/books.json", data, 0644); err != nil {
+	file := filepath.Join(getDashboardPath(), "books.json")
+	if err := os.WriteFile(file, data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -83,7 +84,8 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-	data, err := ioutil.ReadFile("../dashbord/books.json")
+	file := filepath.Join(getDashboardPath(), "books.json")
+	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -547,6 +549,9 @@ func main() {
 
 	// serve React control panel
 	r.Static("/controlpanel", getDashboardPath())
+	r.GET("/controlpanel", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/controlpanel/")
+	})
 
 	r.Static("/uploads", "./uploads")
 
