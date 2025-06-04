@@ -2,9 +2,12 @@
 
 This simple backend provides:
 
-- **/register**: POST JSON `{"username":"user","password":"pass"}` to create a user.
-- **/login**: POST JSON to authenticate.
+- **/auth/register**: POST JSON `{"username":"user","email":"e","password":"pass"}` to create a user. Legacy `/register` remains for compatibility.
+- **/auth/login**: POST JSON to authenticate. Legacy `/login` also works.
+- **/profile**: GET returns the authenticated user's data using an `Authorization: Bearer <token>` header.
 - **/files**: GET list of all files in the project directory.
+
+All Go dependencies are vendored so the project can be built without network access.
 
 Run with:
 
