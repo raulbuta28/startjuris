@@ -9,7 +9,10 @@ This simple backend provides:
 Run with:
 
 ```bash
-go run main.go
+go run .
 ```
+
+This compiles all Go files in the directory, including `parser.go` which
+defines helper functions used by `main.go`.
 
 The server listens on `localhost:8080`.
