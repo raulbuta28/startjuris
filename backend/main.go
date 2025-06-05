@@ -73,6 +73,48 @@ var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
 
+// codeFiles maps code IDs to their text source file and display title.
+var codeFiles = map[string]struct {
+	path  string
+	title string
+}{
+	"civil":      {path: "codes/codulcivil.txt", title: "Codul Civil"},
+	"penal":      {path: "codes/codulpenal.txt", title: "Codul Penal"},
+	"proc_civil": {path: "codes/coduldeproceduracivila.txt", title: "Codul de Procedur\u0103 Civil\u0103"},
+	"proc_penal": {path: "codes/coduldeprocedurapenala.txt", title: "Codul de Procedur\u0103 Penal\u0103"},
+}
+
+// loadOrParseCode loads a code from the JSON file if available.
+// If the file doesn't exist it attempts to parse the original text
+// file and saves the result for future use.
+func loadOrParseCode(id string) (*ParsedCode, error) {
+	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
+	data, err := os.ReadFile(jsonPath)
+	if err == nil {
+		var pc ParsedCode
+		if json.Unmarshal(data, &pc) == nil {
+			return &pc, nil
+		}
+	}
+
+	info, ok := codeFiles[id]
+	if !ok {
+		return nil, fmt.Errorf("unknown code id")
+	}
+
+	pc, err := parseCodeFile(info.path, id, info.title)
+	if err != nil {
+		return nil, err
+	}
+	pc.LastUpdated = time.Now().Format(time.RFC3339)
+
+	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
+		_ = os.WriteFile(jsonPath, data, 0644)
+	}
+
+	return pc, nil
+}
+
 // getDashboardPath returns an absolute path to the React control panel
 // directory so the server works regardless of the working directory.
 func getDashboardPath() string {
@@ -282,22 +324,13 @@ type CodeInfo struct {
 
 // listCodes returns all codes saved via the React dashboard.
 func listCodes(c *gin.Context) {
-	files, err := filepath.Glob("../dashbord-react/code_*.json")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	var codes []CodeInfo
-	for _, f := range files {
-		data, err := os.ReadFile(f)
+	codes := []CodeInfo{}
+	for id := range codeFiles {
+		pc, err := loadOrParseCode(id)
 		if err != nil {
 			continue
 		}
-		var pc ParsedCode
-		if err := json.Unmarshal(data, &pc); err == nil {
-			codes = append(codes, CodeInfo{ID: pc.ID, Title: pc.Title, LastUpdated: pc.LastUpdated})
-		}
+		codes = append(codes, CodeInfo{ID: pc.ID, Title: pc.Title, LastUpdated: pc.LastUpdated})
 	}
 
 	c.JSON(http.StatusOK, codes)
@@ -306,19 +339,12 @@ func listCodes(c *gin.Context) {
 func getCode(c *gin.Context) {
 	id := c.Param("id")
 
-	// Codes are stored as JSON files saved from the React dashboard.
-	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
-	data, err := os.ReadFile(jsonPath)
+	pc, err := loadOrParseCode(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
 		return
 	}
 
-	var pc ParsedCode
-	if err := json.Unmarshal(data, &pc); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	c.JSON(http.StatusOK, pc)
 }
 
