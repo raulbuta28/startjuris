@@ -144,6 +144,63 @@ func listBooks(c *gin.Context) {
 	c.JSON(http.StatusOK, books)
 }
 
+func saveNews(c *gin.Context) {
+	var news []map[string]interface{}
+	if err := c.BindJSON(&news); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(news, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile("../dashbord-react/news.json", data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func listNews(c *gin.Context) {
+	data, err := ioutil.ReadFile("../dashbord-react/news.json")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var news []map[string]interface{}
+	if err := json.Unmarshal(data, &news); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, news)
+}
+
+func uploadNewsImage(c *gin.Context) {
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+		return
+	}
+
+	os.MkdirAll("uploads/noutati", os.ModePerm)
+	filename := uuid.New().String() + filepath.Ext(file.Filename)
+	path := filepath.Join("uploads", "noutati", filename)
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+		return
+	}
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	host := c.Request.Host
+	url := fmt.Sprintf("%s://%s/uploads/noutati/%s", scheme, host, filename)
+
+	c.JSON(http.StatusOK, gin.H{"url": url})
+}
+
 func register(c *gin.Context) {
 	var u User
 	if err := c.BindJSON(&u); err != nil {
@@ -370,28 +427,28 @@ func uploadAvatar(c *gin.Context) {
 }
 
 func uploadBookImage(c *gin.Context) {
-        file, err := c.FormFile("image")
-        if err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
-                return
-        }
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+		return
+	}
 
-        os.MkdirAll("uploads/books", os.ModePerm)
-        filename := uuid.New().String() + filepath.Ext(file.Filename)
-        path := filepath.Join("uploads", "books", filename)
-        if err := c.SaveUploadedFile(file, path); err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
-                return
-        }
+	os.MkdirAll("uploads/books", os.ModePerm)
+	filename := uuid.New().String() + filepath.Ext(file.Filename)
+	path := filepath.Join("uploads", "books", filename)
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+		return
+	}
 
-        scheme := "http"
-        if c.Request.TLS != nil {
-                scheme = "https"
-        }
-        host := c.Request.Host
-        url := fmt.Sprintf("%s://%s/uploads/books/%s", scheme, host, filename)
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	host := c.Request.Host
+	url := fmt.Sprintf("%s://%s/uploads/books/%s", scheme, host, filename)
 
-        c.JSON(http.StatusOK, gin.H{"url": url})
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
 func wsHandler(c *gin.Context) {
@@ -800,10 +857,14 @@ func main() {
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
 
-               api.GET("/books", listBooks)
-               api.POST("/save-books", saveBooks)
-               api.POST("/books/upload-image", uploadBookImage)
-       }
+		api.GET("/books", listBooks)
+		api.POST("/save-books", saveBooks)
+		api.POST("/books/upload-image", uploadBookImage)
+
+		api.GET("/news", listNews)
+		api.POST("/save-news", saveNews)
+		api.POST("/news/upload-image", uploadNewsImage)
+	}
 
 	// serve React control panel
 	r.Static("/controlpanel", getDashboardPath())
