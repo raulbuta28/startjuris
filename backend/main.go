@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -349,7 +350,12 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
-	user.AvatarURL = "/uploads/avatars/" + filename
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	host := c.Request.Host
+	user.AvatarURL = fmt.Sprintf("%s://%s/uploads/avatars/%s", scheme, host, filename)
 
 	mu.Lock()
 	users[user.Username] = user
