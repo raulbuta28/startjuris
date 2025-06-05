@@ -14,3 +14,8 @@ This file documents changes made to improve the code editor and backend.
 - Token and user data files are saved relative to the repository root so the
   backend can reload authentication info regardless of the working directory.
 
+## New in this attempt
+- Increased the buffer size in `parseCodeFile` to avoid errors on very long lines.
+- The backend now prints the detected repository root and reports parsing errors
+  when preloading code files to help diagnose missing content issues.
+

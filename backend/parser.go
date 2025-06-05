@@ -72,6 +72,9 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	// some articles can be quite long, so increase the scanner buffer
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 
 	bookRe := regexp.MustCompile(`(?i)^Cartea`)
 	titleRe := regexp.MustCompile(`(?i)^Titlul`)
