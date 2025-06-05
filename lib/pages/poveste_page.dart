@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_html/style.dart';
 
 class PovesterePage extends StatefulWidget {
   final String titlu;
@@ -89,14 +91,17 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
   }
 
   Widget _buildContent() {
-    return SelectableText(
-      widget.continut,
-      style: TextStyle(
-        fontSize: _fontSize,
-        height: _lineHeight,
-        color: _textColor,
-        fontFamily: _fontFamily,
-      ),
+    return Html(
+      data: widget.continut,
+      style: {
+        "body": Style(
+          fontSize: FontSize(_fontSize),
+          lineHeight: LineHeight(_lineHeight),
+          color: _textColor,
+          fontFamily: _fontFamily,
+          backgroundColor: _backgroundColor,
+        ),
+      },
     );
   }
 
