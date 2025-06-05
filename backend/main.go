@@ -203,6 +203,11 @@ func preloadParsedCodes() {
 
 func getParsedCodeHandler(c *gin.Context) {
 	id := c.Param("id")
+	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	if _, err := os.Stat(jsonPath); err == nil {
+		c.File(jsonPath)
+		return
+	}
 	pc, err := loadParsedCode(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
