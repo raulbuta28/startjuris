@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 
 const ITEM_HEIGHT = 180;
 
@@ -132,7 +132,7 @@ export default function CodeEditor() {
         itemSize={ITEM_HEIGHT}
         width={"100%"}
       >
-        {({ index, style }) => {
+        {({ index, style }: ListChildComponentProps) => {
           const a = sec.articles[index];
           return (
             <div style={style} key={a.id} className="border p-2 my-2 rounded">
