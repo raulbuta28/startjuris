@@ -33,8 +33,9 @@ class CartiCivil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const cardHeight = 270.0;
     return Container(
-      height: 320,
+      height: cardHeight,
       margin: const EdgeInsets.only(top: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -78,36 +79,55 @@ class CartiCivil extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                       child: AspectRatio(
                         aspectRatio: 0.75,
                         child: _buildImage(carte.image),
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            carte.title,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        carte.title,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(
+                        height: 6,
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          LinearProgressIndicator(
-                            value: 0.0,
-                            backgroundColor: Colors.grey.shade200,
-                            color: Colors.blue,
-                          ),
-                        ],
+                            FractionallySizedBox(
+                              widthFactor: 0.0,
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF7CC4A2), Color(0xFFB8D8A0)],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.all(Radius.circular(3)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

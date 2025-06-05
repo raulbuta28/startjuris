@@ -63,19 +63,21 @@ class ColectiaStartJuris extends StatelessWidget {
               children: [
                 SizedBox(
                   height: imageHeight,
-                  child: AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: Image.asset(
-                      _bookData[index]['path'],
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey.shade200,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.broken_image, size: 40),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: aspectRatio,
+                      child: Image.asset(
+                        _bookData[index]['path'],
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey.shade200,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image, size: 40),
+                        ),
                       ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 6),
                 SizedBox(
                   height: 16,

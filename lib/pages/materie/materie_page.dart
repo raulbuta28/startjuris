@@ -50,7 +50,7 @@ class _MateriePageState extends State<MateriePage> {
     // Height of each horizontal list item. This should match the card
     // height defined in the book widgets to avoid clipping the bottom
     // of the cards.
-    const imageHeight = 320.0;
+    const imageHeight = 270.0;
 
     return Scaffold(
       backgroundColor: Colors.white,
