@@ -44,3 +44,8 @@ This file documents changes made to improve the code editor and backend.
 ## Fix for null sections
 - Parser now initializes Books, CodeTitles, and Chapters with empty slices to prevent null arrays in JSON.
 - CodeEditor guards against missing arrays when rendering.
+
+## Article parsing tweak
+- Updated the parser to treat lines starting with parentheses as part of the article
+  content instead of references. This ensures every article correctly includes
+  its paragraphs when displayed in the dashboard.
