@@ -52,8 +52,12 @@ export default function CodeEditor() {
   const [code, setCode] = useState<ParsedCode | null>(null);
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [json, setJson] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch(`/api/codes/${selected}`)
       .then(r => {
         if (!r.ok) throw new Error('failed to load code');
@@ -68,9 +72,13 @@ export default function CodeEditor() {
           setJson('');
         }
       })
-      .catch(() => {
+      .catch(err => {
         setCode(null);
         setJson('');
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, [selected]);
 
@@ -185,7 +193,11 @@ export default function CodeEditor() {
           {mode === 'form' ? 'JSON' : 'Form'}
         </button>
       </div>
-      {mode === 'json' ? (
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : mode === 'json' ? (
         <textarea
           className="w-full h-96 border p-2 font-mono text-sm"
           value={json}
