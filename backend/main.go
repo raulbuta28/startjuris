@@ -134,6 +134,29 @@ func saveCodes() {
 	_ = os.WriteFile(codesFile, data, 0644)
 }
 
+// preloadParsedCodes ensures all known code files are parsed once at startup
+// and cached as JSON files next to the React dashboard. This avoids expensive
+// parsing on each request and guarantees the dashboard can load the structured
+// data even if parsing fails later on.
+func preloadParsedCodes() {
+	for id, info := range codeFiles {
+		jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+		if _, err := os.Stat(jsonPath); err == nil {
+			// already generated
+			continue
+		}
+		pc, err := parseCodeFile(info.path, id, info.title)
+		if err != nil {
+			continue
+		}
+		pc.LastUpdated = time.Now().Format(time.RFC3339)
+		parsedCache[id] = pc
+		if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
+			_ = os.WriteFile(jsonPath, data, 0644)
+		}
+	}
+}
+
 func getParsedCodeHandler(c *gin.Context) {
 	id := c.Param("id")
 	pc, err := loadParsedCode(id)
@@ -942,6 +965,7 @@ func getFollowingHandler(c *gin.Context) {
 func main() {
 	loadUsers()
 	loadCodes()
+	preloadParsedCodes()
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
