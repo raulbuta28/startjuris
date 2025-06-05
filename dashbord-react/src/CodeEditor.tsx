@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { FixedSizeList as List } from 'react-window';
+
+const ITEM_HEIGHT = 180;
 
 interface Article {
   id: string;
@@ -107,27 +110,37 @@ export default function CodeEditor() {
 
   const renderArticles = (sec: CodeSection) => (
     <div className="ml-4">
-      {sec.articles.map(a => (
-        <div key={a.id} className="border p-2 my-2 rounded">
-          <div className="flex space-x-2 mb-1">
-            <input
-              className="border p-1 w-16"
-              value={a.number}
-              onChange={e => updateArticle(a.id, 'number', e.target.value)}
-            />
-            <input
-              className="border p-1 flex-1"
-              value={a.title}
-              onChange={e => updateArticle(a.id, 'title', e.target.value)}
-            />
-          </div>
-          <textarea
-            className="border p-1 w-full text-sm"
-            value={a.content}
-            onChange={e => updateArticle(a.id, 'content', e.target.value)}
-          />
-        </div>
-      ))}
+      <List
+        height={Math.min(600, sec.articles.length * ITEM_HEIGHT)}
+        itemCount={sec.articles.length}
+        itemSize={ITEM_HEIGHT}
+        width={"100%"}
+      >
+        {({ index, style }) => {
+          const a = sec.articles[index];
+          return (
+            <div style={style} key={a.id} className="border p-2 my-2 rounded">
+              <div className="flex space-x-2 mb-1">
+                <input
+                  className="border p-1 w-16"
+                  value={a.number}
+                  onChange={e => updateArticle(a.id, 'number', e.target.value)}
+                />
+                <input
+                  className="border p-1 flex-1"
+                  value={a.title}
+                  onChange={e => updateArticle(a.id, 'title', e.target.value)}
+                />
+              </div>
+              <textarea
+                className="border p-1 w-full text-sm"
+                value={a.content}
+                onChange={e => updateArticle(a.id, 'content', e.target.value)}
+              />
+            </div>
+          );
+        }}
+      </List>
       {sec.subsections.map(s => renderSection(s))}
     </div>
   );
