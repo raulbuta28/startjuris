@@ -60,7 +60,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           : _error != null
               ? Center(child: Text(_error!))
               : _code == null
-                  ? const SizedBox()
+                  ? const Center(child: Text('No data'))
                   : ListView(
                       padding: const EdgeInsets.all(16),
                       children:

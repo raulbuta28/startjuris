@@ -171,7 +171,8 @@ export default function CodeEditor() {
     </details>
   );
 
-  if (!structure) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (!structure) return <div>No data</div>;
 
   return (
     <div className="space-y-4">
