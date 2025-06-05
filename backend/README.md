@@ -8,6 +8,9 @@ This simple backend provides:
 - **/profile**: PUT updates the user's profile fields (`username`, `email`, `bio`, `phone`).
 - **/profile/avatar**: POST multipart form with an `avatar` file to upload a profile picture. Files are saved under `uploads/avatars/` and served from `/uploads`.
 - **/files**: GET list of all files in the project directory.
+- **/codes**: GET list of all available legal codes saved from the React dashboard.
+- **/codes/:id**: GET the full structure of a specific code in JSON form.
+- **/save-code/:id**: POST JSON to update a code from the dashboard.
 
 All Go dependencies are vendored so the project can be built without network access.
 

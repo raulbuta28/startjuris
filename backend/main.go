@@ -274,41 +274,52 @@ func listFiles(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 
-func getCode(c *gin.Context) {
-	id := c.Param("id")
+type CodeInfo struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	LastUpdated string `json:"lastUpdated"`
+}
 
-	// check for a saved JSON version in the dashboard folder first
-	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
-	if data, err := os.ReadFile(jsonPath); err == nil {
-		var pc ParsedCode
-		if err := json.Unmarshal(data, &pc); err == nil {
-			c.JSON(http.StatusOK, pc)
-			return
-		}
-	}
-
-	files := map[string]struct {
-		path  string
-		title string
-	}{
-		"civil":      {"codes/codulcivil.txt", "Codul Civil"},
-		"penal":      {"codes/codulpenal.txt", "Codul Penal"},
-		"proc_civil": {"codes/coduldeproceduracivila.txt", "Codul de Procedură Civilă"},
-		"proc_penal": {"codes/coduldeprocedurapenala.txt", "Codul de Procedură Penală"},
-	}
-
-	f, ok := files[id]
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
-		return
-	}
-
-	code, err := parseCodeFile(f.path, id, f.title)
+// listCodes returns all codes saved via the React dashboard.
+func listCodes(c *gin.Context) {
+	files, err := filepath.Glob("../dashbord-react/code_*.json")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, code)
+
+	var codes []CodeInfo
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		var pc ParsedCode
+		if err := json.Unmarshal(data, &pc); err == nil {
+			codes = append(codes, CodeInfo{ID: pc.ID, Title: pc.Title, LastUpdated: pc.LastUpdated})
+		}
+	}
+
+	c.JSON(http.StatusOK, codes)
+}
+
+func getCode(c *gin.Context) {
+	id := c.Param("id")
+
+	// Codes are stored as JSON files saved from the React dashboard.
+	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
+	data, err := os.ReadFile(jsonPath)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
+		return
+	}
+
+	var pc ParsedCode
+	if err := json.Unmarshal(data, &pc); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pc)
 }
 
 func saveCode(c *gin.Context) {
@@ -867,6 +878,7 @@ func main() {
 		api.PUT("/profile", updateProfile)
 		api.POST("/profile/avatar", uploadAvatar)
 		api.GET("/files", listFiles)
+		api.GET("/codes", listCodes)
 		api.GET("/codes/:id", getCode)
 
 		api.GET("/utils", getUtilsHandler)
