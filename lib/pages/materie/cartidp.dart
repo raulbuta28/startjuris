@@ -7,22 +7,28 @@ class CartiDP extends StatelessWidget {
   const CartiDP({Key? key, required this.carti}) : super(key: key);
 
   Widget _buildImage(String path) {
+    final placeholder = Container(
+      color: Colors.grey.shade300,
+      alignment: Alignment.center,
+      child: const Icon(Icons.book, size: 50, color: Colors.grey),
+    );
+
     final image = path.startsWith('http://') || path.startsWith('https://')
-        ? Image.network(path, fit: BoxFit.contain, width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade300,
-              child: const Icon(Icons.book, size: 50, color: Colors.grey),
-            );
-          })
-        : Image.asset(path, fit: BoxFit.contain, width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade300,
-              child: const Icon(Icons.book, size: 50, color: Colors.grey),
-            );
-          });
-    return Container(color: Colors.white, child: image);
+        ? Image.network(
+            path,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => placeholder,
+          )
+        : Image.asset(
+            path,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => placeholder,
+          );
+    return image;
   }
 
   @override
@@ -51,7 +57,8 @@ class CartiDP extends StatelessWidget {
               ],
             ),
             child: Material(
-              color: Colors.transparent,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: () {
                   Navigator.push(
@@ -68,61 +75,39 @@ class CartiDP extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 0.75,
                         child: _buildImage(carte.image),
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(
-                            bottom: Radius.circular(12),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            carte.title,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              carte.title,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: FractionallySizedBox(
-                                widthFactor: 0.0, // Default progress
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: 0.0,
+                            backgroundColor: Colors.grey.shade200,
+                            color: Colors.blue,
+                          ),
+                        ],
                       ),
                     ),
                   ],

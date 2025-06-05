@@ -174,23 +174,31 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
   Widget _buildResult(AdminBook book) {
     Widget img;
     if (book.image.startsWith('http')) {
-      img = Image.network(book.image,
-          fit: BoxFit.contain, width: 60, height: 80,
-          errorBuilder: (_, __, ___) => Container(
-                width: 60,
-                height: 80,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.book, color: Colors.grey),
-              ));
+      img = Image.network(
+        book.image,
+        fit: BoxFit.cover,
+        width: 60,
+        height: 80,
+        errorBuilder: (_, __, ___) => Container(
+          width: 60,
+          height: 80,
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.book, color: Colors.grey),
+        ),
+      );
     } else {
-      img = Image.asset(book.image,
-          fit: BoxFit.contain, width: 60, height: 80,
-          errorBuilder: (_, __, ___) => Container(
-                width: 60,
-                height: 80,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.book, color: Colors.grey),
-              ));
+      img = Image.asset(
+        book.image,
+        fit: BoxFit.cover,
+        width: 60,
+        height: 80,
+        errorBuilder: (_, __, ___) => Container(
+          width: 60,
+          height: 80,
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.book, color: Colors.grey),
+        ),
+      );
     }
     return ListTile(
       contentPadding:
