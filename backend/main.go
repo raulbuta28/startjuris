@@ -277,6 +277,16 @@ func listFiles(c *gin.Context) {
 func getCode(c *gin.Context) {
 	id := c.Param("id")
 
+	// check for a saved JSON version in the dashboard folder first
+	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
+	if data, err := os.ReadFile(jsonPath); err == nil {
+		var pc ParsedCode
+		if err := json.Unmarshal(data, &pc); err == nil {
+			c.JSON(http.StatusOK, pc)
+			return
+		}
+	}
+
 	files := map[string]struct {
 		path  string
 		title string
@@ -299,6 +309,25 @@ func getCode(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, code)
+}
+
+func saveCode(c *gin.Context) {
+	id := c.Param("id")
+	var pc ParsedCode
+	if err := c.BindJSON(&pc); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(pc, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(fmt.Sprintf("../dashbord-react/code_%s.json", id), data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
 }
 
 func profile(c *gin.Context) {
@@ -864,6 +893,8 @@ func main() {
 		api.GET("/news", listNews)
 		api.POST("/save-news", saveNews)
 		api.POST("/news/upload-image", uploadNewsImage)
+
+		api.POST("/save-code/:id", saveCode)
 	}
 
 	// serve React control panel

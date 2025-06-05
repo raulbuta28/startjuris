@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
+import CodeEditor from './CodeEditor';
 
 interface LoginProps {
   onLogin: () => void;
@@ -305,6 +306,9 @@ function Dashboard() {
     }
     if (section === 'noutati') {
       return <NewsList items={news} onUpdate={updateNews} onEdit={setEditingNews} />;
+    }
+    if (section === 'codes') {
+      return <CodeEditor />;
     }
     const s = sections.find((x) => x.key === section);
     return (

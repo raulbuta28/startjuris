@@ -17,3 +17,6 @@ ios/Flutter/Flutter.podspec
 macos/Flutter/Flutter.framework
 # Dependent files
 pubspec.lock
+dashbord-react/node_modules/
+dashbord-react/dist/
+dashbord-react/package-lock.json
