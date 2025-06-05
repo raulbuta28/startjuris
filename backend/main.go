@@ -73,46 +73,45 @@ var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
 
-// codeFiles maps code IDs to their text source file and display title.
-var codeFiles = map[string]struct {
-	path  string
-	title string
-}{
-	"civil":      {path: "codes/codulcivil.txt", title: "Codul Civil"},
-	"penal":      {path: "codes/codulpenal.txt", title: "Codul Penal"},
-	"proc_civil": {path: "codes/coduldeproceduracivila.txt", title: "Codul de Procedur\u0103 Civil\u0103"},
-	"proc_penal": {path: "codes/coduldeprocedurapenala.txt", title: "Codul de Procedur\u0103 Penal\u0103"},
+type SimpleCode struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	LastUpdated string `json:"lastUpdated"`
 }
 
-// loadOrParseCode loads a code from the JSON file if available.
-// If the file doesn't exist it attempts to parse the original text
-// file and saves the result for future use.
-func loadOrParseCode(id string) (*ParsedCode, error) {
-	jsonPath := fmt.Sprintf("../dashbord-react/code_%s.json", id)
-	data, err := os.ReadFile(jsonPath)
-	if err == nil {
-		var pc ParsedCode
-		if json.Unmarshal(data, &pc) == nil {
-			return &pc, nil
-		}
-	}
+var codes = make(map[string]*SimpleCode)
 
-	info, ok := codeFiles[id]
-	if !ok {
-		return nil, fmt.Errorf("unknown code id")
-	}
+const codesFile = "../dashbord-react/codes.json"
 
-	pc, err := parseCodeFile(info.path, id, info.title)
+func loadCodes() {
+	data, err := os.ReadFile(codesFile)
 	if err != nil {
-		return nil, err
+		return
 	}
-	pc.LastUpdated = time.Now().Format(time.RFC3339)
-
-	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
-		_ = os.WriteFile(jsonPath, data, 0644)
+	var arr []SimpleCode
+	if json.Unmarshal(data, &arr) != nil {
+		return
 	}
+	for i := range arr {
+		c := arr[i]
+		if c.LastUpdated == "" {
+			c.LastUpdated = time.Now().Format(time.RFC3339)
+		}
+		codes[c.ID] = &c
+	}
+}
 
-	return pc, nil
+func saveCodes() {
+	arr := make([]SimpleCode, 0, len(codes))
+	for _, c := range codes {
+		arr = append(arr, *c)
+	}
+	data, err := json.MarshalIndent(arr, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(codesFile, data, 0644)
 }
 
 // getDashboardPath returns an absolute path to the React control panel
@@ -324,46 +323,33 @@ type CodeInfo struct {
 
 // listCodes returns all codes saved via the React dashboard.
 func listCodes(c *gin.Context) {
-	codes := []CodeInfo{}
-	for id := range codeFiles {
-		pc, err := loadOrParseCode(id)
-		if err != nil {
-			continue
-		}
-		codes = append(codes, CodeInfo{ID: pc.ID, Title: pc.Title, LastUpdated: pc.LastUpdated})
+	list := []CodeInfo{}
+	for _, cde := range codes {
+		list = append(list, CodeInfo{ID: cde.ID, Title: cde.Title, LastUpdated: cde.LastUpdated})
 	}
-
-	c.JSON(http.StatusOK, codes)
+	c.JSON(http.StatusOK, list)
 }
 
 func getCode(c *gin.Context) {
 	id := c.Param("id")
-
-	pc, err := loadOrParseCode(id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
+	if cd, ok := codes[id]; ok {
+		c.JSON(http.StatusOK, cd)
 		return
 	}
-
-	c.JSON(http.StatusOK, pc)
+	c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
 }
 
 func saveCode(c *gin.Context) {
 	id := c.Param("id")
-	var pc ParsedCode
-	if err := c.BindJSON(&pc); err != nil {
+	var payload SimpleCode
+	if err := c.BindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
-	data, err := json.MarshalIndent(pc, "", "  ")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	if err := os.WriteFile(fmt.Sprintf("../dashbord-react/code_%s.json", id), data, 0644); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	payload.ID = id
+	payload.LastUpdated = time.Now().Format(time.RFC3339)
+	codes[id] = &payload
+	saveCodes()
 	c.Status(http.StatusOK)
 }
 
@@ -875,6 +861,7 @@ func getFollowingHandler(c *gin.Context) {
 
 func main() {
 	loadUsers()
+	loadCodes()
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
