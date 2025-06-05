@@ -18,25 +18,23 @@ function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="login">
-      <h3>Admin Login</h3>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button style={{ marginTop: 10 }} type="submit">
+    <div className="bg-white max-w-sm mx-auto mt-24 p-4 shadow rounded">
+      <h3 className="text-lg font-semibold mb-4">Admin Login</h3>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          className="w-full border px-2 py-1"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          type="password"
+          className="w-full border px-2 py-1"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button className="w-full bg-blue-600 text-white py-2 rounded" type="submit">
           Login
         </button>
       </form>
@@ -60,15 +58,15 @@ interface SidebarProps {
 
 function Sidebar({ active, onSelect }: SidebarProps) {
   return (
-    <div className="sidebar">
+    <div className="sidebar bg-white border-r border-gray-300 w-56">
       <ul>
         {sections.map((s) => (
           <li
             key={s.key}
-            className={active === s.key ? 'active' : ''}
+            className={`flex items-center p-3 cursor-pointer ${active === s.key ? 'bg-gray-100' : ''}`}
             onClick={() => onSelect(s.key)}
           >
-            <span className="material-icons">{s.icon}</span>
+            <span className="material-icons mr-2">{s.icon}</span>
             {s.label}
           </li>
         ))}
@@ -93,11 +91,15 @@ interface BookCarouselProps {
 function BookCarousel({ title, books, onSelect }: BookCarouselProps) {
   return (
     <div>
-      <h3>{title}</h3>
-      <div className="carousel">
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <div className="carousel flex overflow-x-auto pb-2">
         {books.map((b) => (
-          <div className="book-card" key={b.id} onClick={() => onSelect(b)}>
-            <img src={b.image} alt={b.title} />
+          <div
+            className="book-card flex-none w-36 mr-2 bg-white border border-gray-300 p-2 cursor-pointer"
+            key={b.id}
+            onClick={() => onSelect(b)}
+          >
+            <img src={b.image} alt={b.title} className="w-full" />
             <div>{b.title}</div>
           </div>
         ))}
@@ -147,26 +149,29 @@ function Materie({ books, onUpdate }: MaterieProps) {
         />
       ))}
       {selected && (
-        <div className="editor">
-          <h3>Edit {selected.title}</h3>
+        <div className="editor mt-5 bg-white p-4 border border-gray-300">
+          <h3 className="font-semibold mb-2">Edit {selected.title}</h3>
           <input
+            className="w-full border mb-2 p-2"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Title"
           />
           <input
+            className="w-full border mb-2 p-2"
             value={form.image}
             onChange={(e) => setForm({ ...form, image: e.target.value })}
             placeholder="Image URL"
           />
           <textarea
+            className="w-full border mb-2 p-2"
             rows={6}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
             placeholder="Content"
           />
-          <button onClick={save}>Save</button>
-          <button onClick={() => setSelected(null)}>Cancel</button>
+          <button className="mr-2 bg-blue-600 text-white px-3 py-1 rounded" onClick={save}>Save</button>
+          <button className="px-3 py-1 border rounded" onClick={() => setSelected(null)}>Cancel</button>
         </div>
       )}
     </div>
@@ -206,9 +211,9 @@ function Dashboard() {
   };
 
   return (
-    <div className="dashboard">
+    <div className="dashboard flex h-screen">
       <Sidebar active={section} onSelect={setSection} />
-      <div className="content">{renderSection()}</div>
+      <div className="content flex-1 p-5 overflow-y-auto">{renderSection()}</div>
     </div>
   );
 }

@@ -13,6 +13,8 @@
 /ios/Flutter/Flutter.podspec
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
+# Node
+node_modules/
 # macOS (build artifacts)
 macos/Flutter/Flutter.framework
 # Dependent files
