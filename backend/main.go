@@ -73,6 +73,19 @@ var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
 
+// mapping of available code text files
+var codeFiles = map[string]struct {
+	path  string
+	title string
+}{
+	"civil":      {path: filepath.Join(codesTextDir, "codulcivil.txt"), title: "Codul Civil"},
+	"penal":      {path: filepath.Join(codesTextDir, "codulpenal.txt"), title: "Codul Penal"},
+	"proc_civil": {path: filepath.Join(codesTextDir, "coduldeproceduracivila.txt"), title: "Codul de Procedură Civilă"},
+	"proc_penal": {path: filepath.Join(codesTextDir, "coduldeprocedurapenala.txt"), title: "Codul de Procedură Penală"},
+}
+
+var parsedCache = make(map[string]*ParsedCode)
+
 type SimpleCode struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -119,6 +132,66 @@ func saveCodes() {
 		return
 	}
 	_ = os.WriteFile(codesFile, data, 0644)
+}
+
+func getParsedCodeHandler(c *gin.Context) {
+	id := c.Param("id")
+	pc, err := loadParsedCode(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
+		return
+	}
+	c.JSON(http.StatusOK, pc)
+}
+
+func saveParsedCodeHandler(c *gin.Context) {
+	id := c.Param("id")
+	var pc ParsedCode
+	if err := c.BindJSON(&pc); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	parsedCache[id] = &pc
+	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
+		if err := os.WriteFile(jsonPath, data, 0644); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	c.Status(http.StatusOK)
+}
+
+func loadParsedCode(id string) (*ParsedCode, error) {
+	if pc, ok := parsedCache[id]; ok {
+		return pc, nil
+	}
+
+	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	if data, err := os.ReadFile(jsonPath); err == nil {
+		var pc ParsedCode
+		if json.Unmarshal(data, &pc) == nil {
+			parsedCache[id] = &pc
+			return &pc, nil
+		}
+	}
+
+	info, ok := codeFiles[id]
+	if !ok {
+		return nil, fmt.Errorf("unknown code id")
+	}
+
+	pc, err := parseCodeFile(info.path, id, info.title)
+	if err != nil {
+		return nil, err
+	}
+	pc.LastUpdated = time.Now().Format(time.RFC3339)
+	parsedCache[id] = pc
+
+	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
+		_ = os.WriteFile(jsonPath, data, 0644)
+	}
+	return pc, nil
 }
 
 // getDashboardPath returns an absolute path to the React control panel
@@ -900,6 +973,8 @@ func main() {
 		api.GET("/files", listFiles)
 		api.GET("/codes", listCodes)
 		api.GET("/codes/:id", getCode)
+		api.GET("/parsed-code/:id", getParsedCodeHandler)
+		api.POST("/save-parsed-code/:id", saveParsedCodeHandler)
 
 		api.GET("/utils", getUtilsHandler)
 		api.PUT("/utils", updateUtilsHandler)
