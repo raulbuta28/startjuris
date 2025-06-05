@@ -62,3 +62,9 @@ This file documents changes made to improve the code editor and backend.
 - Articles are shown read-only by default with a new **Edit** button on each one.
 - Clicking the button reveals input fields so updates are intentional and clearer.
 - Parser now adds lines starting with parentheses directly to the article text before checking for notes or references, ensuring all paragraphs appear.
+
+## Flutter reader fix
+- The `ModernCodeReader` screen now checks the API response type before casting
+  to a map and gracefully handles missing lists when rendering. This prevents
+  `List<dynamic>`/`String` cast errors when loading the parsed codes from the
+  dashboard.
