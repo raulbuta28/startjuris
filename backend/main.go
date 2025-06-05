@@ -253,6 +253,7 @@ func preloadParsedCodes() {
 		}
 		pc, err := parseCodeFile(info.path, id, info.title)
 		if err != nil {
+			fmt.Println("failed to parse", id, "-", err)
 			continue
 		}
 		pc.LastUpdated = time.Now().Format(time.RFC3339)
@@ -1086,6 +1087,7 @@ func getFollowingHandler(c *gin.Context) {
 }
 
 func main() {
+	fmt.Println("Using repository root:", rootDir)
 	loadUsers()
 	loadTokens()
 	loadCodes()
