@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -84,7 +85,51 @@ var codeFiles = map[string]struct {
 	"proc_penal": {path: filepath.Join(codesTextDir, "coduldeprocedurapenala.txt"), title: "Codul de Procedură Penală"},
 }
 
-var parsedCache = make(map[string]*ParsedCode)
+// parsedCache holds a limited set of parsed codes in memory. Since the parsed
+// structures can be very large, we keep only a few most recently used entries
+// to avoid exhausting memory.
+var (
+	parsedCache   = make(map[string]*cachedParsed)
+	parsedOrder   = list.New()
+	cacheMu       sync.Mutex
+	maxCacheItems = 2
+)
+
+type cachedParsed struct {
+	data *ParsedCode
+	id   string
+	elem *list.Element
+}
+
+func cacheGet(id string) (*ParsedCode, bool) {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	if c, ok := parsedCache[id]; ok {
+		parsedOrder.MoveToFront(c.elem)
+		return c.data, true
+	}
+	return nil, false
+}
+
+func cacheAdd(id string, pc *ParsedCode) {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	if c, ok := parsedCache[id]; ok {
+		c.data = pc
+		parsedOrder.MoveToFront(c.elem)
+		return
+	}
+	e := parsedOrder.PushFront(id)
+	parsedCache[id] = &cachedParsed{data: pc, id: id, elem: e}
+	if parsedOrder.Len() > maxCacheItems {
+		back := parsedOrder.Back()
+		if back != nil {
+			oldID := back.Value.(string)
+			parsedOrder.Remove(back)
+			delete(parsedCache, oldID)
+		}
+	}
+}
 
 type SimpleCode struct {
 	ID          string `json:"id"`
@@ -150,7 +195,6 @@ func preloadParsedCodes() {
 			continue
 		}
 		pc.LastUpdated = time.Now().Format(time.RFC3339)
-		parsedCache[id] = pc
 		if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
 			_ = os.WriteFile(jsonPath, data, 0644)
 		}
@@ -174,7 +218,7 @@ func saveParsedCodeHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
 		return
 	}
-	parsedCache[id] = &pc
+	cacheAdd(id, &pc)
 	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
 	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
 		if err := os.WriteFile(jsonPath, data, 0644); err != nil {
@@ -186,7 +230,7 @@ func saveParsedCodeHandler(c *gin.Context) {
 }
 
 func loadParsedCode(id string) (*ParsedCode, error) {
-	if pc, ok := parsedCache[id]; ok {
+	if pc, ok := cacheGet(id); ok {
 		return pc, nil
 	}
 
@@ -194,7 +238,7 @@ func loadParsedCode(id string) (*ParsedCode, error) {
 	if data, err := os.ReadFile(jsonPath); err == nil {
 		var pc ParsedCode
 		if json.Unmarshal(data, &pc) == nil {
-			parsedCache[id] = &pc
+			cacheAdd(id, &pc)
 			return &pc, nil
 		}
 	}
@@ -209,7 +253,7 @@ func loadParsedCode(id string) (*ParsedCode, error) {
 		return nil, err
 	}
 	pc.LastUpdated = time.Now().Format(time.RFC3339)
-	parsedCache[id] = pc
+	cacheAdd(id, pc)
 
 	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
 		_ = os.WriteFile(jsonPath, data, 0644)
