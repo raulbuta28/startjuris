@@ -74,7 +74,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     return books.map((b) {
       return ExpansionTile(
         title: Text(b['title']),
-        children: _buildTitles(b['titles'] as List<dynamic>?),
+        children: _buildTitles(b['titles'] as List<dynamic>? ?? []),
       );
     }).toList();
   }
@@ -84,7 +84,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     return titles.map((t) {
       return ExpansionTile(
         title: Text(t['title']),
-        children: _buildChapters(t['chapters'] as List<dynamic>?),
+        children: _buildChapters(t['chapters'] as List<dynamic>? ?? []),
       );
     }).toList();
   }
@@ -94,7 +94,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     return chapters.map((c) {
       return ExpansionTile(
         title: Text(c['title']),
-        children: _buildSections(c['sections'] as List<dynamic>?),
+        children: _buildSections(c['sections'] as List<dynamic>? ?? []),
       );
     }).toList();
   }
@@ -105,8 +105,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       return ExpansionTile(
         title: Text(s['title']),
         children: [
-          ..._buildArticles(s['articles'] as List<dynamic>?),
-          ..._buildSubsections(s['subsections'] as List<dynamic>?),
+          ..._buildArticles(s['articles'] as List<dynamic>? ?? []),
+          ..._buildSubsections(s['subsections'] as List<dynamic>? ?? []),
         ],
       );
     }).toList();
@@ -117,7 +117,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     return subs.map((s) {
       return ExpansionTile(
         title: Text(s['title']),
-        children: _buildArticles(s['articles'] as List<dynamic>?),
+        children: _buildArticles(s['articles'] as List<dynamic>? ?? []),
       );
     }).toList();
   }
