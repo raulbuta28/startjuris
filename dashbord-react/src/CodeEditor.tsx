@@ -52,24 +52,40 @@ export default function CodeEditor() {
   const [active, setActive] = useState('');
   const [structure, setStructure] = useState<ParsedCode | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
     fetch('/api/codes')
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) throw new Error('Failed to load codes');
+        return r.json();
+      })
       .then((list: CodeInfo[]) => {
         setCodes(list);
         if (list.length > 0) {
           setActive(list[0].id);
         }
-      });
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!active) return;
     setLoading(true);
+    setError('');
+    setStructure(null);
     fetch(`/api/parsed-code/${active}`)
-      .then(r => r.json())
+      .then(async r => {
+        const data = await r.json();
+        if (!r.ok || (data as any).error) {
+          throw new Error((data as any).error || 'Failed to load');
+        }
+        return data;
+      })
       .then((d: ParsedCode) => setStructure(d))
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [active]);
 
@@ -173,7 +189,9 @@ export default function CodeEditor() {
     </details>
   );
 
-  if (!structure) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-red-600">{error}</div>;
+  if (!structure) return <div>No data</div>;
 
   return (
     <div className="space-y-4">
