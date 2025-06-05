@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/news_service.dart';
 
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
@@ -14,6 +15,22 @@ class NewsPage extends StatefulWidget {
 class _NewsPageState extends State<NewsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<NewsItem> _news = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await NewsService.fetchNews();
+      setState(() {
+        _news = items;
+      });
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -23,37 +40,9 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> newsItems = [
-      {
-        'title': 'Lansare Epică 3.0',
-        'description':
-            'Versiunea 3.0 introduce un design revoluționar și funcții AI avansate.',
-        'date': DateTime(2025, 5, 24),
-        'imageUrl': 'https://picsum.photos/1200/600?random=1',
-        'details':
-            'Descoperă noile funcții, inclusiv modul AI personalizat, integrare cloud și o experiență de utilizare ultra-fluidă.'
-      },
-      {
-        'title': 'Webinar Global 2026',
-        'description':
-            'Alătură-te evenimentului live pentru a afla viziunea noastră pentru viitor.',
-        'date': DateTime(2025, 5, 20),
-        'imageUrl': 'https://picsum.photos/1200/600?random=2',
-        'details': 'Înregistrarea este deschisă. Rezervă-ți locul pentru a participa la discuții exclusive.'
-      },
-      {
-        'title': 'Mod Întunecat Premium',
-        'description':
-            'Noul mod întunecat economisește baterie și arată impecabil.',
-        'date': DateTime(2025, 5, 15),
-        'imageUrl': 'https://picsum.photos/1200/600?random=3',
-        'details': 'Activează modul întunecat din setări pentru o experiență vizuală superioară.'
-      },
-    ];
-
-    final filteredNews = newsItems.where((news) {
-      final title = (news['title'] as String).toLowerCase();
-      final description = (news['description'] as String).toLowerCase();
+    final filteredNews = _news.where((news) {
+      final title = news.title.toLowerCase();
+      final description = news.description.toLowerCase();
       final query = _searchQuery.toLowerCase();
       return title.contains(query) || description.contains(query);
     }).toList();
@@ -124,11 +113,11 @@ class _NewsPageState extends State<NewsPage> {
                   return FadeInUp(
                     duration: Duration(milliseconds: 600 + (index * 200)),
                     child: NewsCard(
-                      title: news['title'] ?? 'Fără titlu',
-                      description: news['description'] ?? 'Fără descriere',
-                      date: news['date'] ?? DateTime.now(),
-                      imageUrl: news['imageUrl'] ?? '',
-                      details: news['details'] ?? 'Fără detalii',
+                      title: news.title,
+                      description: news.description,
+                      date: news.date,
+                      imageUrl: news.imageUrl,
+                      details: news.details,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -304,6 +293,19 @@ class _NewsCardState extends State<NewsCard> with SingleTickerProviderStateMixin
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (DateTime.now().difference(widget.date).inHours < 24)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Noutate',
+                            style: GoogleFonts.inter(color: Colors.white, fontSize: 10),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -317,7 +319,7 @@ class _NewsCardState extends State<NewsCard> with SingleTickerProviderStateMixin
 }
 
 class NewsDetailPage extends StatelessWidget {
-  final Map<String, dynamic> news;
+  final NewsItem news;
 
   const NewsDetailPage({super.key, required this.news});
 
@@ -344,8 +346,8 @@ class NewsDetailPage extends StatelessWidget {
                     height: 300,
                     width: double.infinity,
                     child: CachedNetworkImage(
-                      imageUrl: (news['imageUrl'] as String?)?.isNotEmpty ?? false
-                          ? news['imageUrl']
+                      imageUrl: news.imageUrl.isNotEmpty
+                          ? news.imageUrl
                           : 'https://picsum.photos/1200/600?random=0',
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
@@ -381,7 +383,7 @@ class NewsDetailPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      news['title'] ?? 'Fără titlu',
+                      news.title,
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -391,7 +393,7 @@ class NewsDetailPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       DateFormat('dd MMMM yyyy', 'ro')
-                          .format(news['date'] ?? DateTime.now()),
+                          .format(news.date),
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -400,7 +402,7 @@ class NewsDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      news['details'] ?? 'Fără detalii',
+                      news.details,
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,

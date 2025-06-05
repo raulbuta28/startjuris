@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
+import NewsEditor, { NewsItem } from './NewsEditor';
 
 interface LoginProps {
   onLogin: () => void;
@@ -175,15 +176,73 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
   );
 }
 
+interface NewsProps {
+  items: NewsItem[];
+  onUpdate: (items: NewsItem[]) => void;
+  onEdit: (n: NewsItem) => void;
+}
+
+function NewsList({ items, onUpdate, onEdit }: NewsProps) {
+  const handleDelete = (n: NewsItem) => {
+    const updated = items.filter((x) => x.id !== n.id);
+    onUpdate(updated);
+  };
+
+  const handleAdd = () => {
+    const n: NewsItem = {
+      id: Date.now().toString(),
+      title: 'New News',
+      description: '',
+      details: '',
+      imageUrl: '',
+      date: new Date().toISOString(),
+    };
+    onEdit(n);
+  };
+
+  return (
+    <div className="space-y-4">
+      {items.map((n) => (
+        <div key={n.id} className="border p-2 flex items-center">
+          {n.imageUrl && (
+            <img src={n.imageUrl} alt={n.title} className="w-24 h-16 object-cover mr-4" />
+          )}
+          <div className="flex-1">
+            <div className="font-semibold">{n.title}</div>
+            <div className="text-sm text-gray-600">{n.description}</div>
+          </div>
+          <button className="text-red-600 mr-2" onClick={() => handleDelete(n)}>
+            <span className="material-icons text-sm">close</span>
+          </button>
+          <button className="text-blue-600" onClick={() => onEdit(n)}>
+            <span className="material-icons text-sm">edit</span>
+          </button>
+        </div>
+      ))}
+      <button
+        className="w-36 h-24 border-2 border-dashed flex items-center justify-center text-gray-500"
+        onClick={handleAdd}
+      >
+        <span className="material-icons">add</span>
+      </button>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [section, setSection] = useState('materie');
-  const [editing, setEditing] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
 
   useEffect(() => {
     fetch('/api/books')
       .then((r) => r.json())
       .then(setBooks);
+    fetch('/api/news')
+      .then((r) => r.json())
+      .then(setNews);
   }, []);
 
   const updateBooks = (updated: Book[]) => {
@@ -195,11 +254,20 @@ function Dashboard() {
     });
   };
 
+  const updateNews = (updated: NewsItem[]) => {
+    setNews(updated);
+    fetch('/api/save-news', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+  };
+
   const renderSection = () => {
-    if (editing) {
+    if (editingBook) {
       return (
         <BookEditor
-          book={editing}
+          book={editingBook}
           onSave={(b) => {
             let updated: Book[];
             if (books.some((x) => x.id === b.id)) {
@@ -208,14 +276,35 @@ function Dashboard() {
               updated = [...books, b];
             }
             updateBooks(updated);
-            setEditing(null);
+            setEditingBook(null);
           }}
-          onCancel={() => setEditing(null)}
+          onCancel={() => setEditingBook(null)}
+        />
+      );
+    }
+    if (editingNews) {
+      return (
+        <NewsEditor
+          news={editingNews}
+          onSave={(n) => {
+            let updated: NewsItem[];
+            if (news.some((x) => x.id === n.id)) {
+              updated = news.map((x) => (x.id === n.id ? n : x));
+            } else {
+              updated = [...news, n];
+            }
+            updateNews(updated);
+            setEditingNews(null);
+          }}
+          onCancel={() => setEditingNews(null)}
         />
       );
     }
     if (section === 'materie') {
-      return <Materie books={books} onUpdate={updateBooks} onEdit={setEditing} />;
+      return <Materie books={books} onUpdate={updateBooks} onEdit={setEditingBook} />;
+    }
+    if (section === 'noutati') {
+      return <NewsList items={news} onUpdate={updateNews} onEdit={setEditingNews} />;
     }
     const s = sections.find((x) => x.key === section);
     return (
