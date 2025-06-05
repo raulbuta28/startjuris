@@ -30,6 +30,25 @@ type User struct {
 
 var users = make(map[string]User)
 var tokens = make(map[string]string) // token -> username
+
+const tokensFile = "tokens.json"
+
+func loadTokens() {
+	data, err := os.ReadFile(tokensFile)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, &tokens)
+}
+
+func saveTokens() {
+	data, err := json.MarshalIndent(tokens, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(tokensFile, data, 0644)
+}
+
 var mu sync.Mutex
 var userUtils = make(map[string]map[string]interface{})
 
@@ -450,6 +469,7 @@ func login(c *gin.Context) {
 	}
 	token := uuid.New().String()
 	tokens[token] = stored.Username
+	saveTokens()
 	c.JSON(http.StatusOK, gin.H{"token": token, "user": stored})
 }
 
@@ -585,6 +605,7 @@ func updateProfile(c *gin.Context) {
 			}
 		}
 		delete(users, original)
+		saveTokens()
 	}
 	users[user.Username] = user
 	saveUsers()
@@ -1013,6 +1034,7 @@ func getFollowingHandler(c *gin.Context) {
 
 func main() {
 	loadUsers()
+	loadTokens()
 	loadCodes()
 	preloadParsedCodes()
 	r := gin.Default()
