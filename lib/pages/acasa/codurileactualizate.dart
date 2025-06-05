@@ -21,6 +21,10 @@ class CodItem {
 class CodurileActualizate extends StatelessWidget {
   const CodurileActualizate({Key? key}) : super(key: key);
 
+  static const double _imageAspectRatio = 1.0;
+  static const double _titleHeight = 34;
+  static const double _dateHeight = 14;
+
   static const List<CodItem> _items = [
     CodItem(
       path: 'assets/videos/7.gif',
@@ -95,64 +99,76 @@ class CodurileActualizate extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Stack(
-                            children: [
-                              Image.asset(
-                                item.path,
-                                fit: BoxFit.cover,
-                                gaplessPlayback: true,
-                                width: itemWidth,
-                              ),
-                              Positioned.fill(
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ModernCodeReader(
-                                            codeId: item.codId,
-                                            codeTitle: item.title,
-                                          ),
-                                        ),
-                                      );
-                                    },
+                      AspectRatio(
+                        aspectRatio: _imageAspectRatio,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Image.asset(
+                                    item.path,
+                                    fit: BoxFit.cover,
+                                    gaplessPlayback: true,
                                   ),
                                 ),
-                              ),
-                            ],
+                                Positioned.fill(
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ModernCodeReader(
+                                              codeId: item.codId,
+                                              codeTitle: item.title,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        item.title,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.5,
-                          color: Colors.black87,
+                      SizedBox(
+                        height: _titleHeight,
+                        child: Text(
+                          item.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.5,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Actualizare: ${item.date}',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          color: Colors.grey[600],
-                          letterSpacing: -0.5,
+                      SizedBox(
+                        height: _dateHeight,
+                        child: Text(
+                          'Actualizare: ${item.date}',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
