@@ -21,11 +21,14 @@ class CodItem {
 class CodurileActualizate extends StatelessWidget {
   const CodurileActualizate({Key? key}) : super(key: key);
 
-  static const double _imageAspectRatio = 1.0;
+  // Display the GIFs in an A4-like ratio (width/height ~= 0.7) so
+  // they appear taller while keeping the current rounded corners.
+  static const double _imageAspectRatio = 0.7;
   static const double _titleHeight = 34;
   static const double _dateHeight = 14;
 
   static const List<CodItem> _items = [
+    // Order: Civil, Procedura Civila, Penal, Procedura Penala
     CodItem(
       path: 'assets/videos/7.gif',
       date: '20 Mai 2025',
@@ -34,18 +37,18 @@ class CodurileActualizate extends StatelessWidget {
       codId: 'civil',
     ),
     CodItem(
-      path: 'assets/videos/8.gif',
-      date: '18 Mai 2025',
-      progress: 0.50,
-      title: 'Codul Penal',
-      codId: 'penal',
-    ),
-    CodItem(
       path: 'assets/videos/9.gif',
       date: '15 Mai 2025',
       progress: 0.90,
       title: 'Codul de Procedură Civilă',
       codId: 'proc_civil',
+    ),
+    CodItem(
+      path: 'assets/videos/8.gif',
+      date: '18 Mai 2025',
+      progress: 0.50,
+      title: 'Codul Penal',
+      codId: 'penal',
     ),
     CodItem(
       path: 'assets/videos/10.gif',
@@ -145,16 +148,18 @@ class CodurileActualizate extends StatelessWidget {
                       const SizedBox(height: 8),
                       SizedBox(
                         height: _titleHeight,
-                        child: Text(
-                          item.title,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.5,
-                            color: Colors.black87,
+                        child: Center(
+                          child: Text(
+                            item.title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ),
