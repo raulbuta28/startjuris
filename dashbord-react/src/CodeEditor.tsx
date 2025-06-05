@@ -1,7 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { FixedSizeList as List, ListChildComponentProps } from "react-window";
-
-const ITEM_HEIGHT = 180;
 
 interface Article {
   id: string;
@@ -140,74 +137,58 @@ export default function CodeEditor() {
     const articles = sec.articles || [];
     return (
       <div className="ml-4">
-        <List
-          height={Math.min(600, articles.length * ITEM_HEIGHT)}
-          itemCount={articles.length}
-          itemSize={ITEM_HEIGHT}
-          width={"100%"}
-        >
-          {({ index, style }: ListChildComponentProps) => {
-            const a = articles[index];
-            return (
-              <div style={style} key={a.id} className="border p-2 my-2 rounded">
-                <div className="flex space-x-2 mb-1">
-                  <input
-                    className="border p-1 w-16"
-                    value={a.number}
-                    onChange={(e) =>
-                      updateArticle(a.id, "number", e.target.value)
-                    }
-                  />
-                  <input
-                    className="border p-1 flex-1"
-                    value={a.title}
-                    onChange={(e) =>
-                      updateArticle(a.id, "title", e.target.value)
-                    }
-                  />
-                </div>
-                <textarea
-                  className="border p-1 w-full text-sm"
-                  value={a.content}
-                  onChange={(e) =>
-                    updateArticle(a.id, "content", e.target.value)
-                  }
-                />
-              </div>
-            );
-          }}
-        </List>
+        {articles.map((a) => (
+          <div key={a.id} className="border p-2 my-2 rounded">
+            <div className="flex space-x-2 mb-1">
+              <input
+                className="border p-1 w-16"
+                value={a.number}
+                onChange={(e) => updateArticle(a.id, "number", e.target.value)}
+              />
+              <input
+                className="border p-1 flex-1"
+                value={a.title}
+                onChange={(e) => updateArticle(a.id, "title", e.target.value)}
+              />
+            </div>
+            <textarea
+              className="border p-1 w-full text-sm"
+              value={a.content}
+              onChange={(e) => updateArticle(a.id, "content", e.target.value)}
+            />
+          </div>
+        ))}
         {(sec.subsections || []).map((s) => renderSection(s))}
       </div>
     );
   };
 
   const renderSection = (sec: CodeSection) => (
-    <details key={sec.id} className="ml-2">
-      <summary className="cursor-pointer font-semibold">{sec.title}</summary>
+    <div key={sec.id} className="ml-2">
+      <h5 className="font-semibold mt-4">{sec.title}</h5>
       {renderArticles(sec)}
-    </details>
+    </div>
   );
 
   const renderChapter = (ch: Chapter) => (
-    <details key={ch.id} className="ml-2">
-      <summary className="cursor-pointer font-semibold">{ch.title}</summary>
+    <div key={ch.id} className="ml-2">
+      <h4 className="font-semibold mt-4">{ch.title}</h4>
       {(ch.sections || []).map((sec) => renderSection(sec))}
-    </details>
+    </div>
   );
 
   const renderTitle = (t: CodeTitle) => (
-    <details key={t.id} className="ml-2">
-      <summary className="cursor-pointer font-semibold">{t.title}</summary>
+    <div key={t.id} className="ml-2">
+      <h3 className="font-semibold mt-4">{t.title}</h3>
       {(t.chapters || []).map((ch) => renderChapter(ch))}
-    </details>
+    </div>
   );
 
   const renderBook = (b: Book) => (
-    <details key={b.id}>
-      <summary className="cursor-pointer font-semibold">{b.title}</summary>
+    <div key={b.id}>
+      <h2 className="font-bold mt-6">{b.title}</h2>
       {(b.titles || []).map((t) => renderTitle(t))}
-    </details>
+    </div>
   );
 
   if (loading) return <div>Loading...</div>;
