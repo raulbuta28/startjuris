@@ -32,9 +32,16 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       final res =
           await http.get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
       if (res.statusCode == 200) {
-        setState(() {
-          _code = jsonDecode(res.body);
-        });
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map<String, dynamic>) {
+          setState(() {
+            _code = decoded;
+          });
+        } else {
+          setState(() {
+            _error = 'Invalid data format';
+          });
+        }
       } else {
         setState(() {
           _error = 'Failed to load code';
@@ -63,45 +70,51 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                   ? const SizedBox()
                   : ListView(
                       padding: const EdgeInsets.all(16),
-                      children: _buildBooks(_code!['books'] as List<dynamic>),
+                      children: _buildBooks(
+                          _code!['books'] is List ? _code!['books'] as List : []),
                     ),
     );
   }
 
   List<Widget> _buildBooks(List<dynamic> books) {
     return books.map((b) {
+      final titles = b is Map && b['titles'] is List ? b['titles'] as List : [];
       return ExpansionTile(
-        title: Text(b['title']),
-        children: _buildTitles(b['titles'] as List<dynamic>),
+        title: Text('${b is Map ? b['title'] ?? '' : ''}'),
+        children: _buildTitles(titles),
       );
     }).toList();
   }
 
   List<Widget> _buildTitles(List<dynamic> titles) {
     return titles.map((t) {
+      final chapters = t is Map && t['chapters'] is List ? t['chapters'] as List : [];
       return ExpansionTile(
-        title: Text(t['title']),
-        children: _buildChapters(t['chapters'] as List<dynamic>),
+        title: Text('${t is Map ? t['title'] ?? '' : ''}'),
+        children: _buildChapters(chapters),
       );
     }).toList();
   }
 
   List<Widget> _buildChapters(List<dynamic> chapters) {
     return chapters.map((c) {
+      final secs = c is Map && c['sections'] is List ? c['sections'] as List : [];
       return ExpansionTile(
-        title: Text(c['title']),
-        children: _buildSections(c['sections'] as List<dynamic>),
+        title: Text('${c is Map ? c['title'] ?? '' : ''}'),
+        children: _buildSections(secs),
       );
     }).toList();
   }
 
   List<Widget> _buildSections(List<dynamic> sections) {
     return sections.map((s) {
+      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
+      final subs = s is Map && s['subsections'] is List ? s['subsections'] as List : [];
       return ExpansionTile(
-        title: Text(s['title']),
+        title: Text('${s is Map ? s['title'] ?? '' : ''}'),
         children: [
-          ..._buildArticles(s['articles'] as List<dynamic>),
-          ..._buildSubsections(s['subsections'] as List<dynamic>),
+          ..._buildArticles(arts),
+          ..._buildSubsections(subs),
         ],
       );
     }).toList();
@@ -109,9 +122,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   List<Widget> _buildSubsections(List<dynamic> subs) {
     return subs.map((s) {
+      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
       return ExpansionTile(
-        title: Text(s['title']),
-        children: _buildArticles(s['articles'] as List<dynamic>),
+        title: Text('${s is Map ? s['title'] ?? '' : ''}'),
+        children: _buildArticles(arts),
       );
     }).toList();
   }
@@ -119,8 +133,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   List<Widget> _buildArticles(List<dynamic> arts) {
     return arts.map((a) {
       return ListTile(
-        title: Text('Art. ${a['number']} ${a['title']}'),
-        subtitle: Text(a['content'] ?? ''),
+        title: Text('Art. ${a is Map ? a['number'] ?? '' : ''} ${a is Map ? a['title'] ?? '' : ''}'),
+        subtitle: Text(a is Map ? (a['content'] ?? '') : ''),
       );
     }).toList();
   }
