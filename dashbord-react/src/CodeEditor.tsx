@@ -119,7 +119,10 @@ export default function CodeEditor() {
     if (!structure) return;
     fetch(`/api/save-parsed-code/${structure.id}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
       body: JSON.stringify(structure),
     });
   };

@@ -26,3 +26,12 @@ This file documents changes made to improve the code editor and backend.
 - Added a small logout button which clears the stored flag so testing remains
   simple.
 
+## Additional update
+- Switched the dashboard login to use the backend `/auth/login` endpoint.
+  Successful authentication stores the returned token in `localStorage`.
+- All save requests now send this token in an `Authorization` header so the
+  backend can verify the admin session.
+- The app verifies any stored token on load via `/api/profile` to keep the user
+  logged in across refreshes and prevent unintended logouts when opening the
+  code editor.
+
