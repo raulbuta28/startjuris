@@ -369,6 +369,31 @@ func uploadAvatar(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+func uploadBookImage(c *gin.Context) {
+        file, err := c.FormFile("image")
+        if err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+                return
+        }
+
+        os.MkdirAll("uploads/books", os.ModePerm)
+        filename := uuid.New().String() + filepath.Ext(file.Filename)
+        path := filepath.Join("uploads", "books", filename)
+        if err := c.SaveUploadedFile(file, path); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+                return
+        }
+
+        scheme := "http"
+        if c.Request.TLS != nil {
+                scheme = "https"
+        }
+        host := c.Request.Host
+        url := fmt.Sprintf("%s://%s/uploads/books/%s", scheme, host, filename)
+
+        c.JSON(http.StatusOK, gin.H{"url": url})
+}
+
 func wsHandler(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
@@ -775,9 +800,10 @@ func main() {
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
 
-		api.GET("/books", listBooks)
-		api.POST("/save-books", saveBooks)
-	}
+               api.GET("/books", listBooks)
+               api.POST("/save-books", saveBooks)
+               api.POST("/books/upload-image", uploadBookImage)
+       }
 
 	// serve React control panel
 	r.Static("/controlpanel", getDashboardPath())
