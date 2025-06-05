@@ -742,11 +742,75 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
     }
   }
 
+  Widget _buildGroupedArticlesList() {
+    if (_codeStructure == null) return const SizedBox();
+    final widgets = <Widget>[];
+    int idx = 0;
+
+    void addArticle(code_service.Article a) {
+      widgets.add(_buildModernArticleCard(a, idx++));
+    }
+
+    void processSection(code_service.CodeSection sec, {double indent = 0}) {
+      widgets.add(Container(
+        padding: EdgeInsets.fromLTRB(16 + indent, 8, 16, 8),
+        color: Colors.grey.shade200,
+        child: Text(sec.title,
+            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+      ));
+      for (var a in sec.articles) {
+        addArticle(a);
+      }
+      for (var sub in sec.subsections) {
+        processSection(sub, indent: indent + 16);
+      }
+    }
+
+    for (var book in _codeStructure!.books) {
+      widgets.add(Container(
+        padding: const EdgeInsets.all(12),
+        color: Colors.blue.shade100,
+        child: Text(book.title,
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+      ));
+      for (var title in book.titles) {
+        widgets.add(Container(
+          padding: const EdgeInsets.all(12),
+          color: Colors.blue.shade50,
+          child: Text(title.title,
+              style:
+                  GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+        ));
+        for (var ch in title.chapters) {
+          widgets.add(Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey.shade300,
+            child: Text(ch.title,
+                style: GoogleFonts.inter(
+                    fontSize: 14, fontWeight: FontWeight.w600)),
+          ));
+          for (var sec in ch.sections) {
+            processSection(sec);
+          }
+        }
+      }
+    }
+
+    return ListView(
+      controller: _scrollController,
+      children: widgets,
+    );
+  }
+
   Widget _buildArticlesList() {
     final articles = _getTabArticles();
 
     if (articles.isEmpty) {
       return _buildEnhancedEmptyState();
+    }
+
+    if (_currentTabIndex == 0 && _currentSearchQuery.isEmpty) {
+      return _buildGroupedArticlesList();
     }
 
     return ListView.builder(
