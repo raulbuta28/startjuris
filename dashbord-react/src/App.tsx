@@ -81,23 +81,38 @@ interface BookCarouselProps {
   title: string;
   books: Book[];
   onSelect: (b: Book) => void;
+  onDelete: (b: Book) => void;
+  onAdd: () => void;
 }
 
-function BookCarousel({ title, books, onSelect }: BookCarouselProps) {
+function BookCarousel({ title, books, onSelect, onDelete, onAdd }: BookCarouselProps) {
   return (
     <div className="mb-6">
       <h3 className="font-semibold text-lg mb-2">{title}</h3>
       <div className="flex space-x-3 overflow-x-auto pb-2">
         {books.map((b) => (
           <div
-            className="w-36 flex-shrink-0 bg-white border rounded p-2 cursor-pointer"
+            className="relative w-36 flex-shrink-0 bg-white border rounded p-2"
             key={b.id}
-            onClick={() => onSelect(b)}
           >
-            <img className="w-full" src={b.image} alt={b.title} />
-            <div className="mt-2 text-sm text-center">{b.title}</div>
+            <button
+              className="absolute top-0 right-0 text-red-600"
+              onClick={() => onDelete(b)}
+            >
+              <span className="material-icons text-sm">close</span>
+            </button>
+            <div className="cursor-pointer" onClick={() => onSelect(b)}>
+              <img className="w-full" src={b.image} alt={b.title} />
+              <div className="mt-2 text-sm text-center">{b.title}</div>
+            </div>
           </div>
         ))}
+        <button
+          className="w-36 h-48 flex-shrink-0 border-2 border-dashed flex items-center justify-center text-gray-500"
+          onClick={onAdd}
+        >
+          <span className="material-icons">add</span>
+        </button>
       </div>
     </div>
   );
@@ -125,6 +140,25 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
 
   const filter = (p: string) => books.filter((b) => b.id.startsWith(p));
 
+  const nextId = (prefix: string) => {
+    const nums = books
+      .filter((b) => b.id.startsWith(prefix))
+      .map((b) => parseInt(b.id.replace(prefix, '').replace('_', ''), 10))
+      .filter((n) => !isNaN(n));
+    const max = nums.length ? Math.max(...nums) : 0;
+    return `${prefix}${prefix.endsWith('_') ? '' : '_'}${max + 1}`;
+  };
+
+  const handleDelete = (b: Book) => {
+    const updated = books.filter((x) => x.id !== b.id);
+    onUpdate(updated);
+  };
+
+  const handleAdd = (prefix: string) => {
+    const nb: Book = { id: nextId(prefix), title: 'New Book', image: '', content: '' };
+    onEdit(nb);
+  };
+
   return (
     <div className="space-y-6">
       {categories.map((cat) => (
@@ -133,6 +167,8 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
           title={cat.label}
           books={filter(cat.prefix)}
           onSelect={onEdit}
+          onDelete={handleDelete}
+          onAdd={() => handleAdd(cat.prefix)}
         />
       ))}
     </div>
@@ -165,7 +201,12 @@ function Dashboard() {
         <BookEditor
           book={editing}
           onSave={(b) => {
-            const updated = books.map((x) => (x.id === b.id ? b : x));
+            let updated: Book[];
+            if (books.some((x) => x.id === b.id)) {
+              updated = books.map((x) => (x.id === b.id ? b : x));
+            } else {
+              updated = [...books, b];
+            }
             updateBooks(updated);
             setEditing(null);
           }}
