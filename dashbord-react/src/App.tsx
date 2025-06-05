@@ -15,6 +15,7 @@ function Login({ onLogin }: LoginProps) {
     e.preventDefault();
     if (username === 'admin' && password === 'admin') {
       onLogin();
+      localStorage.setItem('logged', 'true');
     } else {
       alert('Invalid credentials');
     }
@@ -230,7 +231,11 @@ function NewsList({ items, onUpdate, onEdit }: NewsProps) {
   );
 }
 
-function Dashboard() {
+interface DashboardProps {
+  onLogout: () => void;
+}
+
+function Dashboard({ onLogout }: DashboardProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [section, setSection] = useState('materie');
@@ -322,14 +327,42 @@ function Dashboard() {
   return (
     <div className="flex h-screen">
       <Sidebar active={section} onSelect={setSection} />
-      <div className="flex-1 overflow-y-auto p-6">{renderSection()}</div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="text-right mb-4">
+          <button
+            className="text-sm text-blue-600"
+            onClick={() => {
+              localStorage.removeItem('logged');
+              onLogout();
+            }}
+          >
+            Logout
+          </button>
+        </div>
+        {renderSection()}
+      </div>
     </div>
   );
 }
 
 function App() {
-  const [logged, setLogged] = useState(false);
-  return logged ? <Dashboard /> : <Login onLogin={() => setLogged(true)} />;
+  const [logged, setLogged] = useState(
+    () => localStorage.getItem('logged') === 'true'
+  );
+
+  useEffect(() => {
+    if (logged) {
+      localStorage.setItem('logged', 'true');
+    } else {
+      localStorage.removeItem('logged');
+    }
+  }, [logged]);
+
+  return logged ? (
+    <Dashboard onLogout={() => setLogged(false)} />
+  ) : (
+    <Login onLogin={() => setLogged(true)} />
+  );
 }
 
 export default App;
