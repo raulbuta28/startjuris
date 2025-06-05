@@ -8,11 +8,6 @@ import 'cartidpc.dart';
 import 'cartidp.dart';
 import 'cartidpp.dart';
 import 'obiective.dart';
-import 'admitereinm.dart';
-import 'admiterebarou.dart';
-import 'admiterenotariat.dart';
-import 'admiteresng.dart';
-import 'colectiastartjuris.dart';
 import 'carusel.dart';
 import '../modern_code_reader.dart';
 import '../../services/book_service.dart';
@@ -214,7 +209,7 @@ class _MateriePageState extends State<MateriePage> {
             ),
             SizedBox(
               height: imageHeight,
-              child: const AdmitereINM(),
+              child: CartiCivil(carti: _filter('inm')),
             ),
 
             // Codurile actualizate section
@@ -309,7 +304,7 @@ class _MateriePageState extends State<MateriePage> {
             ),
             SizedBox(
               height: imageHeight,
-              child: const AdmitereBarou(),
+              child: CartiCivil(carti: _filter('barou')),
             ),
             // Admitere INR (notariat)
             Padding(
@@ -325,7 +320,7 @@ class _MateriePageState extends State<MateriePage> {
             ),
             SizedBox(
               height: imageHeight,
-              child: const AdmitereNotariat(),
+              child: CartiCivil(carti: _filter('not')),
             ),
             // Admitere SNG (grefieri)
             Padding(
@@ -341,7 +336,7 @@ class _MateriePageState extends State<MateriePage> {
             ),
             SizedBox(
               height: imageHeight,
-              child: const AdmitereSNG(),
+              child: CartiCivil(carti: _filter('sng')),
             ),
             // Colectia startJuris
             Padding(
@@ -395,7 +390,7 @@ class _MateriePageState extends State<MateriePage> {
             ),
             SizedBox(
               height: imageHeight,
-              child: const ColectiaStartJuris(),
+              child: CartiCivil(carti: _filter('sj')),
             ),
             // Obiective (only once)
             const Padding(

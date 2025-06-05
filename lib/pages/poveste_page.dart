@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:flutter_html/style.dart';
 
 class PovesterePage extends StatefulWidget {
   final String titlu;
