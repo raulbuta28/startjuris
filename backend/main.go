@@ -80,6 +80,8 @@ func getDashboardPath() string {
 	// is the common case when running `go run .` during development
 	if wd, err := os.Getwd(); err == nil {
 		candidates := []string{
+			filepath.Join(wd, "dashbord-react", "dist"),
+			filepath.Join(wd, "..", "dashbord-react", "dist"),
 			filepath.Join(wd, "dashbord-react"),
 			filepath.Join(wd, "..", "dashbord-react"),
 		}
@@ -94,6 +96,8 @@ func getDashboardPath() string {
 	// server is built and executed from another directory.
 	if exe, err := os.Executable(); err == nil {
 		candidates := []string{
+			filepath.Join(filepath.Dir(exe), "dashbord-react", "dist"),
+			filepath.Join(filepath.Dir(exe), "..", "dashbord-react", "dist"),
 			filepath.Join(filepath.Dir(exe), "dashbord-react"),
 			filepath.Join(filepath.Dir(exe), "..", "dashbord-react"),
 		}
