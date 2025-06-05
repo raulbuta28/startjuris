@@ -391,15 +391,18 @@ function App() {
     })
       .then((r) => {
         if (!r.ok) {
-          localStorage.removeItem('token');
-          setLogged(false);
+          if (r.status === 401) {
+            // remove the token only if the server reports it is invalid
+            localStorage.removeItem('token');
+            setLogged(false);
+          }
         } else {
           setLogged(true);
         }
       })
-      .catch(() => {
-        localStorage.removeItem('token');
-        setLogged(false);
+      .catch((err) => {
+        // network or server error should not immediately log the user out
+        console.error('profile check failed', err);
       });
   }, []);
 
