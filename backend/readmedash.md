@@ -35,3 +35,5 @@ This file documents changes made to improve the code editor and backend.
   logged in across refreshes and prevent unintended logouts when opening the
   code editor.
 
+## Final adjustment
+- The profile verification on app load now retains the stored token unless the server explicitly returns a 401 response. Network or server errors no longer force a logout, preventing the admin from being kicked out when opening the code editor.
