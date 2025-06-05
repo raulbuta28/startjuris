@@ -298,6 +298,10 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
 	if currentArticle != nil {
 		if currentSubsection != nil {
 			currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)

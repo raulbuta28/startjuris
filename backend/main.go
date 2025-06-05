@@ -16,6 +16,46 @@ import (
 	"time"
 )
 
+func dirExists(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && info.IsDir()
+}
+
+// detectRepoRoot attempts to locate the project root directory by walking
+// upwards from the working directory and executable location until both
+// "backend" and "dashbord-react" folders are found.
+func detectRepoRoot() string {
+	if wd, err := os.Getwd(); err == nil {
+		dir := wd
+		for i := 0; i < 5; i++ {
+			if dirExists(filepath.Join(dir, "backend")) && dirExists(filepath.Join(dir, "dashbord-react")) {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	if exe, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exe)
+		for i := 0; i < 5; i++ {
+			if dirExists(filepath.Join(dir, "backend")) && dirExists(filepath.Join(dir, "dashbord-react")) {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	return "."
+}
+
 type User struct {
 	ID        string   `json:"id"`
 	Username  string   `json:"username"`
@@ -159,8 +199,10 @@ type SimpleCode struct {
 
 var codes = make(map[string]*SimpleCode)
 
-const codesFile = "../dashbord-react/codes.json"
-const codesTextDir = "./codurileactualizate"
+var rootDir = detectRepoRoot()
+
+var codesFile = filepath.Join(rootDir, "dashbord-react", "codes.json")
+var codesTextDir = filepath.Join(rootDir, "backend", "codurileactualizate")
 
 func loadCodes() {
 	data, err := os.ReadFile(codesFile)
@@ -204,7 +246,7 @@ func saveCodes() {
 // data even if parsing fails later on.
 func preloadParsedCodes() {
 	for id, info := range codeFiles {
-		jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+		jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
 		if _, err := os.Stat(jsonPath); err == nil {
 			// already generated
 			continue
@@ -222,7 +264,7 @@ func preloadParsedCodes() {
 
 func getParsedCodeHandler(c *gin.Context) {
 	id := c.Param("id")
-	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
 	if _, err := os.Stat(jsonPath); err == nil {
 		c.File(jsonPath)
 		return
@@ -243,7 +285,7 @@ func saveParsedCodeHandler(c *gin.Context) {
 		return
 	}
 	cacheAdd(id, &pc)
-	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
 	if data, err := json.MarshalIndent(pc, "", "  "); err == nil {
 		if err := os.WriteFile(jsonPath, data, 0644); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -258,7 +300,7 @@ func loadParsedCode(id string) (*ParsedCode, error) {
 		return pc, nil
 	}
 
-	jsonPath := filepath.Join("..", "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
 	if data, err := os.ReadFile(jsonPath); err == nil {
 		var pc ParsedCode
 		if json.Unmarshal(data, &pc) == nil {
@@ -288,7 +330,18 @@ func loadParsedCode(id string) (*ParsedCode, error) {
 // getDashboardPath returns an absolute path to the React control panel
 // directory so the server works regardless of the working directory.
 func getDashboardPath() string {
-	// first try paths relative to the current working directory as this
+	// first try the path derived from the detected repository root
+	candidates := []string{
+		filepath.Join(rootDir, "dashbord-react", "dist"),
+		filepath.Join(rootDir, "dashbord-react"),
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+
+	// next try paths relative to the current working directory as this
 	// is the common case when running `go run .` during development
 	if wd, err := os.Getwd(); err == nil {
 		candidates := []string{
@@ -321,7 +374,7 @@ func getDashboardPath() string {
 	}
 
 	// final fallback keeps previous behaviour
-	return "../dashbord-react"
+	return filepath.Join(rootDir, "dashbord-react")
 }
 
 func saveBooks(c *gin.Context) {
@@ -335,7 +388,7 @@ func saveBooks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile("../dashbord-react/books.json", data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "books.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -343,7 +396,7 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-	data, err := ioutil.ReadFile("../dashbord-react/books.json")
+	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "books.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -367,7 +420,7 @@ func saveNews(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile("../dashbord-react/news.json", data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "news.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -375,7 +428,7 @@ func saveNews(c *gin.Context) {
 }
 
 func listNews(c *gin.Context) {
-	data, err := ioutil.ReadFile("../dashbord-react/news.json")
+	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "news.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
