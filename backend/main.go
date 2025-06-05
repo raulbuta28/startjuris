@@ -56,6 +56,8 @@ func detectRepoRoot() string {
 	return "."
 }
 
+var rootDir = detectRepoRoot()
+
 type User struct {
 	ID        string   `json:"id"`
 	Username  string   `json:"username"`
@@ -71,7 +73,7 @@ type User struct {
 var users = make(map[string]User)
 var tokens = make(map[string]string) // token -> username
 
-const tokensFile = "tokens.json"
+var tokensFile = filepath.Join(rootDir, "backend", "tokens.json")
 
 func loadTokens() {
 	data, err := os.ReadFile(tokensFile)
@@ -92,7 +94,7 @@ func saveTokens() {
 var mu sync.Mutex
 var userUtils = make(map[string]map[string]interface{})
 
-const userFile = "users.json"
+var userFile = filepath.Join(rootDir, "backend", "users.json")
 
 func loadUsers() {
 	data, err := os.ReadFile(userFile)
@@ -198,8 +200,6 @@ type SimpleCode struct {
 }
 
 var codes = make(map[string]*SimpleCode)
-
-var rootDir = detectRepoRoot()
 
 var codesFile = filepath.Join(rootDir, "dashbord-react", "codes.json")
 var codesTextDir = filepath.Join(rootDir, "backend", "codurileactualizate")

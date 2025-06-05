@@ -11,4 +11,6 @@ This file documents changes made to improve the code editor and backend.
 - Added error checking for `bufio.Scanner` in `parseCodeFile` so parsing failures
   are reported.
 - The React `CodeEditor` now handles API errors and displays a loading state.
+- Token and user data files are saved relative to the repository root so the
+  backend can reload authentication info regardless of the working directory.
 
