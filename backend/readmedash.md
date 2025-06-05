@@ -49,3 +49,8 @@ This file documents changes made to improve the code editor and backend.
 - Updated the parser to treat lines starting with parentheses as part of the article
   content instead of references. This ensures every article correctly includes
   its paragraphs when displayed in the dashboard.
+
+## Layout update
+- CodeEditor now renders the entire code hierarchy expanded using headings
+  instead of collapsible `<details>` elements. Articles are listed directly
+  without virtualization so the full text is visible.
