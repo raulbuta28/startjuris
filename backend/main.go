@@ -530,17 +530,19 @@ func profile(c *gin.Context) {
 }
 
 func getUserFromToken(token string) (User, bool) {
-	if strings.HasPrefix(token, "Bearer ") {
-		token = strings.TrimPrefix(token, "Bearer ")
-	}
-	mu.Lock()
-	defer mu.Unlock()
-	username, ok := tokens[token]
-	if !ok {
-		return User{}, false
-	}
-	user, exists := users[username]
-	return user, exists
+        token = strings.TrimSpace(token)
+        if strings.HasPrefix(token, "Bearer ") {
+                token = strings.TrimPrefix(token, "Bearer ")
+        }
+        token = strings.Trim(token, "\"")
+        mu.Lock()
+        defer mu.Unlock()
+        username, ok := tokens[token]
+        if !ok {
+                return User{}, false
+        }
+        user, exists := users[username]
+        return user, exists
 }
 
 func updateProfile(c *gin.Context) {
