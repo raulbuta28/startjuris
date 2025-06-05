@@ -6,6 +6,41 @@ class CartiDPP extends StatelessWidget {
   final List<AdminBook> carti;
   const CartiDPP({Key? key, required this.carti}) : super(key: key);
 
+  Widget _buildImage(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade300,
+            child: const Icon(
+              Icons.book,
+              size: 50,
+              color: Colors.grey,
+            ),
+          );
+        },
+      );
+    }
+    return Image.asset(
+      path,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey.shade300,
+          child: const Icon(
+            Icons.book,
+            size: 50,
+            color: Colors.grey,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -57,21 +92,7 @@ class CartiDPP extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
-                        child: Image.asset(
-                          carte.image,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey.shade300,
-                              child: const Icon(
-                                Icons.book,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        ),
+                        child: _buildImage(carte.image),
                       ),
                     ),
                     Expanded(
