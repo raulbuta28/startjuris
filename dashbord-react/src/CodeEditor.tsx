@@ -10,21 +10,42 @@ interface Code {
 export default function CodeEditor() {
   const [codes, setCodes] = useState<Code[]>([]);
   const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState('');
 
   useEffect(() => {
     fetch('/api/codes')
-      .then(r => r.json())
-      .then(setCodes)
+      .then((r) => r.json())
+      .then((list: Code[]) => {
+        setCodes(list);
+        if (list.length > 0) {
+          setActive(list[0].id);
+          list.forEach((c) => {
+            fetch(`/api/codes/${c.id}`)
+              .then((r) => r.json())
+              .then((d) => {
+                setCodes((prev) =>
+                  prev.map((x) =>
+                    x.id === c.id ? { ...x, content: d.content } : x
+                  )
+                );
+              });
+          });
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const update = (idx: number, field: keyof Code, value: string) => {
-    const copy = [...codes];
-    (copy[idx] as any)[field] = value;
-    setCodes(copy);
+  const activeCode = codes.find((c) => c.id === active);
+
+  const updateActive = (value: string) => {
+    setCodes((prev) =>
+      prev.map((c) => (c.id === active ? { ...c, content: value } : c))
+    );
   };
 
-  const save = (code: Code) => {
+  const saveActive = () => {
+    const code = codes.find((c) => c.id === active);
+    if (!code) return;
     fetch(`/api/save-code/${code.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -35,23 +56,35 @@ export default function CodeEditor() {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      {codes.map((c, i) => (
-        <div key={c.id} className="bg-white shadow p-4 rounded">
-          <h3 className="font-semibold mb-2">{c.title}</h3>
+    <div>
+      <div className="border-b mb-4 space-x-2">
+        {codes.map((c) => (
+          <button
+            key={c.id}
+            className={`px-4 py-2 rounded-t ${
+              active === c.id ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            }`}
+            onClick={() => setActive(c.id)}
+          >
+            {c.title}
+          </button>
+        ))}
+      </div>
+      {activeCode && (
+        <div className="bg-white shadow p-4 rounded">
           <textarea
-            className="w-full border p-2 h-40"
-            value={c.content}
-            onChange={e => update(i, 'content', e.target.value)}
+            className="w-full border p-2 h-96"
+            value={activeCode.content || ''}
+            onChange={(e) => updateActive(e.target.value)}
           />
           <button
             className="mt-2 px-3 py-1 bg-blue-600 text-white rounded"
-            onClick={() => save(c)}
+            onClick={saveActive}
           >
             Save
           </button>
         </div>
-      ))}
+      )}
     </div>
   );
 }

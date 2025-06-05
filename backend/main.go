@@ -83,11 +83,12 @@ type SimpleCode struct {
 var codes = make(map[string]*SimpleCode)
 
 const codesFile = "../dashbord-react/codes.json"
+const codesTextDir = "./codurileactualizate"
 
 func loadCodes() {
 	data, err := os.ReadFile(codesFile)
 	if err != nil {
-		return
+		data = []byte("[]")
 	}
 	var arr []SimpleCode
 	if json.Unmarshal(data, &arr) != nil {
@@ -97,6 +98,12 @@ func loadCodes() {
 		c := arr[i]
 		if c.LastUpdated == "" {
 			c.LastUpdated = time.Now().Format(time.RFC3339)
+		}
+		if c.Content == "" {
+			txtPath := filepath.Join(codesTextDir, c.ID+".txt")
+			if b, err := os.ReadFile(txtPath); err == nil {
+				c.Content = string(b)
+			}
 		}
 		codes[c.ID] = &c
 	}
