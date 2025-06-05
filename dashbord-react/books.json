@@ -2,13 +2,13 @@
   {
     "id": "civil_1",
     "title": "Despre persoane",
-    "image": "../assets/carti/1.png",
+    "image": "carti/1.png",
     "content": "Sample content"
   },
   {
     "id": "civil_2",
     "title": "Căsătoria",
-    "image": "../assets/carti/2.png",
+    "image": "carti/2.png",
     "content": "Sample content"
   }
 ]
