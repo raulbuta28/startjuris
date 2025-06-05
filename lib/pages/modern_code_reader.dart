@@ -12,7 +12,7 @@ class ModernCodeReader extends StatefulWidget {
 }
 
 class _ModernCodeReaderState extends State<ModernCodeReader> {
-  String _content = '';
+  Map<String, dynamic>? _code;
   bool _loading = true;
   String? _error;
 
@@ -29,11 +29,11 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       _error = null;
     });
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/codes/${widget.codeId}'));
+      final res =
+          await http.get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
         setState(() {
-          _content = data['content'] ?? '';
+          _code = jsonDecode(res.body);
         });
       } else {
         setState(() {
@@ -59,10 +59,69 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(_content, style: const TextStyle(fontSize: 16)),
-                ),
+              : _code == null
+                  ? const SizedBox()
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: _buildBooks(_code!['books'] as List<dynamic>),
+                    ),
     );
+  }
+
+  List<Widget> _buildBooks(List<dynamic> books) {
+    return books.map((b) {
+      return ExpansionTile(
+        title: Text(b['title']),
+        children: _buildTitles(b['titles'] as List<dynamic>),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildTitles(List<dynamic> titles) {
+    return titles.map((t) {
+      return ExpansionTile(
+        title: Text(t['title']),
+        children: _buildChapters(t['chapters'] as List<dynamic>),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildChapters(List<dynamic> chapters) {
+    return chapters.map((c) {
+      return ExpansionTile(
+        title: Text(c['title']),
+        children: _buildSections(c['sections'] as List<dynamic>),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildSections(List<dynamic> sections) {
+    return sections.map((s) {
+      return ExpansionTile(
+        title: Text(s['title']),
+        children: [
+          ..._buildArticles(s['articles'] as List<dynamic>),
+          ..._buildSubsections(s['subsections'] as List<dynamic>),
+        ],
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildSubsections(List<dynamic> subs) {
+    return subs.map((s) {
+      return ExpansionTile(
+        title: Text(s['title']),
+        children: _buildArticles(s['articles'] as List<dynamic>),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildArticles(List<dynamic> arts) {
+    return arts.map((a) {
+      return ListTile(
+        title: Text('Art. ${a['number']} ${a['title']}'),
+        subtitle: Text(a['content'] ?? ''),
+      );
+    }).toList();
   }
 }
