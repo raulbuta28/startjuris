@@ -1,6 +1,8 @@
 // lib/pages/materie/baradecautare.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/book_service.dart';
+import '../poveste_page.dart';
 
 class BaraDeCautarePage extends StatefulWidget {
   const BaraDeCautarePage({Key? key}) : super(key: key);
@@ -18,6 +20,40 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
     'Drept constituțional – sinteze',
     'Regulament notarial – ghid rapid',
   ];
+
+  List<AdminBook> _books = [];
+  List<AdminBook> _filtered = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    BookService.fetchBooks().then((b) {
+      setState(() {
+        _books = b;
+        _filtered = b;
+        _loading = false;
+      });
+    }).catchError((_) {
+      setState(() => _loading = false);
+    });
+    _controller.addListener(_onChanged);
+  }
+
+  void _onChanged() {
+    final query = _controller.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filtered = _books;
+      } else {
+        _filtered = _books
+            .where((b) =>
+                b.title.toLowerCase().contains(query) ||
+                b.content.toLowerCase().contains(query))
+            .toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,40 +132,83 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
                 ],
               ),
             ),
-            // popular searches
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Căutări populare',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _exemple.length,
-                separatorBuilder: (_, __) => Divider(
-                  color: Colors.grey.shade300,
-                  thickness: 1,
-                ),
-                itemBuilder: (_, i) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    _exemple[i],
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.25,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _controller.text.isEmpty
+                      ? ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _exemple.length,
+                          separatorBuilder: (_, __) => Divider(
+                            color: Colors.grey.shade300,
+                            thickness: 1,
+                          ),
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              _exemple[i],
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.25,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _filtered.length,
+                          itemBuilder: (_, i) {
+                            final carte = _filtered[i];
+                            return _buildResult(carte);
+                          },
+                        ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResult(AdminBook book) {
+    Widget img;
+    if (book.image.startsWith('http')) {
+      img = Image.network(book.image,
+          fit: BoxFit.contain, width: 60, height: 80,
+          errorBuilder: (_, __, ___) => Container(
+                width: 60,
+                height: 80,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.book, color: Colors.grey),
+              ));
+    } else {
+      img = Image.asset(book.image,
+          fit: BoxFit.contain, width: 60, height: 80,
+          errorBuilder: (_, __, ___) => Container(
+                width: 60,
+                height: 80,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.book, color: Colors.grey),
+              ));
+    }
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      leading: img,
+      title: Text(
+        book.title,
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PovesterePage(
+            titlu: book.title,
+            imagine: book.image,
+            continut: book.content,
+            progress: 0.0,
+          ),
         ),
       ),
     );
