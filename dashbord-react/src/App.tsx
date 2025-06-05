@@ -10,14 +10,27 @@ interface LoginProps {
 function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin') {
-      onLogin();
+    setError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+      localStorage.setItem('token', data.token);
       localStorage.setItem('logged', 'true');
-    } else {
-      alert('Invalid credentials');
+      onLogin();
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -38,6 +51,9 @@ function Login({ onLogin }: LoginProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {error && (
+          <div className="text-sm text-red-600 text-center">{error}</div>
+        )}
         <button className="w-full bg-blue-600 text-white py-2 rounded" type="submit">
           Login
         </button>
@@ -243,10 +259,11 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
 
   useEffect(() => {
-    fetch('/api/books')
+    const token = localStorage.getItem('token') || '';
+    fetch('/api/books', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(setBooks);
-    fetch('/api/news')
+    fetch('/api/news', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(setNews);
   }, []);
@@ -255,7 +272,10 @@ function Dashboard({ onLogout }: DashboardProps) {
     setBooks(updated);
     fetch('/api/save-books', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
       body: JSON.stringify(updated),
     });
   };
@@ -264,7 +284,10 @@ function Dashboard({ onLogout }: DashboardProps) {
     setNews(updated);
     fetch('/api/save-news', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
       body: JSON.stringify(updated),
     });
   };
@@ -331,8 +354,9 @@ function Dashboard({ onLogout }: DashboardProps) {
         <div className="text-right mb-4">
           <button
             className="text-sm text-blue-600"
-            onClick={() => {
+          onClick={() => {
               localStorage.removeItem('logged');
+              localStorage.removeItem('token');
               onLogout();
             }}
           >
@@ -347,7 +371,7 @@ function Dashboard({ onLogout }: DashboardProps) {
 
 function App() {
   const [logged, setLogged] = useState(
-    () => localStorage.getItem('logged') === 'true'
+    () => localStorage.getItem('token') !== null
   );
 
   useEffect(() => {
@@ -355,8 +379,29 @@ function App() {
       localStorage.setItem('logged', 'true');
     } else {
       localStorage.removeItem('logged');
+      localStorage.removeItem('token');
     }
   }, [logged]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/api/profile', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => {
+        if (!r.ok) {
+          localStorage.removeItem('token');
+          setLogged(false);
+        } else {
+          setLogged(true);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        setLogged(false);
+      });
+  }, []);
 
   return logged ? (
     <Dashboard onLogout={() => setLogged(false)} />
