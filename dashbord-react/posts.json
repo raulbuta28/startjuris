@@ -1,0 +1,10 @@
+[
+  {
+    "id": "1",
+    "title": "Prima postare",
+    "description": "Descriere scurta a primei postari",
+    "details": "Continut detaliat al postarii",
+    "imageUrl": "https://picsum.photos/1200/600?random=11",
+    "date": "2025-01-01T00:00:00Z"
+  }
+]

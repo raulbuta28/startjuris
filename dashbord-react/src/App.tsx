@@ -82,6 +82,15 @@ interface Book {
   content: string;
 }
 
+interface Post {
+  id: string;
+  title: string;
+  description: string;
+  details: string;
+  imageUrl: string;
+  date: string;
+}
+
 interface BookCarouselProps {
   title: string;
   books: Book[];
@@ -174,14 +183,81 @@ function Materie({ books, onUpdate }: MaterieProps) {
   );
 }
 
+interface NoutatiProps {
+  posts: Post[];
+  onUpdate: (posts: Post[]) => void;
+}
+
+function Noutati({ posts, onUpdate }: NoutatiProps) {
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    details: '',
+    imageUrl: '',
+  });
+
+  const addPost = () => {
+    const newPost: Post = {
+      id: Date.now().toString(),
+      title: form.title,
+      description: form.description,
+      details: form.details,
+      imageUrl: form.imageUrl,
+      date: new Date().toISOString(),
+    };
+    onUpdate([...posts, newPost]);
+    setForm({ title: '', description: '', details: '', imageUrl: '' });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border p-4 rounded space-y-4">
+        <h3 className="font-semibold text-lg">Adauga postare</h3>
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Titlu"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Descriere"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+        />
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Image URL"
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+        />
+        <ReactQuill theme="snow" value={form.details} onChange={(v) => setForm({ ...form, details: v })} />
+        <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={addPost}>Save</button>
+      </div>
+      <div className="space-y-3">
+        {posts.map((p) => (
+          <div key={p.id} className="bg-white border p-4 rounded">
+            <h4 className="font-semibold">{p.title}</h4>
+            <p className="text-sm text-gray-600">{p.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [section, setSection] = useState('materie');
 
   useEffect(() => {
     fetch('/api/books')
       .then((r) => r.json())
       .then(setBooks);
+    fetch('/api/posts')
+      .then((r) => r.json())
+      .then(setPosts);
   }, []);
 
   const updateBooks = (updated: Book[]) => {
@@ -193,9 +269,20 @@ function Dashboard() {
     });
   };
 
+  const updatePosts = (updated: Post[]) => {
+    setPosts(updated);
+    fetch('/api/save-posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+  };
+
   const renderSection = () => {
     if (section === 'materie') {
       return <Materie books={books} onUpdate={updateBooks} />;
+    } else if (section === 'noutati') {
+      return <Noutati posts={posts} onUpdate={updatePosts} />;
     }
     const s = sections.find((x) => x.key === section);
     return (

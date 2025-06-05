@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/news_service.dart';
 
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
@@ -14,6 +15,27 @@ class NewsPage extends StatefulWidget {
 class _NewsPageState extends State<NewsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Map<String, dynamic>> _newsItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNews();
+  }
+
+  Future<void> _loadNews() async {
+    try {
+      final items = await NewsService.fetchNews();
+      setState(() {
+        _newsItems = items
+            .map((e) => {
+                  ...e,
+                  'date': DateTime.tryParse(e['date'] ?? '') ?? DateTime.now(),
+                })
+            .toList();
+      });
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -23,33 +45,7 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> newsItems = [
-      {
-        'title': 'Lansare Epică 3.0',
-        'description':
-            'Versiunea 3.0 introduce un design revoluționar și funcții AI avansate.',
-        'date': DateTime(2025, 5, 24),
-        'imageUrl': 'https://picsum.photos/1200/600?random=1',
-        'details':
-            'Descoperă noile funcții, inclusiv modul AI personalizat, integrare cloud și o experiență de utilizare ultra-fluidă.'
-      },
-      {
-        'title': 'Webinar Global 2026',
-        'description':
-            'Alătură-te evenimentului live pentru a afla viziunea noastră pentru viitor.',
-        'date': DateTime(2025, 5, 20),
-        'imageUrl': 'https://picsum.photos/1200/600?random=2',
-        'details': 'Înregistrarea este deschisă. Rezervă-ți locul pentru a participa la discuții exclusive.'
-      },
-      {
-        'title': 'Mod Întunecat Premium',
-        'description':
-            'Noul mod întunecat economisește baterie și arată impecabil.',
-        'date': DateTime(2025, 5, 15),
-        'imageUrl': 'https://picsum.photos/1200/600?random=3',
-        'details': 'Activează modul întunecat din setări pentru o experiență vizuală superioară.'
-      },
-    ];
+    final List<Map<String, dynamic>> newsItems = _newsItems;
 
     final filteredNews = newsItems.where((news) {
       final title = (news['title'] as String).toLowerCase();
