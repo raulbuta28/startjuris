@@ -8,27 +8,33 @@ class CartiDP extends StatelessWidget {
 
   Widget _buildImage(String path) {
     final image = path.startsWith('http://') || path.startsWith('https://')
-        ? Image.network(path, fit: BoxFit.contain, width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-            return Container(
+        ? Image.network(
+            path,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
               color: Colors.grey.shade300,
               child: const Icon(Icons.book, size: 50, color: Colors.grey),
-            );
-          })
-        : Image.asset(path, fit: BoxFit.contain, width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-            return Container(
+            ),
+          )
+        : Image.asset(
+            path,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
               color: Colors.grey.shade300,
               child: const Icon(Icons.book, size: 50, color: Colors.grey),
-            );
-          });
-    return Container(color: Colors.white, child: image);
+            ),
+          );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: AspectRatio(aspectRatio: 0.66, child: image),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 320,
+    return SizedBox(
+      height: 260,
       margin: const EdgeInsets.only(top: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -41,6 +47,7 @@ class CartiDP extends StatelessWidget {
             width: 160,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -53,6 +60,7 @@ class CartiDP extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -66,66 +74,35 @@ class CartiDP extends StatelessWidget {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildImage(carte.image),
+                      const SizedBox(height: 8),
+                      Text(
+                        carte.title,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                        child: _buildImage(carte.image),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(
-                            bottom: Radius.circular(12),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              carte.title,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: FractionallySizedBox(
-                                widthFactor: 0.0, // Default progress
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: 0,
+                          minHeight: 4,
+                          backgroundColor: Colors.grey.shade200,
+                          color: Colors.blue,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
