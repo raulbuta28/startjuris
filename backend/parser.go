@@ -77,7 +77,10 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 	titleRe := regexp.MustCompile(`(?i)^Titlul`)
 	chapterRe := regexp.MustCompile(`(?i)^Capitolul`)
 	sectionRe := regexp.MustCompile(`(?i)^Sec[tț]iunea`)
+	subsectionRe := regexp.MustCompile(`(?i)^Subsec[tț]iunea`)
 	articleRe := regexp.MustCompile(`(?i)^Articolul\s+(\d+)`)
+	noteRe := regexp.MustCompile(`(?i)^Not[aă]`)
+	refRe := regexp.MustCompile(`(?i)(monitorul oficial|legea nr|ril nr|decizia)`)
 
 	code := &ParsedCode{
 		ID:       codeID,
@@ -91,10 +94,11 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 	var currentTitle *CodeTitle
 	var currentChapter *Chapter
 	var currentSection *CodeSection
+	var currentSubsection *CodeSection
 	var currentArticle *Article
 	var expectTitle bool
 
-	var bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder int
+	var bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder int
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -104,21 +108,29 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 
 		switch {
 		case bookRe.MatchString(line):
-			if currentArticle != nil && currentSection != nil {
-				currentSection.Articles = append(currentSection.Articles, *currentArticle)
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
 				currentArticle = nil
 			}
-			titleOrder, chapterOrder, sectionOrder, articleOrder = 0, 0, 0, 0
+			titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder = 0, 0, 0, 0, 0
 			bookOrder++
 			b := Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: line, Order: bookOrder}
 			code.Books = append(code.Books, b)
 			currentBook = &code.Books[len(code.Books)-1]
 		case titleRe.MatchString(line):
-			if currentArticle != nil && currentSection != nil {
-				currentSection.Articles = append(currentSection.Articles, *currentArticle)
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
 				currentArticle = nil
 			}
-			chapterOrder, sectionOrder, articleOrder = 0, 0, 0
+			chapterOrder, sectionOrder, subsectionOrder, articleOrder = 0, 0, 0, 0
 			titleOrder++
 			t := CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: line, Order: titleOrder}
 			if currentBook == nil {
@@ -130,11 +142,15 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			currentBook.Titles = append(currentBook.Titles, t)
 			currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
 		case chapterRe.MatchString(line):
-			if currentArticle != nil && currentSection != nil {
-				currentSection.Articles = append(currentSection.Articles, *currentArticle)
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
 				currentArticle = nil
 			}
-			sectionOrder, articleOrder = 0, 0
+			sectionOrder, subsectionOrder, articleOrder = 0, 0, 0
 			chapterOrder++
 			ch := Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: line, Order: chapterOrder}
 			if currentTitle == nil {
@@ -151,11 +167,16 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			currentTitle.Chapters = append(currentTitle.Chapters, ch)
 			currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 		case sectionRe.MatchString(line):
-			if currentArticle != nil && currentSection != nil {
-				currentSection.Articles = append(currentSection.Articles, *currentArticle)
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
 				currentArticle = nil
 			}
 			articleOrder = 0
+			subsectionOrder = 0
 			sectionOrder++
 			sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: line, Order: sectionOrder}
 			if currentChapter == nil {
@@ -176,11 +197,52 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			}
 			currentChapter.Sections = append(currentChapter.Sections, sec)
 			currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
-		case articleRe.MatchString(line):
-			if currentArticle != nil && currentSection != nil {
-				currentSection.Articles = append(currentSection.Articles, *currentArticle)
+			currentSubsection = nil
+		case subsectionRe.MatchString(line):
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
+				currentArticle = nil
 			}
+			articleOrder = 0
+			subsectionOrder++
+			sub := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_sub_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder), Title: line, Order: subsectionOrder}
 			if currentSection == nil {
+				// create a default section
+				sectionOrder++
+				if currentChapter == nil {
+					chapterOrder++
+					if currentTitle == nil {
+						titleOrder++
+						if currentBook == nil {
+							bookOrder++
+							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+							currentBook = &code.Books[len(code.Books)-1]
+						}
+						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+						currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
+					}
+					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder})
+					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
+				}
+				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder}
+				currentChapter.Sections = append(currentChapter.Sections, sec)
+				currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
+			}
+			currentSection.Subsections = append(currentSection.Subsections, sub)
+			currentSubsection = &currentSection.Subsections[len(currentSection.Subsections)-1]
+		case articleRe.MatchString(line):
+			if currentArticle != nil {
+				if currentSubsection != nil {
+					currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+				} else if currentSection != nil {
+					currentSection.Articles = append(currentSection.Articles, *currentArticle)
+				}
+			}
+			if currentSubsection == nil && currentSection == nil {
 				// create a default section if none exists
 				sectionOrder++
 				if currentChapter == nil {
@@ -210,11 +272,19 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			if len(matches) > 1 {
 				num = matches[1]
 			}
-			currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Order: articleOrder}
+			if currentSubsection != nil {
+				currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_sub_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder), Number: num, Order: articleOrder}
+			} else {
+				currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Order: articleOrder}
+			}
 			expectTitle = true
 		default:
 			if currentArticle != nil {
-				if expectTitle {
+				if noteRe.MatchString(line) {
+					currentArticle.Notes = append(currentArticle.Notes, line)
+				} else if refRe.MatchString(strings.ToLower(line)) || strings.HasPrefix(line, "(") {
+					currentArticle.References = append(currentArticle.References, line)
+				} else if expectTitle {
 					currentArticle.Title = line
 					expectTitle = false
 				} else {
@@ -228,8 +298,12 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 		}
 	}
 
-	if currentArticle != nil && currentSection != nil {
-		currentSection.Articles = append(currentSection.Articles, *currentArticle)
+	if currentArticle != nil {
+		if currentSubsection != nil {
+			currentSubsection.Articles = append(currentSubsection.Articles, *currentArticle)
+		} else if currentSection != nil {
+			currentSection.Articles = append(currentSection.Articles, *currentArticle)
+		}
 	}
 
 	// gather all articles into code.Articles and count
@@ -238,7 +312,11 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 		for j := range code.Books[i].Titles {
 			for k := range code.Books[i].Titles[j].Chapters {
 				for l := range code.Books[i].Titles[j].Chapters[k].Sections {
-					all = append(all, code.Books[i].Titles[j].Chapters[k].Sections[l].Articles...)
+					sec := code.Books[i].Titles[j].Chapters[k].Sections[l]
+					all = append(all, sec.Articles...)
+					for m := range sec.Subsections {
+						all = append(all, sec.Subsections[m].Articles...)
+					}
 				}
 			}
 		}
