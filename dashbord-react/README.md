@@ -26,5 +26,6 @@ npm run build
 
 This generates a `dist/` folder that the Go server exposes at
 `http://localhost:8080/controlpanel` when running `go run ./backend` from the
-project root.
+project root. The Vite configuration sets the `base` option to `/controlpanel/`
+so the built assets are served correctly from that path.
 
