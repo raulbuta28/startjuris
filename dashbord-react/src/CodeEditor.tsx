@@ -50,6 +50,7 @@ export default function CodeEditor() {
   const [structure, setStructure] = useState<ParsedCode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -129,27 +130,51 @@ export default function CodeEditor() {
     const articles = sec.articles || [];
     return (
       <div className="ml-4">
-        {articles.map((a) => (
-          <div key={a.id} className="border p-2 my-2 rounded">
-            <div className="flex space-x-2 mb-1">
-              <input
-                className="border p-1 w-16"
-                value={a.number}
-                onChange={(e) => updateArticle(a.id, "number", e.target.value)}
-              />
-              <input
-                className="border p-1 flex-1"
-                value={a.title}
-                onChange={(e) => updateArticle(a.id, "title", e.target.value)}
-              />
+        {articles.map((a) => {
+          const editing = editingId === a.id;
+          return (
+            <div key={a.id} className="border p-2 my-2 rounded">
+              {editing ? (
+                <>
+                  <div className="flex space-x-2 mb-1">
+                    <input
+                      className="border p-1 w-16"
+                      value={a.number}
+                      onChange={(e) => updateArticle(a.id, "number", e.target.value)}
+                    />
+                    <input
+                      className="border p-1 flex-1"
+                      value={a.title}
+                      onChange={(e) => updateArticle(a.id, "title", e.target.value)}
+                    />
+                  </div>
+                  <textarea
+                    className="border p-1 w-full text-sm"
+                    value={a.content}
+                    onChange={(e) => updateArticle(a.id, "content", e.target.value)}
+                  />
+                  <button
+                    className="mt-1 px-2 py-1 bg-blue-600 text-white rounded"
+                    onClick={() => setEditingId(null)}
+                  >
+                    Done
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold">{a.number} {a.title}</div>
+                  <pre className="whitespace-pre-wrap text-sm">{a.content}</pre>
+                  <button
+                    className="mt-1 px-2 py-1 bg-gray-200 rounded"
+                    onClick={() => setEditingId(a.id)}
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
             </div>
-            <textarea
-              className="border p-1 w-full text-sm"
-              value={a.content}
-              onChange={(e) => updateArticle(a.id, "content", e.target.value)}
-            />
-          </div>
-        ))}
+          );
+        })}
         {(sec.subsections || []).map((s) => renderSection(s))}
       </div>
     );

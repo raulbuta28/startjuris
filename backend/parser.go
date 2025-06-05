@@ -283,14 +283,20 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			expectTitle = true
 		default:
 			if currentArticle != nil {
-                               if noteRe.MatchString(line) {
-                                       currentArticle.Notes = append(currentArticle.Notes, line)
-                               } else if refRe.MatchString(strings.ToLower(line)) {
-                                       currentArticle.References = append(currentArticle.References, line)
-                               } else if expectTitle {
-                                       currentArticle.Title = line
-                                       expectTitle = false
-                               } else {
+				if strings.HasPrefix(line, "(") {
+					if currentArticle.Content != "" {
+						currentArticle.Content += "\n" + line
+					} else {
+						currentArticle.Content = line
+					}
+				} else if noteRe.MatchString(line) {
+					currentArticle.Notes = append(currentArticle.Notes, line)
+				} else if refRe.MatchString(strings.ToLower(line)) {
+					currentArticle.References = append(currentArticle.References, line)
+				} else if expectTitle {
+					currentArticle.Title = line
+					expectTitle = false
+				} else {
 					if currentArticle.Content != "" {
 						currentArticle.Content += "\n" + line
 					} else {
