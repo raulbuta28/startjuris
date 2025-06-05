@@ -54,3 +54,6 @@ This file documents changes made to improve the code editor and backend.
 - CodeEditor now renders the entire code hierarchy expanded using headings
   instead of collapsible `<details>` elements. Articles are listed directly
   without virtualization so the full text is visible.
+
+## Display fix
+- Removed the raw text preview from CodeEditor to avoid duplicate article content.

@@ -48,7 +48,6 @@ export default function CodeEditor() {
   const [codes, setCodes] = useState<CodeInfo[]>([]);
   const [active, setActive] = useState("");
   const [structure, setStructure] = useState<ParsedCode | null>(null);
-  const [rawText, setRawText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -87,13 +86,6 @@ export default function CodeEditor() {
       .finally(() => setLoading(false));
   }, [active]);
 
-  useEffect(() => {
-    if (!active) return;
-    fetch(`/api/code-text/${active}`)
-      .then((r) => (r.ok ? r.text() : Promise.reject("Failed to load text")))
-      .then(setRawText)
-      .catch(() => setRawText(""));
-  }, [active]);
 
   const updateArticle = (id: string, field: keyof Article, value: string) => {
     if (!structure) return;
@@ -213,11 +205,6 @@ export default function CodeEditor() {
       <div className="space-y-2">
         {(structure.books || []).map((b) => renderBook(b))}
       </div>
-      {rawText && (
-        <pre className="whitespace-pre-wrap p-2 bg-white border rounded text-sm">
-          {rawText}
-        </pre>
-      )}
       <button
         className="px-4 py-2 bg-blue-600 text-white rounded"
         onClick={save}
