@@ -47,7 +47,10 @@ class _MateriePageState extends State<MateriePage> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    const imageHeight = 220.0 + 6 + 16 + 6 + 6 + 36 + 6;
+    // Height of each horizontal list item. This should match the card
+    // height defined in the book widgets to avoid clipping the bottom
+    // of the cards.
+    const imageHeight = 320.0;
 
     return Scaffold(
       backgroundColor: Colors.white,

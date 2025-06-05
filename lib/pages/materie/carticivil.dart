@@ -7,38 +7,22 @@ class CartiCivil extends StatelessWidget {
   const CartiCivil({Key? key, required this.carti}) : super(key: key);
 
   Widget _buildImage(String path) {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey.shade300,
-            child: const Icon(
-              Icons.book,
-              size: 50,
-              color: Colors.grey,
-            ),
-          );
-        },
-      );
-    }
-    return Image.asset(
-      path,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey.shade300,
-          child: const Icon(
-            Icons.book,
-            size: 50,
-            color: Colors.grey,
-          ),
-        );
-      },
-    );
+    final image = path.startsWith('http://') || path.startsWith('https://')
+        ? Image.network(path, fit: BoxFit.contain, width: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey.shade300,
+              child: const Icon(Icons.book, size: 50, color: Colors.grey),
+            );
+          })
+        : Image.asset(path, fit: BoxFit.contain, width: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey.shade300,
+              child: const Icon(Icons.book, size: 50, color: Colors.grey),
+            );
+          });
+    return Container(color: Colors.white, child: image);
   }
 
   @override
