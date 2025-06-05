@@ -31,6 +31,24 @@ var tokens = make(map[string]string) // token -> username
 var mu sync.Mutex
 var userUtils = make(map[string]map[string]interface{})
 
+const userFile = "users.json"
+
+func loadUsers() {
+	data, err := os.ReadFile(userFile)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, &users)
+}
+
+func saveUsers() {
+	data, err := json.MarshalIndent(users, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(userFile, data, 0644)
+}
+
 type Message struct {
 	ID             string    `json:"id"`
 	ConversationID string    `json:"conversationId"`
@@ -141,6 +159,7 @@ func register(c *gin.Context) {
 	}
 	u.ID = uuid.New().String()
 	users[u.Username] = u
+	saveUsers()
 	c.JSON(http.StatusCreated, gin.H{"user": u})
 }
 
@@ -302,6 +321,7 @@ func updateProfile(c *gin.Context) {
 		delete(users, original)
 	}
 	users[user.Username] = user
+	saveUsers()
 	mu.Unlock()
 
 	c.JSON(http.StatusOK, user)
@@ -333,6 +353,7 @@ func uploadAvatar(c *gin.Context) {
 
 	mu.Lock()
 	users[user.Username] = user
+	saveUsers()
 	mu.Unlock()
 
 	c.JSON(http.StatusOK, user)
@@ -647,6 +668,7 @@ func toggleFollowHandler(c *gin.Context) {
 
 	users[current.Username] = current
 	users[target.Username] = target
+	saveUsers()
 
 	c.JSON(http.StatusOK, gin.H{"user": current, "isFollowing": following})
 }
@@ -694,6 +716,7 @@ func getFollowingHandler(c *gin.Context) {
 }
 
 func main() {
+	loadUsers()
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {
