@@ -19,3 +19,10 @@ This file documents changes made to improve the code editor and backend.
 - The backend now prints the detected repository root and reports parsing errors
   when preloading code files to help diagnose missing content issues.
 
+## Changes in this fix
+- The React dashboard now persists the login state in `localStorage`, ensuring
+  the admin remains logged in even if a page refresh occurs when loading the
+  code editor.
+- Added a small logout button which clears the stored flag so testing remains
+  simple.
+
