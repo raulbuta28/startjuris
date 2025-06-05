@@ -7,38 +7,40 @@ class CartiDPP extends StatelessWidget {
   const CartiDPP({Key? key, required this.carti}) : super(key: key);
 
   Widget _buildImage(String path) {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey.shade300,
-            child: const Icon(
-              Icons.book,
-              size: 50,
-              color: Colors.grey,
-            ),
+    final isNet = path.startsWith('http://') || path.startsWith('https://');
+    final p = isNet || path.startsWith('assets/') ? path : 'assets/$path';
+    final image = isNet
+        ? Image.network(
+            p,
+            width: double.infinity,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Icon(
+                  Icons.book,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              );
+            },
+          )
+        : Image.asset(
+            p,
+            width: double.infinity,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.grey.shade300,
+                child: const Icon(
+                  Icons.book,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              );
+            },
           );
-        },
-      );
-    }
-    return Image.asset(
-      path,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey.shade300,
-          child: const Icon(
-            Icons.book,
-            size: 50,
-            color: Colors.grey,
-          ),
-        );
-      },
-    );
+    return image;
   }
 
   @override
@@ -127,7 +129,7 @@ class CartiDPP extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(2),
                               ),
                               child: FractionallySizedBox(
-                                widthFactor: 0.0, // Default progress
+                                widthFactor: 0.5,
                                 alignment: Alignment.centerLeft,
                                 child: Container(
                                   decoration: BoxDecoration(

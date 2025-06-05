@@ -13,9 +13,21 @@ class AdminBook {
     return AdminBook(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
-      image: (json['image'] as String?)?.replaceFirst('../', '') ?? '',
+      image: _normalizeImage(json['image'] as String?),
       content: json['content'] ?? '',
     );
+  }
+
+  static String _normalizeImage(String? img) {
+    if (img == null) return '';
+    var path = img.replaceFirst('../', '');
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    if (!path.startsWith('assets/')) {
+      path = 'assets/$path';
+    }
+    return path;
   }
 }
 

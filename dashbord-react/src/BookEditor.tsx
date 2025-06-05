@@ -38,6 +38,9 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
   const [form, setForm] = useState({ ...book });
   const [uploading, setUploading] = useState(false);
 
+  const getImageUrl = (p: string) =>
+    p.startsWith('http://') || p.startsWith('https://') ? p : `/assets/${p}`;
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -81,7 +84,7 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
         <input type="file" accept="image/*" onChange={handleFile} />
         {uploading && <div className="text-sm text-gray-500">Uploading...</div>}
         {form.image && (
-          <img src={form.image} alt="preview" className="w-32" />
+          <img src={getImageUrl(form.image)} alt="preview" className="w-32" />
         )}
       </div>
       <ReactQuill

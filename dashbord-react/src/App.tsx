@@ -77,6 +77,9 @@ function Sidebar({ active, onSelect }: SidebarProps) {
 
 type Book = BookType;
 
+const getImageUrl = (p: string) =>
+  p.startsWith('http://') || p.startsWith('https://') ? p : `/assets/${p}`;
+
 interface BookCarouselProps {
   title: string;
   books: Book[];
@@ -102,7 +105,7 @@ function BookCarousel({ title, books, onSelect, onDelete, onAdd }: BookCarouselP
               <span className="material-icons text-sm">close</span>
             </button>
             <div className="cursor-pointer" onClick={() => onSelect(b)}>
-              <img className="w-full" src={b.image} alt={b.title} />
+              <img className="w-full" src={getImageUrl(b.image)} alt={b.title} />
               <div className="mt-2 text-sm text-center">{b.title}</div>
             </div>
           </div>

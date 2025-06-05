@@ -112,6 +112,35 @@ func getDashboardPath() string {
 	return "../dashbord-react"
 }
 
+// getAssetsPath returns an absolute path to the Flutter assets directory so
+// book cover images can be served even when the server is launched from a
+// different working directory.
+func getAssetsPath() string {
+	if wd, err := os.Getwd(); err == nil {
+		candidates := []string{
+			filepath.Join(wd, "assets"),
+			filepath.Join(wd, "..", "assets"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+	if exe, err := os.Executable(); err == nil {
+		candidates := []string{
+			filepath.Join(filepath.Dir(exe), "assets"),
+			filepath.Join(filepath.Dir(exe), "..", "assets"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+	return "../assets"
+}
+
 func saveBooks(c *gin.Context) {
 	var books []map[string]interface{}
 	if err := c.BindJSON(&books); err != nil {
@@ -370,28 +399,28 @@ func uploadAvatar(c *gin.Context) {
 }
 
 func uploadBookImage(c *gin.Context) {
-        file, err := c.FormFile("image")
-        if err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
-                return
-        }
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+		return
+	}
 
-        os.MkdirAll("uploads/books", os.ModePerm)
-        filename := uuid.New().String() + filepath.Ext(file.Filename)
-        path := filepath.Join("uploads", "books", filename)
-        if err := c.SaveUploadedFile(file, path); err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
-                return
-        }
+	os.MkdirAll("uploads/books", os.ModePerm)
+	filename := uuid.New().String() + filepath.Ext(file.Filename)
+	path := filepath.Join("uploads", "books", filename)
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+		return
+	}
 
-        scheme := "http"
-        if c.Request.TLS != nil {
-                scheme = "https"
-        }
-        host := c.Request.Host
-        url := fmt.Sprintf("%s://%s/uploads/books/%s", scheme, host, filename)
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	host := c.Request.Host
+	url := fmt.Sprintf("%s://%s/uploads/books/%s", scheme, host, filename)
 
-        c.JSON(http.StatusOK, gin.H{"url": url})
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
 func wsHandler(c *gin.Context) {
@@ -800,15 +829,15 @@ func main() {
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
 
-               api.GET("/books", listBooks)
-               api.POST("/save-books", saveBooks)
-               api.POST("/books/upload-image", uploadBookImage)
-       }
+		api.GET("/books", listBooks)
+		api.POST("/save-books", saveBooks)
+		api.POST("/books/upload-image", uploadBookImage)
+	}
 
 	// serve React control panel
 	r.Static("/controlpanel", getDashboardPath())
-
 	r.Static("/uploads", "./uploads")
+	r.Static("/assets", getAssetsPath())
 
 	r.Run(":8080")
 }
