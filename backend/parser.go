@@ -121,7 +121,7 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			}
 			titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder = 0, 0, 0, 0, 0
 			bookOrder++
-			b := Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: line, Order: bookOrder}
+			b := Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: line, Order: bookOrder, Titles: []CodeTitle{}}
 			code.Books = append(code.Books, b)
 			currentBook = &code.Books[len(code.Books)-1]
 		case titleRe.MatchString(line):
@@ -135,11 +135,11 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			}
 			chapterOrder, sectionOrder, subsectionOrder, articleOrder = 0, 0, 0, 0
 			titleOrder++
-			t := CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: line, Order: titleOrder}
+			t := CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: line, Order: titleOrder, Chapters: []Chapter{}}
 			if currentBook == nil {
 				// create default book if none exists
 				bookOrder++
-				code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+				code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder, Titles: []CodeTitle{}})
 				currentBook = &code.Books[len(code.Books)-1]
 			}
 			currentBook.Titles = append(currentBook.Titles, t)
@@ -155,16 +155,16 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			}
 			sectionOrder, subsectionOrder, articleOrder = 0, 0, 0
 			chapterOrder++
-			ch := Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: line, Order: chapterOrder}
+			ch := Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: line, Order: chapterOrder, Sections: []CodeSection{}}
 			if currentTitle == nil {
 				// create default title
 				titleOrder++
 				if currentBook == nil {
 					bookOrder++
-					code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+					code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder, Titles: []CodeTitle{}})
 					currentBook = &code.Books[len(code.Books)-1]
 				}
-				currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+				currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder, Chapters: []Chapter{}})
 				currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
 			}
 			currentTitle.Chapters = append(currentTitle.Chapters, ch)
@@ -189,13 +189,13 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 					titleOrder++
 					if currentBook == nil {
 						bookOrder++
-						code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+						code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder, Titles: []CodeTitle{}})
 						currentBook = &code.Books[len(code.Books)-1]
 					}
-					currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+					currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder, Chapters: []Chapter{}})
 					currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
 				}
-				currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder})
+				currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder, Sections: []CodeSection{}})
 				currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 			}
 			currentChapter.Sections = append(currentChapter.Sections, sec)
@@ -222,13 +222,13 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 						titleOrder++
 						if currentBook == nil {
 							bookOrder++
-							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder, Titles: []CodeTitle{}})
 							currentBook = &code.Books[len(code.Books)-1]
 						}
-						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder, Chapters: []Chapter{}})
 						currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
 					}
-					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder})
+					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder, Sections: []CodeSection{}})
 					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 				}
 				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}
@@ -256,13 +256,13 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 						titleOrder++
 						if currentBook == nil {
 							bookOrder++
-							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder})
+							code.Books = append(code.Books, Book{ID: fmt.Sprintf("book_%d", bookOrder), Title: "Intro", Order: bookOrder, Titles: []CodeTitle{}})
 							currentBook = &code.Books[len(code.Books)-1]
 						}
-						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder})
+						currentBook.Titles = append(currentBook.Titles, CodeTitle{ID: fmt.Sprintf("book_%d_title_%d", bookOrder, titleOrder), Title: "Untitled", Order: titleOrder, Chapters: []Chapter{}})
 						currentTitle = &currentBook.Titles[len(currentBook.Titles)-1]
 					}
-					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder})
+					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder, Sections: []CodeSection{}})
 					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 				}
 				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}

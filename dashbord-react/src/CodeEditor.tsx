@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import React, { useEffect, useState } from "react";
+import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 
 const ITEM_HEIGHT = 180;
 
@@ -49,17 +49,17 @@ interface CodeInfo {
 
 export default function CodeEditor() {
   const [codes, setCodes] = useState<CodeInfo[]>([]);
-  const [active, setActive] = useState('');
+  const [active, setActive] = useState("");
   const [structure, setStructure] = useState<ParsedCode | null>(null);
-  const [rawText, setRawText] = useState('');
+  const [rawText, setRawText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/codes')
-      .then(async r => {
-        if (!r.ok) throw new Error('Failed to load codes');
+    fetch("/api/codes")
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Failed to load codes");
         return r.json();
       })
       .then((list: CodeInfo[]) => {
@@ -68,34 +68,34 @@ export default function CodeEditor() {
           setActive(list[0].id);
         }
       })
-      .catch(err => setError(err.message))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!active) return;
     setLoading(true);
-    setError('');
+    setError("");
     setStructure(null);
     fetch(`/api/parsed-code/${active}`)
-      .then(async r => {
+      .then(async (r) => {
         const data = await r.json();
         if (!r.ok || (data as any).error) {
-          throw new Error((data as any).error || 'Failed to load');
+          throw new Error((data as any).error || "Failed to load");
         }
         return data;
       })
       .then((d: ParsedCode) => setStructure(d))
-      .catch(err => setError(err.message))
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [active]);
 
   useEffect(() => {
     if (!active) return;
     fetch(`/api/code-text/${active}`)
-      .then(r => (r.ok ? r.text() : Promise.reject('Failed to load text')))
+      .then((r) => (r.ok ? r.text() : Promise.reject("Failed to load text")))
       .then(setRawText)
-      .catch(() => setRawText(''));
+      .catch(() => setRawText(""));
   }, [active]);
 
   const updateArticle = (id: string, field: keyof Article, value: string) => {
@@ -112,10 +112,10 @@ export default function CodeEditor() {
       }
       return false;
     };
-    for (const b of structure.books) {
-      for (const t of b.titles) {
-        for (const ch of t.chapters) {
-          if (walkSections(ch.sections)) {
+    for (const b of structure.books || []) {
+      for (const t of b.titles || []) {
+        for (const ch of t.chapters || []) {
+          if (walkSections(ch.sections || [])) {
             setStructure({ ...structure });
             return;
           }
@@ -127,51 +127,60 @@ export default function CodeEditor() {
   const save = () => {
     if (!structure) return;
     fetch(`/api/save-parsed-code/${structure.id}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
       },
       body: JSON.stringify(structure),
     });
   };
 
-  const renderArticles = (sec: CodeSection) => (
-    <div className="ml-4">
-      <List
-        height={Math.min(600, sec.articles.length * ITEM_HEIGHT)}
-        itemCount={sec.articles.length}
-        itemSize={ITEM_HEIGHT}
-        width={"100%"}
-      >
-        {({ index, style }: ListChildComponentProps) => {
-          const a = sec.articles[index];
-          return (
-            <div style={style} key={a.id} className="border p-2 my-2 rounded">
-              <div className="flex space-x-2 mb-1">
-                <input
-                  className="border p-1 w-16"
-                  value={a.number}
-                  onChange={e => updateArticle(a.id, 'number', e.target.value)}
-                />
-                <input
-                  className="border p-1 flex-1"
-                  value={a.title}
-                  onChange={e => updateArticle(a.id, 'title', e.target.value)}
+  const renderArticles = (sec: CodeSection) => {
+    const articles = sec.articles || [];
+    return (
+      <div className="ml-4">
+        <List
+          height={Math.min(600, articles.length * ITEM_HEIGHT)}
+          itemCount={articles.length}
+          itemSize={ITEM_HEIGHT}
+          width={"100%"}
+        >
+          {({ index, style }: ListChildComponentProps) => {
+            const a = articles[index];
+            return (
+              <div style={style} key={a.id} className="border p-2 my-2 rounded">
+                <div className="flex space-x-2 mb-1">
+                  <input
+                    className="border p-1 w-16"
+                    value={a.number}
+                    onChange={(e) =>
+                      updateArticle(a.id, "number", e.target.value)
+                    }
+                  />
+                  <input
+                    className="border p-1 flex-1"
+                    value={a.title}
+                    onChange={(e) =>
+                      updateArticle(a.id, "title", e.target.value)
+                    }
+                  />
+                </div>
+                <textarea
+                  className="border p-1 w-full text-sm"
+                  value={a.content}
+                  onChange={(e) =>
+                    updateArticle(a.id, "content", e.target.value)
+                  }
                 />
               </div>
-              <textarea
-                className="border p-1 w-full text-sm"
-                value={a.content}
-                onChange={e => updateArticle(a.id, 'content', e.target.value)}
-              />
-            </div>
-          );
-        }}
-      </List>
-      {sec.subsections.map(s => renderSection(s))}
-    </div>
-  );
+            );
+          }}
+        </List>
+        {(sec.subsections || []).map((s) => renderSection(s))}
+      </div>
+    );
+  };
 
   const renderSection = (sec: CodeSection) => (
     <details key={sec.id} className="ml-2">
@@ -183,21 +192,21 @@ export default function CodeEditor() {
   const renderChapter = (ch: Chapter) => (
     <details key={ch.id} className="ml-2">
       <summary className="cursor-pointer font-semibold">{ch.title}</summary>
-      {ch.sections.map(sec => renderSection(sec))}
+      {(ch.sections || []).map((sec) => renderSection(sec))}
     </details>
   );
 
   const renderTitle = (t: CodeTitle) => (
     <details key={t.id} className="ml-2">
       <summary className="cursor-pointer font-semibold">{t.title}</summary>
-      {t.chapters.map(ch => renderChapter(ch))}
+      {(t.chapters || []).map((ch) => renderChapter(ch))}
     </details>
   );
 
   const renderBook = (b: Book) => (
     <details key={b.id}>
       <summary className="cursor-pointer font-semibold">{b.title}</summary>
-      {b.titles.map(t => renderTitle(t))}
+      {(b.titles || []).map((t) => renderTitle(t))}
     </details>
   );
 
@@ -208,11 +217,11 @@ export default function CodeEditor() {
   return (
     <div className="space-y-4">
       <div className="border-b mb-4 space-x-2">
-        {codes.map(c => (
+        {codes.map((c) => (
           <button
             key={c.id}
             className={`px-4 py-2 rounded-t ${
-              active === c.id ? 'bg-blue-600 text-white' : 'bg-gray-200'
+              active === c.id ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
             onClick={() => setActive(c.id)}
           >
@@ -221,14 +230,17 @@ export default function CodeEditor() {
         ))}
       </div>
       <div className="space-y-2">
-        {structure.books.map(b => renderBook(b))}
+        {(structure.books || []).map((b) => renderBook(b))}
       </div>
       {rawText && (
         <pre className="whitespace-pre-wrap p-2 bg-white border rounded text-sm">
           {rawText}
         </pre>
       )}
-      <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save}>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+        onClick={save}
+      >
         Save
       </button>
     </div>

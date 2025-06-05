@@ -41,3 +41,6 @@ This file documents changes made to improve the code editor and backend.
 ## Raw code endpoint
 - Added `/api/code-text/:id` in the backend to serve the plain text of each legal code.
 - The React `CodeEditor` fetches this text and shows it below the structured view so the admin can confirm the raw contents.
+## Fix for null sections
+- Parser now initializes Books, CodeTitles, and Chapters with empty slices to prevent null arrays in JSON.
+- CodeEditor guards against missing arrays when rendering.
