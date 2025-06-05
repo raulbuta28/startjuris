@@ -394,5 +394,47 @@
     "title": "DPP 37",
     "image": "carti/cartidpp/37.png",
     "content": "Sample content"
+  },
+  {
+    "id": "inm_1",
+    "title": "INM 1",
+    "image": "carti/cartidpp/19.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "inm_2",
+    "title": "INM 2",
+    "image": "carti/cartidpp/20.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "barou_1",
+    "title": "Barou 1",
+    "image": "carti/1.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "barou_2",
+    "title": "Barou 2",
+    "image": "carti/2.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "not_1",
+    "title": "Notariat 1",
+    "image": "carti/cartidpc/1.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "sng_1",
+    "title": "SNG 1",
+    "image": "carti/cartidp/11.png",
+    "content": "Sample content"
+  },
+  {
+    "id": "sj_1",
+    "title": "StartJuris 1",
+    "image": "carti/default.png",
+    "content": "Sample content"
   }
 ]

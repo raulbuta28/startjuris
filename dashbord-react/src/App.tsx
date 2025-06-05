@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ReactQuill from 'react-quill';
+import BookEditor, { Book as BookType } from './BookEditor';
 
 interface LoginProps {
   onLogin: () => void;
@@ -75,12 +75,7 @@ function Sidebar({ active, onSelect }: SidebarProps) {
   );
 }
 
-interface Book {
-  id: string;
-  title: string;
-  image: string;
-  content: string;
-}
+type Book = BookType;
 
 interface BookCarouselProps {
   title: string;
@@ -111,32 +106,24 @@ function BookCarousel({ title, books, onSelect }: BookCarouselProps) {
 interface MaterieProps {
   books: Book[];
   onUpdate: (books: Book[]) => void;
+  onEdit: (b: Book) => void;
 }
 
-function Materie({ books, onUpdate }: MaterieProps) {
-  const [selected, setSelected] = useState<Book | null>(null);
-  const [form, setForm] = useState({ title: '', image: '', content: '' });
+function Materie({ books, onUpdate, onEdit }: MaterieProps) {
 
   const categories = [
     { prefix: 'civil', label: 'Drept civil' },
     { prefix: 'dpc', label: 'Drept procesual civil' },
     { prefix: 'dp_', label: 'Drept penal' },
     { prefix: 'dpp', label: 'Drept procesual penal' },
+    { prefix: 'inm', label: 'Admitere INM' },
+    { prefix: 'barou', label: 'Admitere Barou' },
+    { prefix: 'not', label: 'Admitere INR (notariat)' },
+    { prefix: 'sng', label: 'Admitere SNG' },
+    { prefix: 'sj', label: 'Colectia startJuris' },
   ];
 
   const filter = (p: string) => books.filter((b) => b.id.startsWith(p));
-
-  const handleSelect = (b: Book) => {
-    setSelected(b);
-    setForm({ title: b.title, image: b.image, content: b.content });
-  };
-
-  const save = () => {
-    if (!selected) return;
-    const updated = books.map((b) => (b.id === selected.id ? { ...b, ...form } : b));
-    onUpdate(updated);
-    setSelected(null);
-  };
 
   return (
     <div className="space-y-6">
@@ -145,31 +132,9 @@ function Materie({ books, onUpdate }: MaterieProps) {
           key={cat.prefix}
           title={cat.label}
           books={filter(cat.prefix)}
-          onSelect={handleSelect}
+          onSelect={onEdit}
         />
       ))}
-      {selected && (
-        <div className="bg-white border p-4 rounded space-y-4">
-          <h3 className="font-semibold text-lg">Edit {selected.title}</h3>
-          <input
-            className="w-full border p-2 rounded"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Title"
-          />
-          <input
-            className="w-full border p-2 rounded"
-            value={form.image}
-            onChange={(e) => setForm({ ...form, image: e.target.value })}
-            placeholder="Image URL"
-          />
-          <ReactQuill theme="snow" value={form.content} onChange={(v) => setForm({ ...form, content: v })} />
-          <div className="flex space-x-2">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save}>Save</button>
-            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setSelected(null)}>Cancel</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -177,6 +142,7 @@ function Materie({ books, onUpdate }: MaterieProps) {
 function Dashboard() {
   const [books, setBooks] = useState<Book[]>([]);
   const [section, setSection] = useState('materie');
+  const [editing, setEditing] = useState<Book | null>(null);
 
   useEffect(() => {
     fetch('/api/books')
@@ -194,8 +160,21 @@ function Dashboard() {
   };
 
   const renderSection = () => {
+    if (editing) {
+      return (
+        <BookEditor
+          book={editing}
+          onSave={(b) => {
+            const updated = books.map((x) => (x.id === b.id ? b : x));
+            updateBooks(updated);
+            setEditing(null);
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      );
+    }
     if (section === 'materie') {
-      return <Materie books={books} onUpdate={updateBooks} />;
+      return <Materie books={books} onUpdate={updateBooks} onEdit={setEditing} />;
     }
     const s = sections.find((x) => x.key === section);
     return (
