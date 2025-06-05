@@ -55,10 +55,22 @@ export default function CodeEditor() {
 
   useEffect(() => {
     fetch(`/api/codes/${selected}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('failed to load code');
+        return r.json();
+      })
       .then((data: ParsedCode) => {
-        setCode(data);
-        setJson(JSON.stringify(data, null, 2));
+        if (data && Array.isArray(data.books)) {
+          setCode(data);
+          setJson(JSON.stringify(data, null, 2));
+        } else {
+          setCode(null);
+          setJson('');
+        }
+      })
+      .catch(() => {
+        setCode(null);
+        setJson('');
       });
   }, [selected]);
 
@@ -181,7 +193,7 @@ export default function CodeEditor() {
         />
       ) : (
         <div className="space-y-2">
-          {code && code.books.map(b => renderBook(b))}
+          {code?.books?.map(b => renderBook(b))}
         </div>
       )}
       <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save}>
