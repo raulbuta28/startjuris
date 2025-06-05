@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactQuill from 'react-quill';
 
 interface LoginProps {
   onLogin: () => void;
@@ -18,25 +19,23 @@ function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="login">
-      <h3>Admin Login</h3>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button style={{ marginTop: 10 }} type="submit">
+    <div className="max-w-sm mx-auto mt-40 bg-white p-6 rounded shadow">
+      <h3 className="text-xl font-semibold mb-4 text-center">Admin Login</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="w-full border p-2 rounded"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button className="w-full bg-blue-600 text-white py-2 rounded" type="submit">
           Login
         </button>
       </form>
@@ -47,10 +46,9 @@ function Login({ onLogin }: LoginProps) {
 const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
   { key: 'codes', label: 'Codurile actualizate', icon: 'library_books' },
-  { key: 'abonamente', label: 'Abonamente', icon: 'subscriptions' },
-  { key: 'comportament', label: 'Comportament', icon: 'psychology' },
-  { key: 'utilizatori', label: 'Utilizatori', icon: 'people' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
+  { key: 'grile', label: 'Grile', icon: 'view_list' },
+  { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
 ];
 
 interface SidebarProps {
@@ -60,15 +58,15 @@ interface SidebarProps {
 
 function Sidebar({ active, onSelect }: SidebarProps) {
   return (
-    <div className="sidebar">
+    <div className="w-56 bg-white border-r h-full">
       <ul>
         {sections.map((s) => (
           <li
             key={s.key}
-            className={active === s.key ? 'active' : ''}
+            className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 ${active === s.key ? 'bg-gray-100' : ''}`}
             onClick={() => onSelect(s.key)}
           >
-            <span className="material-icons">{s.icon}</span>
+            <span className="material-icons mr-3">{s.icon}</span>
             {s.label}
           </li>
         ))}
@@ -92,13 +90,17 @@ interface BookCarouselProps {
 
 function BookCarousel({ title, books, onSelect }: BookCarouselProps) {
   return (
-    <div>
-      <h3>{title}</h3>
-      <div className="carousel">
+    <div className="mb-6">
+      <h3 className="font-semibold text-lg mb-2">{title}</h3>
+      <div className="flex space-x-3 overflow-x-auto pb-2">
         {books.map((b) => (
-          <div className="book-card" key={b.id} onClick={() => onSelect(b)}>
-            <img src={b.image} alt={b.title} />
-            <div>{b.title}</div>
+          <div
+            className="w-36 flex-shrink-0 bg-white border rounded p-2 cursor-pointer"
+            key={b.id}
+            onClick={() => onSelect(b)}
+          >
+            <img className="w-full" src={b.image} alt={b.title} />
+            <div className="mt-2 text-sm text-center">{b.title}</div>
           </div>
         ))}
       </div>
@@ -137,7 +139,7 @@ function Materie({ books, onUpdate }: MaterieProps) {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {categories.map((cat) => (
         <BookCarousel
           key={cat.prefix}
@@ -147,26 +149,25 @@ function Materie({ books, onUpdate }: MaterieProps) {
         />
       ))}
       {selected && (
-        <div className="editor">
-          <h3>Edit {selected.title}</h3>
+        <div className="bg-white border p-4 rounded space-y-4">
+          <h3 className="font-semibold text-lg">Edit {selected.title}</h3>
           <input
+            className="w-full border p-2 rounded"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Title"
           />
           <input
+            className="w-full border p-2 rounded"
             value={form.image}
             onChange={(e) => setForm({ ...form, image: e.target.value })}
             placeholder="Image URL"
           />
-          <textarea
-            rows={6}
-            value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            placeholder="Content"
-          />
-          <button onClick={save}>Save</button>
-          <button onClick={() => setSelected(null)}>Cancel</button>
+          <ReactQuill theme="snow" value={form.content} onChange={(v) => setForm({ ...form, content: v })} />
+          <div className="flex space-x-2">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save}>Save</button>
+            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setSelected(null)}>Cancel</button>
+          </div>
         </div>
       )}
     </div>
@@ -198,17 +199,17 @@ function Dashboard() {
     }
     const s = sections.find((x) => x.key === section);
     return (
-      <div className="placeholder">
-        <h2>{s?.label}</h2>
+      <div className="p-6">
+        <h2 className="text-xl font-semibold mb-2">{s?.label}</h2>
         <p>Coming soon...</p>
       </div>
     );
   };
 
   return (
-    <div className="dashboard">
+    <div className="flex h-screen">
       <Sidebar active={section} onSelect={setSection} />
-      <div className="content">{renderSection()}</div>
+      <div className="flex-1 overflow-y-auto p-6">{renderSection()}</div>
     </div>
   );
 }
@@ -219,4 +220,3 @@ function App() {
 }
 
 export default App;
-

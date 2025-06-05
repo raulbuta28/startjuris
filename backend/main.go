@@ -80,8 +80,8 @@ func getDashboardPath() string {
 	// is the common case when running `go run .` during development
 	if wd, err := os.Getwd(); err == nil {
 		candidates := []string{
-			filepath.Join(wd, "dashbord"),
-			filepath.Join(wd, "..", "dashbord"),
+			filepath.Join(wd, "dashbord-react"),
+			filepath.Join(wd, "..", "dashbord-react"),
 		}
 		for _, p := range candidates {
 			if _, err := os.Stat(p); err == nil {
@@ -94,8 +94,8 @@ func getDashboardPath() string {
 	// server is built and executed from another directory.
 	if exe, err := os.Executable(); err == nil {
 		candidates := []string{
-			filepath.Join(filepath.Dir(exe), "dashbord"),
-			filepath.Join(filepath.Dir(exe), "..", "dashbord"),
+			filepath.Join(filepath.Dir(exe), "dashbord-react"),
+			filepath.Join(filepath.Dir(exe), "..", "dashbord-react"),
 		}
 		for _, p := range candidates {
 			if _, err := os.Stat(p); err == nil {
@@ -105,7 +105,7 @@ func getDashboardPath() string {
 	}
 
 	// final fallback keeps previous behaviour
-	return "../dashbord"
+	return "../dashbord-react"
 }
 
 func saveBooks(c *gin.Context) {
@@ -119,7 +119,7 @@ func saveBooks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile("../dashbord/books.json", data, 0644); err != nil {
+	if err := os.WriteFile("../dashbord-react/books.json", data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -127,7 +127,7 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-	data, err := ioutil.ReadFile("../dashbord/books.json")
+	data, err := ioutil.ReadFile("../dashbord-react/books.json")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
