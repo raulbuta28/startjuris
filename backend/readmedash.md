@@ -37,3 +37,7 @@ This file documents changes made to improve the code editor and backend.
 
 ## Final adjustment
 - The profile verification on app load now retains the stored token unless the server explicitly returns a 401 response. Network or server errors no longer force a logout, preventing the admin from being kicked out when opening the code editor.
+
+## Raw code endpoint
+- Added `/api/code-text/:id` in the backend to serve the plain text of each legal code.
+- The React `CodeEditor` fetches this text and shows it below the structured view so the admin can confirm the raw contents.

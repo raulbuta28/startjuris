@@ -565,6 +565,23 @@ func getCode(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
 }
 
+// getCodeTextHandler serves the raw text of a legal code so the dashboard can
+// display the original file contents when needed.
+func getCodeTextHandler(c *gin.Context) {
+	id := c.Param("id")
+	info, ok := codeFiles[id]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "code not found"})
+		return
+	}
+	data, err := os.ReadFile(info.path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", data)
+}
+
 func saveCode(c *gin.Context) {
 	id := c.Param("id")
 	var payload SimpleCode
@@ -1123,6 +1140,7 @@ func main() {
 		api.GET("/files", listFiles)
 		api.GET("/codes", listCodes)
 		api.GET("/codes/:id", getCode)
+		api.GET("/code-text/:id", getCodeTextHandler)
 		api.GET("/parsed-code/:id", getParsedCodeHandler)
 		api.POST("/save-parsed-code/:id", saveParsedCodeHandler)
 
