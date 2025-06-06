@@ -46,6 +46,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const articleRe = /^Articolul\s+(\d+)/i;
   const noteRe = /^Not[aă]/i;
   const decisionRe = /^Decizie/i;
+  const editRe = /^Edit\b/i;
   // Lines that start with "(la" denote amendment notes. Previously, any line
   // starting with "(" was treated as an amendment, which incorrectly captured
   // article paragraphs like "(1)" or "(2)". Restrict the pattern so only
@@ -58,6 +59,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   let sectionOrder = 0;
   let subOrder = 0;
   let articleOrder = 0;
+  let lastArticleNum = 0;
 
   let currentBook: Book | null = null;
   let currentTitle: CodeTitle | null = null;
@@ -98,7 +100,8 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
         !articleRe.test(line) &&
         !noteRe.test(line) &&
         !decisionRe.test(line) &&
-        !amendRe.test(line)
+        !amendRe.test(line) &&
+        !editRe.test(line)
       ) {
         if (currentArticle && currentArticle.notes.length) {
           currentArticle.notes[currentArticle.notes.length - 1] += "\n" + line;
@@ -109,7 +112,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
       }
     }
 
-    if (noteRe.test(line) || decisionRe.test(line) || amendRe.test(line)) {
+    if (noteRe.test(line) || decisionRe.test(line) || amendRe.test(line) || editRe.test(line)) {
       if (currentArticle) {
         currentArticle.notes.push(line);
         collectingNote = true;
@@ -235,8 +238,21 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
 
     const artMatch = line.match(articleRe);
     if (artMatch) {
+      const numVal = parseInt(artMatch[1], 10);
+      if (numVal <= lastArticleNum) {
+        if (currentArticle) {
+          if (!collectingNote) {
+            currentArticle.notes.push(line);
+          } else if (currentArticle.notes.length) {
+            currentArticle.notes[currentArticle.notes.length - 1] += "\n" + line;
+          }
+          collectingNote = true;
+        }
+        continue;
+      }
       finishArticle();
       articleOrder++;
+      lastArticleNum = numVal;
       const num = artMatch[1] || "";
       if (!currentSection && !currentSub) {
         // create default section
