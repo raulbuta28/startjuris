@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
 import CodeEditor from './CodeEditor';
+import RawCodeEditor from './RawCodeEditor';
 
 interface LoginProps {
   onLogin: () => void;
@@ -65,6 +66,7 @@ function Login({ onLogin }: LoginProps) {
 const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
   { key: 'codes', label: 'Codurile actualizate', icon: 'library_books' },
+  { key: 'codes2', label: 'Codurile 2', icon: 'description' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
@@ -337,6 +339,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'codes') {
       return <CodeEditor />;
+    }
+    if (section === 'codes2') {
+      return <RawCodeEditor />;
     }
     const s = sections.find((x) => x.key === section);
     return (
