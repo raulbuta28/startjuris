@@ -68,3 +68,6 @@ This file documents changes made to improve the code editor and backend.
   to a map and gracefully handles missing lists when rendering. This prevents
   `List<dynamic>`/`String` cast errors when loading the parsed codes from the
   dashboard.
+- CodeEditor now shows articles as plain text with a uniform font and a compact
+  layout. Each article has an **Edit** button on the right which turns into a
+  **Save** button when modifying the text.

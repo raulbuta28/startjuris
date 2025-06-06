@@ -135,63 +135,78 @@ export default function CodeEditor() {
         {articles.map((a) => {
           const editing = editingId === a.id;
           return (
-            <div key={a.id} className="border p-2 my-2 rounded">
-              {editing ? (
-                <>
-                  <div className="flex space-x-2 mb-1">
-                    <input
-                      className="border p-1 w-16"
-                      value={a.number}
-                      onChange={(e) => updateArticle(a.id, "number", e.target.value)}
+            <div key={a.id} className="py-1 flex items-start">
+              <div className="flex-1 text-sm space-y-1">
+                {editing ? (
+                  <>
+                    <div className="flex space-x-2">
+                      <input
+                        className="border p-1 w-16"
+                        value={a.number}
+                        onChange={(e) => updateArticle(a.id, "number", e.target.value)}
+                      />
+                      <input
+                        className="border p-1 flex-1"
+                        value={a.title}
+                        onChange={(e) => updateArticle(a.id, "title", e.target.value)}
+                      />
+                    </div>
+                    <textarea
+                      className="border p-1 w-full"
+                      value={a.content}
+                      onChange={(e) => updateArticle(a.id, "content", e.target.value)}
                     />
-                    <input
-                      className="border p-1 flex-1"
-                      value={a.title}
-                      onChange={(e) => updateArticle(a.id, "title", e.target.value)}
-                    />
-                  </div>
-                  <textarea
-                    className="border p-1 w-full text-sm"
-                    value={a.content}
-                    onChange={(e) => updateArticle(a.id, "content", e.target.value)}
-                  />
+                    {a.notes &&
+                      a.notes.map((n, idx) => (
+                        <div key={idx} className="border border-gray-300 bg-gray-50 p-2 text-xs">
+                          {n}
+                        </div>
+                      ))}
+                    {a.references &&
+                      a.references.map((r, idx) => (
+                        <div key={`ref-${idx}`} className="border border-gray-300 bg-gray-50 p-2 text-xs">
+                          {r}
+                        </div>
+                      ))}
+                  </>
+                ) : (
+                  <>
+                    <div className="font-semibold">
+                      {a.number} {a.title}
+                    </div>
+                    <div className="whitespace-pre-wrap">{a.content}</div>
+                    {a.notes &&
+                      a.notes.map((n, idx) => (
+                        <div key={idx} className="border border-gray-300 bg-gray-50 p-2 text-xs">
+                          {n}
+                        </div>
+                      ))}
+                    {a.references &&
+                      a.references.map((r, idx) => (
+                        <div key={`ref-${idx}`} className="border border-gray-300 bg-gray-50 p-2 text-xs">
+                          {r}
+                        </div>
+                      ))}
+                  </>
+                )}
+              </div>
+              <div className="ml-2">
+                {editing ? (
                   <button
-                    className="mt-1 px-2 py-1 bg-blue-600 text-white rounded"
-                    onClick={() => setEditingId(null)}
+                    className="text-blue-600"
+                    onClick={() => {
+                      setEditingId(null);
+                      save();
+                    }}
                   >
-                    Done
+                    Save
                   </button>
-                </>
-              ) : (
-                <>
-                  <div className="font-semibold">{a.number} {a.title}</div>
-                  <pre className="whitespace-pre-wrap text-sm mb-2">{a.content}</pre>
-                  {a.notes &&
-                    a.notes.map((n, idx) => (
-                      <div
-                        key={idx}
-                        className="border border-gray-300 bg-gray-50 p-2 rounded text-xs mb-2"
-                      >
-                        {n}
-                      </div>
-                    ))}
-                  {a.references &&
-                    a.references.map((r, idx) => (
-                      <div
-                        key={`ref-${idx}`}
-                        className="border border-gray-300 bg-gray-50 p-2 rounded text-xs mb-2"
-                      >
-                        {r}
-                      </div>
-                    ))}
-                  <button
-                    className="mt-1 px-2 py-1 bg-gray-200 rounded"
-                    onClick={() => setEditingId(a.id)}
-                  >
+                ) : (
+                  <button className="text-blue-600" onClick={() => setEditingId(a.id)}>
                     Edit
                   </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
           );
         })}
@@ -233,7 +248,7 @@ export default function CodeEditor() {
   if (!structure) return <div>No data</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-sans text-sm">
       <div className="border-b mb-4 space-x-2">
         {codes.map((c) => (
           <button
