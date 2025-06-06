@@ -202,28 +202,26 @@ export default function CodeEditor() {
           )}
 
           <AnimatePresence>
-            {(a.notes || []).map((n, idx) => (
+            {(a.notes?.length || a.references?.length) ? (
               <motion.div
-                key={idx}
-                className="p-2 text-xs rounded bg-gradient-to-r from-yellow-50 to-blue-50"
+                key="notes"
+                className="p-2 text-xs rounded bg-gradient-to-r from-yellow-50 to-blue-50 space-y-1"
                 initial={{ opacity: 0, y: -2 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -2 }}
               >
-                {n}
+                {(a.notes || []).map((n, idx) => (
+                  <div key={idx} className="whitespace-pre-wrap leading-snug">
+                    {n}
+                  </div>
+                ))}
+                {(a.references || []).map((r, idx) => (
+                  <div key={`ref-${idx}`} className="whitespace-pre-wrap leading-snug">
+                    {r}
+                  </div>
+                ))}
               </motion.div>
-            ))}
-            {(a.references || []).map((r, idx) => (
-              <motion.div
-                key={`ref-${idx}`}
-                className="p-2 text-xs rounded bg-gradient-to-r from-yellow-50 to-blue-50"
-                initial={{ opacity: 0, y: -2 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -2 }}
-              >
-                {r}
-              </motion.div>
-            ))}
+            ) : null}
           </AnimatePresence>
           <div className="text-right">
             {editing ? (
