@@ -115,6 +115,14 @@ export default function RawCodeEditor() {
             <>
               <div className="font-semibold">{`Articolul ${a.number} - ${a.title}`}</div>
               <div className="whitespace-pre-wrap leading-snug">{a.content}</div>
+              {a.notes.map((n, i) => (
+                <div
+                  key={i}
+                  className="border text-xs rounded p-1 mt-1 bg-gradient-to-r from-yellow-50 to-blue-50"
+                >
+                  {n}
+                </div>
+              ))}
             </>
           )}
           <div className="text-right">
