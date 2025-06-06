@@ -152,7 +152,7 @@ export default function CodeEditor() {
                       />
                     </div>
                     <textarea
-                      className="border p-1 w-full"
+                      className="p-1 w-full"
                       value={a.content}
                       onChange={(e) => updateArticle(a.id, "content", e.target.value)}
                     />
@@ -172,7 +172,7 @@ export default function CodeEditor() {
                 ) : (
                   <>
                     <div className="font-semibold">
-                      {a.number} {a.title}
+                      {`Articolul ${a.number} - ${a.title}`}
                     </div>
                     <div className="whitespace-pre-wrap">{a.content}</div>
                     {a.notes &&
