@@ -130,7 +130,7 @@ export default function CodeEditor() {
 
   const renderArticles = (sec: CodeSection) => (
     <div className="ml-4 space-y-2">
-      {sec.articles.map((a) => {
+      {sec.articles?.map((a) => {
         const editing = editingId === a.id
         return (
           <Card key={a.id} className="p-2">
@@ -201,7 +201,7 @@ export default function CodeEditor() {
           </Card>
         )
       })}
-      {sec.subsections.map((s) => (
+      {sec.subsections?.map((s) => (
         <div key={s.id} className="ml-4">
           <h5 className="font-semibold mt-4">{s.title}</h5>
           {renderArticles(s)}
@@ -213,7 +213,7 @@ export default function CodeEditor() {
   const renderChapter = (ch: Chapter) => (
     <div key={ch.id} className="ml-2">
       <h4 className="font-semibold mt-4">{ch.title}</h4>
-      {ch.sections.map((sec) => (
+      {ch.sections?.map((sec) => (
         <div key={sec.id} className="ml-2">
           <h5 className="font-semibold mt-4">{sec.title}</h5>
           {renderArticles(sec)}
@@ -225,14 +225,14 @@ export default function CodeEditor() {
   const renderTitle = (t: CodeTitle) => (
     <div key={t.id} className="ml-2">
       <h3 className="font-semibold mt-4">{t.title}</h3>
-      {t.chapters.map((ch) => renderChapter(ch))}
+      {t.chapters?.map((ch) => renderChapter(ch))}
     </div>
   )
 
   const renderBook = (b: Book) => (
     <div key={b.id}>
       <h2 className="font-bold mt-6">{b.title}</h2>
-      {b.titles.map((t) => renderTitle(t))}
+      {b.titles?.map((t) => renderTitle(t))}
     </div>
   )
 
@@ -243,7 +243,7 @@ export default function CodeEditor() {
   return (
     <div className="space-y-4 font-sans text-sm">
       <div className="border-b mb-4 space-x-2">
-        {codes.map((c) => (
+        {codes?.map((c) => (
           <Button
             key={c.id}
             variant={active === c.id ? "default" : "secondary"}
@@ -254,7 +254,7 @@ export default function CodeEditor() {
         ))}
       </div>
       <div className="space-y-2">
-        {structure.books.map((b) => renderBook(b))}
+        {structure.books?.map((b) => renderBook(b))}
       </div>
       <Button onClick={save}>Save</Button>
     </div>
