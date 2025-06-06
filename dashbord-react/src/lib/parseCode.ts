@@ -3,6 +3,7 @@ export interface Article {
   number: string;
   title: string;
   content: string;
+  notes: string[];
 }
 
 export interface CodeSection {
@@ -43,6 +44,8 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const sectionRe = /^Sec[tț]iunea/i;
   const subsectionRe = /^Subsec[tț]iunea/i;
   const articleRe = /^Articolul\s+(\d+)/i;
+  const noteRe = /^Not[aă]/i;
+  const amendRe = /^\(la\s.*|^\(/i;
 
   let bookOrder = 0;
   let titleOrder = 0;
@@ -75,6 +78,13 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   for (let raw of lines) {
     const line = raw.trim();
     if (!line) continue;
+
+    if (noteRe.test(line) || amendRe.test(line)) {
+      if (currentArticle) {
+        currentArticle.notes.push(line);
+      }
+      continue;
+    }
 
     if (bookRe.test(line)) {
       finishArticle();
@@ -228,6 +238,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
         number: num,
         title: "",
         content: "",
+        notes: [],
       };
       expectTitle = true;
       continue;
