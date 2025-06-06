@@ -296,6 +296,43 @@ func saveParsedCodeHandler(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// getCodeTextJSON returns the stored structured code text, if any.
+func getCodeTextJSON(c *gin.Context) {
+	id := c.Param("id")
+	path := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("codetext_%s.json", id))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
+	}
+	c.Data(http.StatusOK, "application/json", data)
+}
+
+// saveCodeTextJSON stores the structured code text as JSON.
+func saveCodeTextJSON(c *gin.Context) {
+	id := c.Param("id")
+	var payload interface{}
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	path := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("codetext_%s.json", id))
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
 func loadParsedCode(id string) (*ParsedCode, error) {
 	if pc, ok := cacheGet(id); ok {
 		return pc, nil
@@ -1141,6 +1178,8 @@ func main() {
 		api.GET("/codes", listCodes)
 		api.GET("/codes/:id", getCode)
 		api.GET("/code-text/:id", getCodeTextHandler)
+		api.GET("/code-text-json/:id", getCodeTextJSON)
+		api.POST("/save-code-text/:id", saveCodeTextJSON)
 		api.GET("/parsed-code/:id", getParsedCodeHandler)
 		api.POST("/save-parsed-code/:id", saveParsedCodeHandler)
 
