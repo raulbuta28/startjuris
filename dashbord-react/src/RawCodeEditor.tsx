@@ -79,6 +79,31 @@ export default function RawCodeEditor() {
     setStructures((s) => ({ ...s, [activeCode]: parsed }));
   };
 
+  const saveAndPublish = () => {
+    const raw = rawTexts[activeCode] || "";
+    const parsed = normalizeCode(parseRawCode(raw, activeCode, activeCode));
+    fetch(`/api/save-parsed-code/${activeCode}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      },
+      body: JSON.stringify(parsed),
+    })
+      .then(() => {
+        setStructures((s) => ({ ...s, [activeCode]: parsed }));
+        setRawTexts((t) => ({ ...t, [activeCode]: "" }));
+        setMode("published");
+      })
+      .catch(() => {});
+  };
+
+  const undo = () => {
+    setRawTexts((t) => ({ ...t, [activeCode]: "" }));
+    setStructures((s) => ({ ...s, [activeCode]: null }));
+    setMode("edit");
+  };
+
   const structure = structures[activeCode];
 
   const updateArticle = (id: string, field: keyof Article, value: string) => {
@@ -438,6 +463,9 @@ export default function RawCodeEditor() {
         >
           Cod publicat in flutter
         </Button>
+        <Button variant="secondary" onClick={undo}>
+          Undo
+        </Button>
       </div>
       {mode === "edit" && (
         <>
@@ -449,11 +477,16 @@ export default function RawCodeEditor() {
             }
             placeholder="Paste raw code text here"
           />
-          <Button onClick={parse}>Parse</Button>
+          <div className="space-x-2 mt-2">
+            <Button onClick={parse}>Parse</Button>
+            <Button onClick={saveAndPublish}>Salveaza si publica</Button>
+          </div>
         </>
       )}
-      {structure && (
-        <div className="space-y-2 mt-4">{(structure.books ?? []).map((b) => renderBook(b))}</div>
+      {mode === "published" && structure && (
+        <div className="space-y-2 mt-4">
+          {(structure.books ?? []).map((b) => renderBook(b))}
+        </div>
       )}
     </div>
   );
