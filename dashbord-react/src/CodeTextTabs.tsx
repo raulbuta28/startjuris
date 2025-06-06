@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { filterCodeText } from './codurilelazi/filtru';
 
 interface CodeTab {
   id: string;
@@ -29,7 +30,8 @@ export default function CodeTextTabs() {
         return r.text();
       })
       .then((txt) => {
-        setTexts((t) => ({ ...t, [active]: txt }));
+        const filtered = filterCodeText(txt);
+        setTexts((t) => ({ ...t, [active]: filtered }));
       })
       .catch((err: any) => {
         setError(err.message || 'Error');
