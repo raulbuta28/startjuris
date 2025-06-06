@@ -66,6 +66,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   let currentSub: CodeSection | null = null;
   let currentArticle: Article | null = null;
   let expectTitle = false;
+  let collectingNote = false;
 
   const code: ParsedCode = { id, title, books: [] };
 
@@ -82,11 +83,36 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const lines = text.split(/\r?\n/);
   for (let raw of lines) {
     const line = raw.trim();
-    if (!line) continue;
+    if (!line) {
+      collectingNote = false;
+      continue;
+    }
+
+    if (collectingNote) {
+      if (
+        !bookRe.test(line) &&
+        !titleRe.test(line) &&
+        !chapterRe.test(line) &&
+        !sectionRe.test(line) &&
+        !subsectionRe.test(line) &&
+        !articleRe.test(line) &&
+        !noteRe.test(line) &&
+        !decisionRe.test(line) &&
+        !amendRe.test(line)
+      ) {
+        if (currentArticle && currentArticle.notes.length) {
+          currentArticle.notes[currentArticle.notes.length - 1] += "\n" + line;
+        }
+        continue;
+      } else {
+        collectingNote = false;
+      }
+    }
 
     if (noteRe.test(line) || decisionRe.test(line) || amendRe.test(line)) {
       if (currentArticle) {
         currentArticle.notes.push(line);
+        collectingNote = true;
       }
       continue;
     }
