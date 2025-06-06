@@ -112,24 +112,34 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			continue
 		}
 
-	ProcessLine:
-		if collectingNote {
-			if noteRe.MatchString(line) {
-				if len(noteLines) > 0 {
-					currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-				}
-				noteLines = []string{line}
-				continue
-			}
-			if bookRe.MatchString(line) || titleRe.MatchString(line) || chapterRe.MatchString(line) || sectionRe.MatchString(line) || subsectionRe.MatchString(line) || articleRe.MatchString(line) {
-				currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-				noteLines = nil
-				collectingNote = false
-				goto ProcessLine
-			}
-			noteLines = append(noteLines, line)
-			continue
-		}
+       ProcessLine:
+               if collectingNote {
+                       if noteRe.MatchString(line) {
+                               if len(noteLines) > 0 && currentArticle != nil {
+                                       currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+                               }
+                               if currentArticle != nil {
+                                       noteLines = []string{line}
+                                       continue
+                               }
+                               // discard notes encountered outside any article
+                               noteLines = nil
+                               collectingNote = false
+                               continue
+                       }
+                       if bookRe.MatchString(line) || titleRe.MatchString(line) || chapterRe.MatchString(line) || sectionRe.MatchString(line) || subsectionRe.MatchString(line) || articleRe.MatchString(line) {
+                               if len(noteLines) > 0 && currentArticle != nil {
+                                       currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+                               }
+                               noteLines = nil
+                               collectingNote = false
+                               goto ProcessLine
+                       }
+                       if currentArticle != nil {
+                               noteLines = append(noteLines, line)
+                       }
+                       continue
+               }
 
 		switch {
 		case bookRe.MatchString(line):
@@ -331,9 +341,9 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 		}
 	}
 
-	if collectingNote && len(noteLines) > 0 {
-		currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-	}
+       if collectingNote && len(noteLines) > 0 && currentArticle != nil {
+               currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+       }
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
