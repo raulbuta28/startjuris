@@ -103,9 +103,31 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 
 	var bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder int
 
+	var collectingNote bool
+	var noteLines []string
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
+			continue
+		}
+
+	ProcessLine:
+		if collectingNote {
+			if noteRe.MatchString(line) {
+				if len(noteLines) > 0 {
+					currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+				}
+				noteLines = []string{line}
+				continue
+			}
+			if bookRe.MatchString(line) || titleRe.MatchString(line) || chapterRe.MatchString(line) || sectionRe.MatchString(line) || subsectionRe.MatchString(line) || articleRe.MatchString(line) {
+				currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+				noteLines = nil
+				collectingNote = false
+				goto ProcessLine
+			}
+			noteLines = append(noteLines, line)
 			continue
 		}
 
@@ -281,6 +303,10 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 				currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Order: articleOrder}
 			}
 			expectTitle = true
+		case noteRe.MatchString(line):
+			collectingNote = true
+			noteLines = []string{line}
+			continue
 		default:
 			if currentArticle != nil {
 				if strings.HasPrefix(line, "(") {
@@ -289,8 +315,6 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 					} else {
 						currentArticle.Content = line
 					}
-				} else if noteRe.MatchString(line) {
-					currentArticle.Notes = append(currentArticle.Notes, line)
 				} else if refRe.MatchString(strings.ToLower(line)) {
 					currentArticle.References = append(currentArticle.References, line)
 				} else if expectTitle {
@@ -305,6 +329,10 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 				}
 			}
 		}
+	}
+
+	if collectingNote && len(noteLines) > 0 {
+		currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
 	}
 
 	if err := scanner.Err(); err != nil {
