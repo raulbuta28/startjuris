@@ -52,16 +52,22 @@ export default function CodeTextTabs() {
   const fetchData = () => {
     setLoading(true);
     setError('');
-    fetch(`/api/code-text/${active}`)
+    fetch(`/api/code-text-json/${active}`)
       .then(async (r) => {
-        if (!r.ok) throw new Error('Failed to load');
-        return r.text();
+        if (r.ok) {
+          return r.json();
+        }
+        if (r.status === 404) {
+          const res = await fetch(`/api/code-text/${active}`);
+          if (!res.ok) throw new Error('Failed to load');
+          const txt = await res.text();
+          const filtered = filterCodeText(txt);
+          return parseText(filtered);
+        }
+        throw new Error('Failed to load');
       })
-      .then((txt) => {
-        const filtered = filterCodeText(txt);
-        console.log('Filtered text:', filtered);
-        const structured = parseText(filtered);
-        setTexts((t) => ({ ...t, [active]: structured }));
+      .then((data) => {
+        setTexts((t) => ({ ...t, [active]: data }));
       })
       .catch((err: any) => {
         setError(err.message || 'Error');
@@ -76,6 +82,18 @@ export default function CodeTextTabs() {
       return newTexts;
     });
     fetchData();
+  };
+
+  const handleSaveAll = () => {
+    const data = texts[active];
+    fetch(`/api/save-code-text/${active}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: JSON.stringify(data),
+    }).catch(() => {});
   };
 
   function parseText(text: string): Section[] {
@@ -537,6 +555,9 @@ export default function CodeTextTabs() {
         ))}
         <Button variant="outline" onClick={handleRefresh}>
           Reîmprospătează
+        </Button>
+        <Button variant="outline" onClick={handleSaveAll}>
+          Salvează
         </Button>
       </div>
       {loading ? (
