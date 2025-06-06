@@ -46,7 +46,11 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const articleRe = /^Articolul\s+(\d+)/i;
   const noteRe = /^Not[aă]/i;
   const decisionRe = /^Decizie/i;
-  const amendRe = /^\(la\s.*|^\(/i;
+  // Lines that start with "(la" denote amendment notes. Previously, any line
+  // starting with "(" was treated as an amendment, which incorrectly captured
+  // article paragraphs like "(1)" or "(2)". Restrict the pattern so only
+  // explicit amendment notes are matched.
+  const amendRe = /^\(la\s.*$/i;
 
   let bookOrder = 0;
   let titleOrder = 0;
