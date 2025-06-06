@@ -14,23 +14,32 @@ import {
 // ensure all Article objects contain a notes array so optional or null values
 // from the backend don't crash the editor when we call .map() on them
 function normalizeCode(code: ParsedCode): ParsedCode {
-  const walkSections = (sections: CodeSection[]) => {
+  const walkSections = (sections?: CodeSection[]) => {
+    if (!Array.isArray(sections)) return;
     for (const sec of sections) {
+      if (!Array.isArray(sec.articles)) sec.articles = [];
       for (const art of sec.articles) {
         if (!Array.isArray(art.notes)) {
           art.notes = [];
         }
       }
+      if (!Array.isArray(sec.subsections)) sec.subsections = [];
       walkSections(sec.subsections);
     }
   };
+
+  if (!Array.isArray(code.books)) code.books = [];
   for (const b of code.books) {
+    if (!Array.isArray(b.titles)) b.titles = [];
     for (const t of b.titles) {
+      if (!Array.isArray(t.chapters)) t.chapters = [];
       for (const ch of t.chapters) {
+        if (!Array.isArray(ch.sections)) ch.sections = [];
         walkSections(ch.sections);
       }
     }
   }
+
   return code;
 }
 
