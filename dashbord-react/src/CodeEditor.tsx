@@ -5,6 +5,8 @@ interface Article {
   number: string;
   title: string;
   content: string;
+  notes?: string[];
+  references?: string[];
 }
 
 interface CodeSection {
@@ -163,7 +165,25 @@ export default function CodeEditor() {
               ) : (
                 <>
                   <div className="font-semibold">{a.number} {a.title}</div>
-                  <pre className="whitespace-pre-wrap text-sm">{a.content}</pre>
+                  <pre className="whitespace-pre-wrap text-sm mb-2">{a.content}</pre>
+                  {a.notes &&
+                    a.notes.map((n, idx) => (
+                      <div
+                        key={idx}
+                        className="border border-gray-300 bg-gray-50 p-2 rounded text-xs mb-2"
+                      >
+                        {n}
+                      </div>
+                    ))}
+                  {a.references &&
+                    a.references.map((r, idx) => (
+                      <div
+                        key={`ref-${idx}`}
+                        className="border border-gray-300 bg-gray-50 p-2 rounded text-xs mb-2"
+                      >
+                        {r}
+                      </div>
+                    ))}
                   <button
                     className="mt-1 px-2 py-1 bg-gray-200 rounded"
                     onClick={() => setEditingId(a.id)}
