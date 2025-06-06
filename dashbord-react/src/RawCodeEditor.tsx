@@ -11,6 +11,29 @@ import {
   ParsedCode,
 } from "@/lib/parseCode";
 
+// ensure all Article objects contain a notes array so optional or null values
+// from the backend don't crash the editor when we call .map() on them
+function normalizeCode(code: ParsedCode): ParsedCode {
+  const walkSections = (sections: CodeSection[]) => {
+    for (const sec of sections) {
+      for (const art of sec.articles) {
+        if (!Array.isArray(art.notes)) {
+          art.notes = [];
+        }
+      }
+      walkSections(sec.subsections);
+    }
+  };
+  for (const b of code.books) {
+    for (const t of b.titles) {
+      for (const ch of t.chapters) {
+        walkSections(ch.sections);
+      }
+    }
+  }
+  return code;
+}
+
 interface CodeTab {
   id: string;
   label: string;
@@ -34,14 +57,16 @@ export default function RawCodeEditor() {
     if (mode === "published") {
       fetch(`/api/parsed-code/${activeCode}`)
         .then((r) => r.json())
-        .then((d) => setStructures((s) => ({ ...s, [activeCode]: d })))
+        .then((d) =>
+          setStructures((s) => ({ ...s, [activeCode]: normalizeCode(d) }))
+        )
         .catch(() => {});
     }
   }, [activeCode, mode]);
 
   const parse = () => {
     const raw = rawTexts[activeCode] || "";
-    const parsed = parseRawCode(raw, activeCode, activeCode);
+    const parsed = normalizeCode(parseRawCode(raw, activeCode, activeCode));
     setStructures((s) => ({ ...s, [activeCode]: parsed }));
   };
 
@@ -79,6 +104,7 @@ export default function RawCodeEditor() {
       for (const sec of sections) {
         for (const art of sec.articles) {
           if (art.id === artId) {
+            if (!Array.isArray(art.notes)) art.notes = [];
             art.notes[index] = value;
             return true;
           }
@@ -105,6 +131,7 @@ export default function RawCodeEditor() {
       for (const sec of sections) {
         for (const art of sec.articles) {
           if (art.id === artId) {
+            if (!Array.isArray(art.notes)) art.notes = [];
             art.notes.push("");
             return true;
           }
@@ -131,6 +158,7 @@ export default function RawCodeEditor() {
       for (const sec of sections) {
         for (const art of sec.articles) {
           if (art.id === artId) {
+            if (!Array.isArray(art.notes)) art.notes = [];
             art.notes.splice(index, 1);
             return true;
           }
@@ -214,7 +242,7 @@ export default function RawCodeEditor() {
                 value={a.content}
                 onChange={(e) => updateArticle(a.id, "content", e.target.value)}
               />
-              {a.notes.map((n, i) => (
+              {(a.notes || []).map((n, i) => (
                 <div key={i} className="flex space-x-2 mt-1">
                   <textarea
                     className="border p-1 flex-1 text-xs"
@@ -238,7 +266,7 @@ export default function RawCodeEditor() {
             <>
               <div className="font-semibold">{`Articolul ${a.number} - ${a.title}`}</div>
               <div className="whitespace-pre-wrap leading-snug">{a.content}</div>
-              {a.notes.map((n, i) => (
+              {(a.notes || []).map((n, i) => (
                 <div
                   key={i}
                   className="border text-xs rounded p-1 mt-1 bg-gradient-to-r from-yellow-50 to-blue-50"
@@ -288,8 +316,8 @@ export default function RawCodeEditor() {
         )}
       </div>
       <div className="ml-4 space-y-2">
-        {sec.articles.map((a) => renderArticle(a))}
-        {sec.subsections.map((s) => renderSection(s))}
+        {(sec.articles ?? []).map((a) => renderArticle(a))}
+        {(sec.subsections ?? []).map((s) => renderSection(s))}
       </div>
     </div>
   );
@@ -317,7 +345,7 @@ export default function RawCodeEditor() {
           </>
         )}
       </div>
-      {ch.sections.map((sec) => renderSection(sec))}
+      {(ch.sections ?? []).map((sec) => renderSection(sec))}
     </div>
   );
 
@@ -344,7 +372,7 @@ export default function RawCodeEditor() {
           </>
         )}
       </div>
-      {t.chapters.map((ch) => renderChapter(ch))}
+      {(t.chapters ?? []).map((ch) => renderChapter(ch))}
     </div>
   );
 
@@ -371,7 +399,7 @@ export default function RawCodeEditor() {
           </>
         )}
       </div>
-      {b.titles.map((t) => renderTitle(t))}
+      {(b.titles ?? []).map((t) => renderTitle(t))}
     </div>
   );
 
@@ -416,7 +444,7 @@ export default function RawCodeEditor() {
         </>
       )}
       {structure && (
-        <div className="space-y-2 mt-4">{structure.books.map((b) => renderBook(b))}</div>
+        <div className="space-y-2 mt-4">{(structure.books ?? []).map((b) => renderBook(b))}</div>
       )}
     </div>
   );
