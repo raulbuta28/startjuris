@@ -231,7 +231,7 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder, Sections: []CodeSection{}})
 					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 				}
-				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}
+				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}
 				currentChapter.Sections = append(currentChapter.Sections, sec)
 				currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
 			}
@@ -265,7 +265,7 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 					currentTitle.Chapters = append(currentTitle.Chapters, Chapter{ID: fmt.Sprintf("book_%d_title_%d_ch_%d", bookOrder, titleOrder, chapterOrder), Title: "Unnamed", Order: chapterOrder, Sections: []CodeSection{}})
 					currentChapter = &currentTitle.Chapters[len(currentTitle.Chapters)-1]
 				}
-				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "Uncategorized", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}
+				sec := CodeSection{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d", bookOrder, titleOrder, chapterOrder, sectionOrder), Title: "", Order: sectionOrder, Subsections: []CodeSection{}, Articles: []Article{}}
 				currentChapter.Sections = append(currentChapter.Sections, sec)
 				currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
 			}
