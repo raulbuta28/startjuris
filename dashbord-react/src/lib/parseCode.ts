@@ -74,6 +74,13 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
 
   function finishArticle() {
     if (!currentArticle) return;
+    if (
+      currentArticle.content &&
+      !currentArticle.content.trim().startsWith("(") &&
+      !currentArticle.content.includes("\n")
+    ) {
+      currentArticle.content = `(1) ${currentArticle.content}`;
+    }
     if (currentSub) {
       currentSub.articles.push(currentArticle);
     } else if (currentSection) {
