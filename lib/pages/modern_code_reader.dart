@@ -132,9 +132,28 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   List<Widget> _buildArticles(List<dynamic> arts) {
     return arts.map((a) {
+      final refs = a is Map && a['references'] is List ? a['references'] as List : [];
       return ListTile(
         title: Text('Art. ${a is Map ? a['number'] ?? '' : ''} ${a is Map ? a['title'] ?? '' : ''}'),
-        subtitle: Text(a is Map ? (a['content'] ?? '') : ''),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(a is Map ? (a['content'] ?? '') : ''),
+            if (refs.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  refs.join('\n'),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+          ],
+        ),
       );
     }).toList();
   }

@@ -112,34 +112,34 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			continue
 		}
 
-       ProcessLine:
-               if collectingNote {
-                       if noteRe.MatchString(line) {
-                               if len(noteLines) > 0 && currentArticle != nil {
-                                       currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-                               }
-                               if currentArticle != nil {
-                                       noteLines = []string{line}
-                                       continue
-                               }
-                               // discard notes encountered outside any article
-                               noteLines = nil
-                               collectingNote = false
-                               continue
-                       }
-                       if bookRe.MatchString(line) || titleRe.MatchString(line) || chapterRe.MatchString(line) || sectionRe.MatchString(line) || subsectionRe.MatchString(line) || articleRe.MatchString(line) {
-                               if len(noteLines) > 0 && currentArticle != nil {
-                                       currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-                               }
-                               noteLines = nil
-                               collectingNote = false
-                               goto ProcessLine
-                       }
-                       if currentArticle != nil {
-                               noteLines = append(noteLines, line)
-                       }
-                       continue
-               }
+	ProcessLine:
+		if collectingNote {
+			if noteRe.MatchString(line) {
+				if len(noteLines) > 0 && currentArticle != nil {
+					currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+				}
+				if currentArticle != nil {
+					noteLines = []string{line}
+					continue
+				}
+				// discard notes encountered outside any article
+				noteLines = nil
+				collectingNote = false
+				continue
+			}
+			if bookRe.MatchString(line) || titleRe.MatchString(line) || chapterRe.MatchString(line) || sectionRe.MatchString(line) || subsectionRe.MatchString(line) || articleRe.MatchString(line) {
+				if len(noteLines) > 0 && currentArticle != nil {
+					currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+				}
+				noteLines = nil
+				collectingNote = false
+				goto ProcessLine
+			}
+			if currentArticle != nil {
+				noteLines = append(noteLines, line)
+			}
+			continue
+		}
 
 		switch {
 		case bookRe.MatchString(line):
@@ -319,13 +319,16 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 			continue
 		default:
 			if currentArticle != nil {
-				if strings.HasPrefix(line, "(") {
+				lower := strings.ToLower(line)
+				if strings.HasPrefix(lower, "(la ") {
+					currentArticle.References = append(currentArticle.References, line)
+				} else if strings.HasPrefix(line, "(") {
 					if currentArticle.Content != "" {
 						currentArticle.Content += "\n" + line
 					} else {
 						currentArticle.Content = line
 					}
-				} else if refRe.MatchString(strings.ToLower(line)) {
+				} else if refRe.MatchString(lower) {
 					currentArticle.References = append(currentArticle.References, line)
 				} else if expectTitle {
 					currentArticle.Title = line
@@ -341,9 +344,9 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 		}
 	}
 
-       if collectingNote && len(noteLines) > 0 && currentArticle != nil {
-               currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
-       }
+	if collectingNote && len(noteLines) > 0 && currentArticle != nil {
+		currentArticle.Notes = append(currentArticle.Notes, strings.Join(noteLines, "\n"))
+	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
