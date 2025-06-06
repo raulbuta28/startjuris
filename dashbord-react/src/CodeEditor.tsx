@@ -197,7 +197,7 @@ export default function CodeEditor() {
           ) : (
             <>
               <div className="font-semibold">{`Articolul ${a.number} - ${a.title}`}</div>
-              <div className="whitespace-pre-wrap">{a.content}</div>
+              <div className="whitespace-pre-wrap leading-snug">{a.content}</div>
             </>
           )}
 
@@ -205,7 +205,7 @@ export default function CodeEditor() {
             {(a.notes || []).map((n, idx) => (
               <motion.div
                 key={idx}
-                className="p-2 text-xs"
+                className="p-2 text-xs rounded bg-gradient-to-r from-yellow-50 to-blue-50"
                 initial={{ opacity: 0, y: -2 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -2 }}
@@ -216,7 +216,7 @@ export default function CodeEditor() {
             {(a.references || []).map((r, idx) => (
               <motion.div
                 key={`ref-${idx}`}
-                className="p-2 text-xs"
+                className="p-2 text-xs rounded bg-gradient-to-r from-yellow-50 to-blue-50"
                 initial={{ opacity: 0, y: -2 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -2 }}
