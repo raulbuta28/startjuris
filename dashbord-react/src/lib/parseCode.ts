@@ -45,6 +45,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const subsectionRe = /^Subsec[tț]iunea/i;
   const articleRe = /^Articolul\s+(\d+)/i;
   const noteRe = /^Not[aă]/i;
+  const decisionRe = /^Decizie/i;
   const amendRe = /^\(la\s.*|^\(/i;
 
   let bookOrder = 0;
@@ -79,7 +80,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
     const line = raw.trim();
     if (!line) continue;
 
-    if (noteRe.test(line) || amendRe.test(line)) {
+    if (noteRe.test(line) || decisionRe.test(line) || amendRe.test(line)) {
       if (currentArticle) {
         currentArticle.notes.push(line);
       }
