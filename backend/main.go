@@ -307,11 +307,25 @@ func getCodeTextJSON(c *gin.Context) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			// attempt to generate from parsed code if the structured file doesn't exist
+			if pc, perr := loadParsedCode(id); perr == nil {
+				sections := convertParsedToSections(pc)
+				if b, jerr := json.MarshalIndent(sections, "", "  "); jerr == nil {
+					_ = os.WriteFile(path, b, 0644)
+					data = b
+					broadcastCodeUpdate(id)
+				} else {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": jerr.Error()})
+					return
+				}
+			} else {
+				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+				return
+			}
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
-		return
 	}
 	c.Data(http.StatusOK, "application/json", data)
 }
@@ -401,6 +415,56 @@ func convertSectionsToText(v interface{}) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// convertParsedToSections transforms a ParsedCode structure into the simple
+// section format used by the dashboard and Flutter app.
+func convertParsedToSections(pc *ParsedCode) []interface{} {
+	var sectionFromUnit func(typ, name string, unit interface{}) map[string]interface{}
+
+	sectionFromUnit = func(typ, name string, unit interface{}) map[string]interface{} {
+		content := []interface{}{}
+
+		switch u := unit.(type) {
+		case Book:
+			for _, t := range u.Titles {
+				content = append(content, sectionFromUnit("Titlul", t.Title, t))
+			}
+		case CodeTitle:
+			for _, ch := range u.Chapters {
+				content = append(content, sectionFromUnit("Capitolul", ch.Title, ch))
+			}
+		case Chapter:
+			for _, s := range u.Sections {
+				content = append(content, sectionFromUnit("Secțiunea", s.Title, s))
+			}
+		case CodeSection:
+			for _, ss := range u.Subsections {
+				content = append(content, sectionFromUnit("Subsecțiunea", ss.Title, ss))
+			}
+			for _, a := range u.Articles {
+				art := map[string]interface{}{
+					"number":     a.Number,
+					"title":      a.Title,
+					"content":    strings.Split(a.Content, "\n"),
+					"amendments": a.Notes,
+				}
+				content = append(content, art)
+			}
+		}
+
+		return map[string]interface{}{
+			"type":    typ,
+			"name":    name,
+			"content": content,
+		}
+	}
+
+	result := []interface{}{}
+	for _, b := range pc.Books {
+		result = append(result, sectionFromUnit("Cartea", b.Title, b))
+	}
+	return result
 }
 
 func loadParsedCode(id string) (*ParsedCode, error) {
