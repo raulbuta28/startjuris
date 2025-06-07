@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { filterCodeText } from './codurilelazi/filtru';
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { filterCodeText } from "./codurilelazi/filtru";
 
 interface CodeTab {
   id: string;
@@ -8,10 +8,10 @@ interface CodeTab {
 }
 
 const codes: CodeTab[] = [
-  { id: 'civil', label: 'Codul civil' },
-  { id: 'penal', label: 'Codul penal' },
-  { id: 'proc_civil', label: 'Codul de procedura civila' },
-  { id: 'proc_penal', label: 'Codul de procedura penala' },
+  { id: "civil", label: "Codul civil" },
+  { id: "penal", label: "Codul penal" },
+  { id: "proc_civil", label: "Codul de procedura civila" },
+  { id: "proc_penal", label: "Codul de procedura penala" },
 ];
 
 interface Article {
@@ -22,7 +22,7 @@ interface Article {
 }
 
 interface Note {
-  type: 'Note' | 'Decision';
+  type: "Note" | "Decision";
   content: string[];
 }
 
@@ -36,13 +36,13 @@ export default function CodeTextTabs() {
   const [active, setActive] = useState<string>(codes[0].id);
   const [texts, setTexts] = useState<Record<string, Section[]>>({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editSectionName, setEditSectionName] = useState('');
+  const [editSectionName, setEditSectionName] = useState("");
   const [editArticle, setEditArticle] = useState<Article | null>(null);
-  const [editNoteContent, setEditNoteContent] = useState('');
+  const [editNoteContent, setEditNoteContent] = useState("");
 
   useEffect(() => {
     if (texts[active]) return;
@@ -51,7 +51,7 @@ export default function CodeTextTabs() {
 
   const fetchData = () => {
     setLoading(true);
-    setError('');
+    setError("");
     fetch(`/api/code-text-json/${active}`)
       .then(async (r) => {
         if (r.ok) {
@@ -59,18 +59,18 @@ export default function CodeTextTabs() {
         }
         if (r.status === 404) {
           const res = await fetch(`/api/code-text/${active}`);
-          if (!res.ok) throw new Error('Failed to load');
+          if (!res.ok) throw new Error("Failed to load");
           const txt = await res.text();
           const filtered = filterCodeText(txt);
           return parseText(filtered);
         }
-        throw new Error('Failed to load');
+        throw new Error("Failed to load");
       })
       .then((data) => {
         setTexts((t) => ({ ...t, [active]: data }));
       })
       .catch((err: any) => {
-        setError(err.message || 'Error');
+        setError(err.message || "Error");
       })
       .finally(() => setLoading(false));
   };
@@ -87,31 +87,53 @@ export default function CodeTextTabs() {
   const handleSaveAll = () => {
     const data = texts[active];
     fetch(`/api/save-code-text/${active}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
       },
       body: JSON.stringify(data),
     }).catch(() => {});
   };
 
   function parseText(text: string): Section[] {
-    const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+    const lines = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line);
     const structure: Section[] = [];
     let currentHierarchy: Section[] = [];
     let currentArticle: Article | null = null;
     let currentNote: Note | null = null;
     let currentAmendments: string[] = [];
+    let expectArticleTitle = false;
 
     const amendmentRegex = /^\(la \d{2}-\d{2}-\d{4},.*\)$/;
-    const sectionRegex = /^(Cartea|Titlul|Capitolul|Secţiunea|Subsecţiunea)\s+([IVXLC]+|[a-zA-Z\s\d-]+(\*\*\))?)$/i;
+    const sectionRegex =
+      /^(Cartea|Titlul|Capitolul|Secţiunea|Subsecţiunea)\s+([IVXLC]+|[a-zA-Z\s\d-]+(\*\*\))?)$/i;
     const articleRegex = /^Articolul\s+(\d+)\s*(?:-\s*(.+))?$/;
     const noteRegex = /^Notă$/;
     const decisionRegex = /^Decizie de admitere:/;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+
+      if (expectArticleTitle) {
+        if (
+          !sectionRegex.test(line) &&
+          !articleRegex.test(line) &&
+          !noteRegex.test(line) &&
+          !decisionRegex.test(line) &&
+          !amendmentRegex.test(line)
+        ) {
+          if (currentArticle) {
+            currentArticle.title = line;
+          }
+          expectArticleTitle = false;
+          continue;
+        }
+        expectArticleTitle = false;
+      }
 
       if (amendmentRegex.test(line)) {
         if (currentArticle) {
@@ -124,16 +146,20 @@ export default function CodeTextTabs() {
         if (currentArticle) {
           currentArticle.amendments = [...currentAmendments];
           currentAmendments = [];
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentArticle);
           currentArticle = null;
         }
         if (currentNote) {
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentNote);
         }
         currentNote = {
-          type: noteRegex.test(line) ? 'Note' : 'Decision',
+          type: noteRegex.test(line) ? "Note" : "Decision",
           content: [line],
         };
         continue;
@@ -144,24 +170,30 @@ export default function CodeTextTabs() {
         if (currentArticle) {
           currentArticle.amendments = [...currentAmendments];
           currentAmendments = [];
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentArticle);
           currentArticle = null;
         }
         if (currentNote) {
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentNote);
           currentNote = null;
         }
         const [, type, name] = sectionMatch;
-        const cleanName = name.replace(/\*\*\)/, '').trim();
+        const cleanName = name.replace(/\*\*\)/, "").trim();
         const newSection: Section = { type, name: cleanName, content: [] };
-        
-        if (type === 'Cartea') {
+
+        if (type === "Cartea") {
           structure.push(newSection);
           currentHierarchy = [newSection];
         } else {
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(newSection);
           currentHierarchy.push(newSection);
         }
@@ -173,17 +205,22 @@ export default function CodeTextTabs() {
         if (currentArticle) {
           currentArticle.amendments = [...currentAmendments];
           currentAmendments = [];
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentArticle);
         }
         if (currentNote) {
-          const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+          const parent = currentHierarchy[currentHierarchy.length - 1] || {
+            content: structure,
+          };
           parent.content.push(currentNote);
           currentNote = null;
         }
-        
-        const [, number, title = ''] = articleMatch;
+
+        const [, number, title = ""] = articleMatch;
         currentArticle = { number, title, content: [], amendments: [] };
+        expectArticleTitle = title === "";
         continue;
       }
 
@@ -193,17 +230,27 @@ export default function CodeTextTabs() {
         currentArticle.content.push(line);
       } else if (currentHierarchy.length > 0) {
         const parent = currentHierarchy[currentHierarchy.length - 1];
-        if (!parent.content.length || 'type' in parent.content[parent.content.length - 1]) {
-          const newArticle = { number: '', title: '', content: [line], amendments: [] };
+        if (
+          !parent.content.length ||
+          "type" in parent.content[parent.content.length - 1]
+        ) {
+          const newArticle = {
+            number: "",
+            title: "",
+            content: [line],
+            amendments: [],
+          };
           parent.content.push(newArticle);
         } else {
-          (parent.content[parent.content.length - 1] as Article).content.push(line);
+          (parent.content[parent.content.length - 1] as Article).content.push(
+            line,
+          );
         }
       } else {
         const newSection: Section = {
-          type: 'Miscellaneous',
-          name: 'Introductory Notes',
-          content: [{ number: '', title: '', content: [line], amendments: [] }],
+          type: "Miscellaneous",
+          name: "Introductory Notes",
+          content: [{ number: "", title: "", content: [line], amendments: [] }],
         };
         structure.push(newSection);
         currentHierarchy.push(newSection);
@@ -212,11 +259,15 @@ export default function CodeTextTabs() {
 
     if (currentArticle) {
       currentArticle.amendments = [...currentAmendments];
-      const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+      const parent = currentHierarchy[currentHierarchy.length - 1] || {
+        content: structure,
+      };
       parent.content.push(currentArticle);
     }
     if (currentNote) {
-      const parent = currentHierarchy[currentHierarchy.length - 1] || { content: structure };
+      const parent = currentHierarchy[currentHierarchy.length - 1] || {
+        content: structure,
+      };
       parent.content.push(currentNote);
     }
 
@@ -228,17 +279,28 @@ export default function CodeTextTabs() {
     setEditSectionName(name);
   }
 
-  function handleSaveSection(sectionId: string, sections: Section[]): Section[] {
-    return sections.map(section => {
+  function handleSaveSection(
+    sectionId: string,
+    sections: Section[],
+  ): Section[] {
+    return sections.map((section) => {
       if (`${section.type}-${section.name}` === sectionId) {
         return { ...section, name: editSectionName };
       }
-      return { ...section, content: handleSaveSection(sectionId, section.content) };
+      return {
+        ...section,
+        content: handleSaveSection(sectionId, section.content),
+      };
     });
   }
 
-  function handleDeleteSection(sectionId: string, sections: Section[] = []): Section[] {
-    return sections.filter(section => `${section.type}-${section.name}` !== sectionId);
+  function handleDeleteSection(
+    sectionId: string,
+    sections: Section[] = [],
+  ): Section[] {
+    return sections.filter(
+      (section) => `${section.type}-${section.name}` !== sectionId,
+    );
   }
 
   function handleEditArticle(articleId: string, article: Article) {
@@ -246,50 +308,74 @@ export default function CodeTextTabs() {
     setEditArticle({ ...article });
   }
 
-  function handleSaveArticle(sectionId: string, sections: Section[]): Section[] {
-    return sections.map(section => {
+  function handleSaveArticle(
+    sectionId: string,
+    sections: Section[],
+  ): Section[] {
+    return sections.map((section) => {
       if (`${section.type}-${section.name}` === sectionId) {
         return {
           ...section,
-          content: section.content.map(item =>
-            'type' in item
+          content: section.content.map((item) =>
+            "type" in item
               ? item
               : `${item.number}-${item.title}` === editingArticle && editArticle
-              ? { ...editArticle }
-              : item
+                ? { ...editArticle }
+                : item,
           ),
         };
       }
-      return { ...section, content: handleSaveArticle(sectionId, section.content) };
+      return {
+        ...section,
+        content: handleSaveArticle(sectionId, section.content),
+      };
     });
   }
 
-  function handleDeleteArticle(articleId: string, sections: Section[]): Section[] {
-    return sections.map(section => ({
+  function handleDeleteArticle(
+    articleId: string,
+    sections: Section[],
+  ): Section[] {
+    return sections.map((section) => ({
       ...section,
       content: section.content
-        .filter(item => !('number' in item && `${item.number}-${item.title}` === articleId))
-        .map(item => 'type' in item ? { ...item, content: handleDeleteArticle(articleId, [item])[0].content } : item),
+        .filter(
+          (item) =>
+            !("number" in item && `${item.number}-${item.title}` === articleId),
+        )
+        .map((item) =>
+          "type" in item
+            ? {
+                ...item,
+                content: handleDeleteArticle(articleId, [item])[0].content,
+              }
+            : item,
+        ),
     }));
   }
 
   function handleAddArticle(sectionId: string) {
     setTexts((prev) => ({
       ...prev,
-      [active]: prev[active].map(section => {
+      [active]: prev[active].map((section) => {
         if (`${section.type}-${section.name}` === sectionId) {
           return {
             ...section,
             content: [
               ...section.content,
-              { number: '', title: 'New Article', content: [], amendments: [] },
+              { number: "", title: "New Article", content: [], amendments: [] },
             ],
           };
         }
         return {
           ...section,
-          content: section.content.map(item =>
-            'type' in item ? { ...item, content: handleAddArticle(sectionId, [item])[0].content } : item
+          content: section.content.map((item) =>
+            "type" in item
+              ? {
+                  ...item,
+                  content: handleAddArticle(sectionId, [item])[0].content,
+                }
+              : item,
           ),
         };
       }),
@@ -298,17 +384,17 @@ export default function CodeTextTabs() {
 
   function handleEditNote(noteId: string, content: string[]) {
     setEditingNote(noteId);
-    setEditNoteContent(content.join('\n'));
+    setEditNoteContent(content.join("\n"));
   }
 
   function updateNoteInContent(
     noteId: string,
     updater: (n: Note) => Note,
-    content: (Section | Article | Note)[]
+    content: (Section | Article | Note)[],
   ): (Section | Article | Note)[] {
     return content.map((item, idx) => {
-      if ('type' in item) {
-        if (item.type === 'Note' || item.type === 'Decision') {
+      if ("type" in item) {
+        if (item.type === "Note" || item.type === "Decision") {
           const currentId = `${item.type}-${idx}`;
           return currentId === noteId ? updater(item) : item;
         }
@@ -323,11 +409,11 @@ export default function CodeTextTabs() {
 
   function deleteNoteFromContent(
     noteId: string,
-    content: (Section | Article | Note)[]
+    content: (Section | Article | Note)[],
   ): (Section | Article | Note)[] {
     return content.reduce<(Section | Article | Note)[]>((acc, item, idx) => {
-      if ('type' in item) {
-        if (item.type === 'Note' || item.type === 'Decision') {
+      if ("type" in item) {
+        if (item.type === "Note" || item.type === "Decision") {
           const currentId = `${item.type}-${idx}`;
           if (currentId !== noteId) acc.push(item);
         } else {
@@ -344,19 +430,21 @@ export default function CodeTextTabs() {
   }
 
   function handleSaveNote(noteId: string, sections: Section[]): Section[] {
-    return sections.map(section => ({
+    return sections.map((section) => ({
       ...section,
-      content: updateNoteInContent(noteId, n => ({
-        ...n,
-        content: editNoteContent
-          .split('\n')
-          .filter(line => line.trim()),
-      }), section.content),
+      content: updateNoteInContent(
+        noteId,
+        (n) => ({
+          ...n,
+          content: editNoteContent.split("\n").filter((line) => line.trim()),
+        }),
+        section.content,
+      ),
     }));
   }
 
   function handleDeleteNote(noteId: string, sections: Section[]): Section[] {
-    return sections.map(section => ({
+    return sections.map((section) => ({
       ...section,
       content: deleteNoteFromContent(noteId, section.content),
     }));
@@ -391,8 +479,14 @@ export default function CodeTextTabs() {
           </div>
         ) : (
           <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-lg mt-2">{section.type} {section.name}</h3>
-            <Button variant="outline" size="sm" onClick={() => handleEditSection(sectionId, section.name)}>
+            <h3 className="font-semibold text-lg mt-2">
+              {section.type} {section.name}
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEditSection(sectionId, section.name)}
+            >
               Edit
             </Button>
             <Button
@@ -407,21 +501,21 @@ export default function CodeTextTabs() {
             >
               Delete
             </Button>
-            <Button variant="outline" size="sm" onClick={() => handleAddArticle(sectionId)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAddArticle(sectionId)}
+            >
               Add Article
             </Button>
           </div>
         )}
         {section.content.map((item, index) =>
-          'type' in item ? (
-            item.type === 'Note' || item.type === 'Decision' ? (
-              renderNote(item as Note, index)
-            ) : (
-              renderSection(item as Section, level + 1)
-            )
-          ) : (
-            renderArticle(item as Article, sectionId, index)
-          )
+          "type" in item
+            ? item.type === "Note" || item.type === "Decision"
+              ? renderNote(item as Note, index)
+              : renderSection(item as Section, level + 1)
+            : renderArticle(item as Article, sectionId, index),
         )}
       </div>
     );
@@ -436,26 +530,40 @@ export default function CodeTextTabs() {
             <input
               className="border rounded p-1"
               placeholder="Number"
-              value={editArticle?.number || ''}
-              onChange={(e) => setEditArticle({ ...editArticle!, number: e.target.value })}
+              value={editArticle?.number || ""}
+              onChange={(e) =>
+                setEditArticle({ ...editArticle!, number: e.target.value })
+              }
             />
             <input
               className="border rounded p-1 w-full"
               placeholder="Title"
-              value={editArticle?.title || ''}
-              onChange={(e) => setEditArticle({ ...editArticle!, title: e.target.value })}
+              value={editArticle?.title || ""}
+              onChange={(e) =>
+                setEditArticle({ ...editArticle!, title: e.target.value })
+              }
             />
             <textarea
               className="border rounded p-1 w-full"
               placeholder="Content"
-              value={editArticle?.content.join('\n') || ''}
-              onChange={(e) => setEditArticle({ ...editArticle!, content: e.target.value.split('\n') })}
+              value={editArticle?.content.join("\n") || ""}
+              onChange={(e) =>
+                setEditArticle({
+                  ...editArticle!,
+                  content: e.target.value.split("\n"),
+                })
+              }
             />
             <textarea
               className="border rounded p-1 w-full"
               placeholder="Amendments"
-              value={editArticle?.amendments.join('\n') || ''}
-              onChange={(e) => setEditArticle({ ...editArticle!, amendments: e.target.value.split('\n') })}
+              value={editArticle?.amendments.join("\n") || ""}
+              onChange={(e) =>
+                setEditArticle({
+                  ...editArticle!,
+                  amendments: e.target.value.split("\n"),
+                })
+              }
             />
             <Button
               variant="outline"
@@ -470,7 +578,13 @@ export default function CodeTextTabs() {
             >
               Save
             </Button>
-            <Button variant="outline" onClick={() => { setEditingArticle(null); setEditArticle(null); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingArticle(null);
+                setEditArticle(null);
+              }}
+            >
               Cancel
             </Button>
           </div>
@@ -479,9 +593,14 @@ export default function CodeTextTabs() {
             {article.number && (
               <div className="flex items-center space-x-2">
                 <h4 className="font-bold text-base">
-                  Articolul {article.number} {article.title && `- ${article.title}`}
+                  Articolul {article.number}{" "}
+                  {article.title && `- ${article.title}`}
                 </h4>
-                <Button variant="outline" size="sm" onClick={() => handleEditArticle(articleId, article)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditArticle(articleId, article)}
+                >
                   Edit
                 </Button>
                 <Button
@@ -499,15 +618,21 @@ export default function CodeTextTabs() {
               </div>
             )}
             {article.title && (
-              <p className="text-sm whitespace-pre-wrap mt-1">{article.title}</p>
+              <p className="text-sm whitespace-pre-wrap mt-1">
+                {article.title}
+              </p>
             )}
             {article.content.map((line, i) => (
-              <p key={i} className="text-sm whitespace-pre-wrap">{line}</p>
+              <p key={i} className="text-sm whitespace-pre-wrap">
+                {line}
+              </p>
             ))}
             {article.amendments.length > 0 && (
               <div className="mt-2 p-2 border rounded bg-gradient-to-r from-gray-100 to-gray-200">
                 {article.amendments.map((amendment, i) => (
-                  <p key={i} className="text-sm text-gray-700">{amendment}</p>
+                  <p key={i} className="text-sm text-gray-700">
+                    {amendment}
+                  </p>
                 ))}
               </div>
             )}
@@ -536,12 +661,18 @@ export default function CodeTextTabs() {
                   [active]: handleSaveNote(noteId, prev[active]),
                 }));
                 setEditingNote(null);
-                setEditNoteContent('');
+                setEditNoteContent("");
               }}
             >
               Save
             </Button>
-            <Button variant="outline" onClick={() => { setEditingNote(null); setEditNoteContent(''); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingNote(null);
+                setEditNoteContent("");
+              }}
+            >
               Cancel
             </Button>
           </div>
@@ -549,7 +680,11 @@ export default function CodeTextTabs() {
           <div className="p-2 border rounded bg-gray-50">
             <div className="flex items-center space-x-2">
               <span className="text-sm">{note.type}</span>
-              <Button variant="outline" size="sm" onClick={() => handleEditNote(noteId, note.content)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEditNote(noteId, note.content)}
+              >
                 Edit
               </Button>
               <Button
@@ -566,7 +701,9 @@ export default function CodeTextTabs() {
               </Button>
             </div>
             {note.content.map((line, i) => (
-              <p key={i} className="text-sm whitespace-pre-wrap">{line}</p>
+              <p key={i} className="text-sm whitespace-pre-wrap">
+                {line}
+              </p>
             ))}
           </div>
         )}
@@ -580,7 +717,7 @@ export default function CodeTextTabs() {
         {codes.map((c) => (
           <Button
             key={c.id}
-            variant={active === c.id ? 'default' : 'secondary'}
+            variant={active === c.id ? "default" : "secondary"}
             onClick={() => setActive(c.id)}
           >
             {c.label}
@@ -599,7 +736,7 @@ export default function CodeTextTabs() {
         <div className="text-red-600">{error}</div>
       ) : texts[active] ? (
         <div className="text-sm">
-          {texts[active].map(section => renderSection(section))}
+          {texts[active].map((section) => renderSection(section))}
         </div>
       ) : null}
     </div>
