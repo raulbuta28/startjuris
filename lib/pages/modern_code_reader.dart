@@ -13,7 +13,7 @@ class ModernCodeReader extends StatefulWidget {
 }
 
 class _ModernCodeReaderState extends State<ModernCodeReader> {
-  Map<String, dynamic>? _code;
+  List<dynamic>? _sections;
   bool _loading = true;
   String? _error;
 
@@ -31,18 +31,22 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     });
     try {
       final res =
-          await http.get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
+          await http.get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
-        if (decoded is Map<String, dynamic>) {
+        if (decoded is List) {
           setState(() {
-            _code = decoded;
+            _sections = decoded;
           });
         } else {
           setState(() {
             _error = 'Invalid data format';
           });
         }
+      } else if (res.statusCode == 404) {
+        setState(() {
+          _error = 'Code not found';
+        });
       } else {
         setState(() {
           _error = 'Failed to load code';
@@ -76,142 +80,95 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!))
-              : _code == null
+              : _sections == null
                   ? const SizedBox()
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView(
                         padding: const EdgeInsets.all(16),
-                        children: _buildBooks(
-                          _code!['books'] is List ? _code!['books'] as List : []),
+                        children: _buildSectionWidgets(_sections!, 0),
                       ),
                     ),
     );
   }
 
-  List<Widget> _buildBooks(List<dynamic> books) {
-    return books.map((b) {
-      final titles = b is Map && b['titles'] is List ? b['titles'] as List : [];
-      return Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          title: Text(
-            '${b is Map ? b['title'] ?? '' : ''}',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
+  List<Widget> _buildSectionWidgets(List<dynamic> items, int level) {
+    return items.map((item) {
+      if (item is Map &&
+          (item['type'] == 'Note' || item['type'] == 'Decision')) {
+        final lines = item['content'] is List ? List<String>.from(item['content']) : <String>[];
+        return Padding(
+          padding: EdgeInsets.only(left: 16.0 * level, bottom: 8),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.grey.shade50,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['type'] == 'Decision' ? 'Decizie' : 'Notă',
+                  style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
+                ),
+                ...lines.map((l) => Text(l, style: GoogleFonts.merriweather())),
+              ],
+            ),
           ),
-          children: _buildTitles(titles),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildTitles(List<dynamic> titles) {
-    return titles.map((t) {
-      final chapters = t is Map && t['chapters'] is List ? t['chapters'] as List : [];
-      return Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(
-            '${t is Map ? t['title'] ?? '' : ''}',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w500),
+        );
+      }
+      if (item is Map && item.containsKey('number')) {
+        final lines = item['content'] is List ? List<String>.from(item['content']) : <String>[];
+        final amendments = item['amendments'] is List ? List<String>.from(item['amendments']) : <String>[];
+        return Padding(
+          padding: EdgeInsets.only(left: 16.0 * level, bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Art. ${item['number'] ?? ''} ${item['title'] ?? ''}',
+                style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
+              ),
+              ...lines.map((l) => Text(l, style: GoogleFonts.merriweather())),
+              if (amendments.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: amendments
+                        .map((a) => Text(a,
+                            style: GoogleFonts.merriweather(fontSize: 12, color: Colors.grey[700])))
+                        .toList(),
+                  ),
+                ),
+            ],
           ),
-          children: _buildChapters(chapters),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildChapters(List<dynamic> chapters) {
-    return chapters.map((c) {
-      final secs = c is Map && c['sections'] is List ? c['sections'] as List : [];
-      return Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(
-            '${c is Map ? c['title'] ?? '' : ''}',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w500),
-          ),
-          children: _buildSections(secs),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildSections(List<dynamic> sections) {
-    return sections.map((s) {
-      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
-      final subs = s is Map && s['subsections'] is List ? s['subsections'] as List : [];
-      return Padding(
-        padding: const EdgeInsets.only(left: 24),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(
-            '${s is Map ? s['title'] ?? '' : ''}',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w500),
-          ),
-          children: [
-            ..._buildArticles(arts),
-            ..._buildSubsections(subs),
-          ],
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildSubsections(List<dynamic> subs) {
-    return subs.map((s) {
-      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
-      return Padding(
-        padding: const EdgeInsets.only(left: 32),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(
-            '${s is Map ? s['title'] ?? '' : ''}',
-            style: GoogleFonts.merriweather(fontWeight: FontWeight.w500),
-          ),
-          children: _buildArticles(arts),
-        ),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildArticles(List<dynamic> arts) {
-    return arts.map((a) {
-      final refs = a is Map && a['references'] is List ? a['references'] as List : [];
-      return Padding(
-        padding: const EdgeInsets.only(left: 40, bottom: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Art. ${a is Map ? a['number'] ?? '' : ''} ${a is Map ? a['title'] ?? '' : ''}',
+        );
+      }
+      if (item is Map && item.containsKey('type')) {
+        final name = item['name'] ?? '';
+        final content = item['content'] is List ? item['content'] as List : [];
+        return Padding(
+          padding: EdgeInsets.only(left: 16.0 * level),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            title: Text(
+              '${item['type']} $name',
               style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 4),
-            Text(
-              a is Map ? (a['content'] ?? '') : '',
-              style: GoogleFonts.merriweather(),
-            ),
-            if (refs.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.grey.shade50,
-                ),
-                child: Text(
-                  refs.join('\n'),
-                  style: GoogleFonts.merriweather(fontSize: 12, color: Colors.grey[700]),
-                ),
-              ),
-          ],
-        ),
-      );
+            children: _buildSectionWidgets(content, level + 1),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
     }).toList();
   }
 }
