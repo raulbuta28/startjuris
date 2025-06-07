@@ -28,10 +28,10 @@ class CodeTextSection {
 }
 
 class CodeTextArticle {
-  final String number;
-  final String title;
-  final List<String> content;
-  final List<String> amendments;
+  String number;
+  String title;
+  List<String> content;
+  List<String> amendments;
 
   CodeTextArticle({required this.number, required this.title, required this.content, required this.amendments});
 
