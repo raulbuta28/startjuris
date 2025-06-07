@@ -249,8 +249,10 @@ func saveCodes() {
 func preloadParsedCodes() {
 	for id, info := range codeFiles {
 		jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
-		if _, err := os.Stat(jsonPath); err == nil {
-			// already generated
+		txtStat, txtErr := os.Stat(info.path)
+		jsonStat, jsonErr := os.Stat(jsonPath)
+		if jsonErr == nil && txtErr == nil && !txtStat.ModTime().After(jsonStat.ModTime()) {
+			// up to date
 			continue
 		}
 		pc, err := parseCodeFile(info.path, id, info.title)
@@ -472,18 +474,24 @@ func loadParsedCode(id string) (*ParsedCode, error) {
 		return pc, nil
 	}
 
-	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
-	if data, err := os.ReadFile(jsonPath); err == nil {
-		var pc ParsedCode
-		if json.Unmarshal(data, &pc) == nil {
-			cacheAdd(id, &pc)
-			return &pc, nil
-		}
-	}
-
 	info, ok := codeFiles[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown code id")
+	}
+
+	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("code_%s.json", id))
+	txtStat, txtErr := os.Stat(info.path)
+	jsonStat, jsonErr := os.Stat(jsonPath)
+
+	useJSON := jsonErr == nil && (txtErr != nil || !txtStat.ModTime().After(jsonStat.ModTime()))
+	if useJSON {
+		if data, err := os.ReadFile(jsonPath); err == nil {
+			var pc ParsedCode
+			if json.Unmarshal(data, &pc) == nil {
+				cacheAdd(id, &pc)
+				return &pc, nil
+			}
+		}
 	}
 
 	pc, err := parseCodeFile(info.path, id, info.title)
