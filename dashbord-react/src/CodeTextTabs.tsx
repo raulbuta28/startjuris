@@ -301,31 +301,64 @@ export default function CodeTextTabs() {
     setEditNoteContent(content.join('\n'));
   }
 
+  function updateNoteInContent(
+    noteId: string,
+    updater: (n: Note) => Note,
+    content: (Section | Article | Note)[]
+  ): (Section | Article | Note)[] {
+    return content.map((item, idx) => {
+      if ('type' in item) {
+        if (item.type === 'Note' || item.type === 'Decision') {
+          const currentId = `${item.type}-${idx}`;
+          return currentId === noteId ? updater(item) : item;
+        }
+        return {
+          ...item,
+          content: updateNoteInContent(noteId, updater, item.content),
+        };
+      }
+      return item;
+    });
+  }
+
+  function deleteNoteFromContent(
+    noteId: string,
+    content: (Section | Article | Note)[]
+  ): (Section | Article | Note)[] {
+    return content.reduce<(Section | Article | Note)[]>((acc, item, idx) => {
+      if ('type' in item) {
+        if (item.type === 'Note' || item.type === 'Decision') {
+          const currentId = `${item.type}-${idx}`;
+          if (currentId !== noteId) acc.push(item);
+        } else {
+          acc.push({
+            ...item,
+            content: deleteNoteFromContent(noteId, item.content),
+          });
+        }
+      } else {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+  }
+
   function handleSaveNote(noteId: string, sections: Section[]): Section[] {
     return sections.map(section => ({
       ...section,
-      content: section.content.map(item =>
-        'type' in item && (item.type === 'Note' || item.type === 'Decision') && item.content.join('\n') === noteId
-          ? { ...item, content: editNoteContent.split('\n').filter(line => line.trim()) }
-          : 'type' in item
-          ? { ...item, content: handleSaveNote(noteId, [item])[0].content }
-          : item
-      ),
+      content: updateNoteInContent(noteId, n => ({
+        ...n,
+        content: editNoteContent
+          .split('\n')
+          .filter(line => line.trim()),
+      }), section.content),
     }));
   }
 
   function handleDeleteNote(noteId: string, sections: Section[]): Section[] {
     return sections.map(section => ({
       ...section,
-      content: section.content
-        .filter(item =>
-          !('type' in item && (item.type === 'Note' || item.type === 'Decision') && item.content.join('\n') === noteId)
-        )
-        .map(item =>
-          'type' in item
-            ? { ...item, content: handleDeleteNote(noteId, [item])[0].content }
-            : item
-        ),
+      content: deleteNoteFromContent(noteId, section.content),
     }));
   }
 
