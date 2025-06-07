@@ -3,6 +3,7 @@ import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
 import CodeEditor from './CodeEditor';
 import CodurileLaZi from './CodurileLaZi';
+import CodeTextTabs from './CodeTextTabs';
 
 interface LoginProps {
   onLogin: () => void;
@@ -67,6 +68,7 @@ const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
   { key: 'coduri_lazi', label: 'Codurile actualizate', icon: 'article' },
   { key: 'codurile_la_zi', label: 'Codurile la zi', icon: 'library_books' },
+  { key: 'codurile_2_0', label: 'Codurile 2.0', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
@@ -342,6 +344,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'codurile_la_zi') {
       return <CodurileLaZi />;
+    }
+    if (section === 'codurile_2_0') {
+      return <CodeTextTabs />;
     }
     const s = sections.find((x) => x.key === section);
     return (
