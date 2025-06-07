@@ -84,8 +84,8 @@ export default function CodeTextTabs() {
     fetchData();
   };
 
-  const handleSaveAll = () => {
-    const data = texts[active];
+  const handleSaveAll = (override?: Section[]) => {
+    const data = override || texts[active];
     fetch(`/api/save-code-text/${active}`, {
       method: "POST",
       headers: {
@@ -307,7 +307,11 @@ export default function CodeTextTabs() {
       }
       return {
         ...section,
-        content: handleSaveSection(sectionId, section.content),
+        content: section.content.map((item) =>
+          "type" in item && item.type !== "Note" && item.type !== "Decision"
+            ? handleSaveSection(sectionId, [item as Section])[0]
+            : item,
+        ),
       };
     });
   }
@@ -335,17 +339,19 @@ export default function CodeTextTabs() {
         return {
           ...section,
           content: section.content.map((item) =>
-            "type" in item
-              ? item
-              : `${item.number}-${item.title}` === editingArticle && editArticle
-                ? { ...editArticle }
-                : item,
+            "number" in item && `${item.number}-${item.title}` === editingArticle && editArticle
+              ? { ...editArticle }
+              : item,
           ),
         };
       }
       return {
         ...section,
-        content: handleSaveArticle(sectionId, section.content),
+        content: section.content.map((item) =>
+          "type" in item && item.type !== "Note" && item.type !== "Decision"
+            ? handleSaveArticle(sectionId, [item as Section])[0]
+            : item,
+        ),
       };
     });
   }
@@ -482,10 +488,12 @@ export default function CodeTextTabs() {
             <Button
               variant="outline"
               onClick={() => {
-                setTexts((prev) => ({
-                  ...prev,
-                  [active]: handleSaveSection(sectionId, prev[active]),
-                }));
+                setTexts((prev) => {
+                  const updated = handleSaveSection(sectionId, prev[active]);
+                  const next = { ...prev, [active]: updated };
+                  handleSaveAll(updated);
+                  return next;
+                });
                 setEditingSection(null);
               }}
             >
@@ -596,10 +604,12 @@ export default function CodeTextTabs() {
             <Button
               variant="outline"
               onClick={() => {
-                setTexts((prev) => ({
-                  ...prev,
-                  [active]: handleSaveArticle(sectionId, prev[active]),
-                }));
+                setTexts((prev) => {
+                  const updated = handleSaveArticle(sectionId, prev[active]);
+                  const next = { ...prev, [active]: updated };
+                  handleSaveAll(updated);
+                  return next;
+                });
                 setEditingArticle(null);
                 setEditArticle(null);
               }}
@@ -684,10 +694,12 @@ export default function CodeTextTabs() {
             <Button
               variant="outline"
               onClick={() => {
-                setTexts((prev) => ({
-                  ...prev,
-                  [active]: handleSaveNote(noteId, prev[active]),
-                }));
+                setTexts((prev) => {
+                  const updated = handleSaveNote(noteId, prev[active]);
+                  const next = { ...prev, [active]: updated };
+                  handleSaveAll(updated);
+                  return next;
+                });
                 setEditingNote(null);
                 setEditNoteContent("");
               }}
