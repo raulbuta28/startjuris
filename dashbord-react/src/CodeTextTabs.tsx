@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { filterCodeText } from "./codurilelazi/filtru";
 
 interface CodeTab {
   id: string;
@@ -61,8 +60,7 @@ export default function CodeTextTabs() {
           const res = await fetch(`/api/code-text/${active}`);
           if (!res.ok) throw new Error("Failed to load");
           const txt = await res.text();
-          const filtered = filterCodeText(txt);
-          return parseText(filtered);
+          return parseText(txt);
         }
         throw new Error("Failed to load");
       })
