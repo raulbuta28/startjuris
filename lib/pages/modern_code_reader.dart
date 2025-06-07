@@ -290,9 +290,11 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
                             _buildFavoriteView(),
                           ],
                         ),
+          ),
         ),
       ),
     );
+
   }
 
   List<Widget> _buildSectionWidgets(List<dynamic> items, int level) {
