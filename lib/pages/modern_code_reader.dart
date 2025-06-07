@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class _CodeSearchDelegate extends SearchDelegate<void> {
   final List<Map<String, dynamic>> articles;
@@ -56,6 +57,9 @@ class ModernCodeReader extends StatefulWidget {
 
 class _ModernCodeReaderState extends State<ModernCodeReader>
     with SingleTickerProviderStateMixin {
+  static const String _baseUrl =
+      String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+  WebSocketChannel? _updatesWs;
   List<dynamic>? _sections;
   bool _loading = true;
   String? _error;
@@ -74,10 +78,12 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
     _tabController = TabController(length: 5, vsync: this);
     _loadPrefs();
     _load();
+    _connectUpdates();
   }
 
   @override
   void dispose() {
+    _updatesWs?.sink.close();
     _tabController.dispose();
     super.dispose();
   }
@@ -98,10 +104,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
   }
 
   Future<void> _load() async {
-    final baseUrl = const String.fromEnvironment(
-      'API_URL',
-      defaultValue: 'http://localhost:8080',
-    );
+    final baseUrl = _baseUrl;
 
     setState(() {
       _loading = true;
@@ -148,6 +151,26 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  void _connectUpdates() {
+    final wsUrl = (_baseUrl.startsWith('https')
+            ? _baseUrl.replaceFirst('https', 'wss')
+            : _baseUrl.replaceFirst('http', 'ws')) +
+        '/api/code-updates';
+    try {
+      _updatesWs = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _updatesWs!.stream.listen((message) {
+        try {
+          final data = jsonDecode(message);
+          if (data is Map &&
+              data['type'] == 'code_update' &&
+              data['id'] == widget.codeId) {
+            _load();
+          }
+        } catch (_) {}
+      });
+    } catch (_) {}
   }
 
   List<dynamic> _fromParsedCode(Map<String, dynamic> data) {
@@ -234,7 +257,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader>
         child: DefaultTabController(
         length: 5,
         child: Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
+          backgroundColor: Colors.white,
           appBar: AppBar(
             title: Text(
               widget.codeTitle,
