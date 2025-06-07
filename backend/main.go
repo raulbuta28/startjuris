@@ -305,31 +305,35 @@ func saveParsedCodeHandler(c *gin.Context) {
 // getCodeTextJSON returns the stored structured code text, if any.
 func getCodeTextJSON(c *gin.Context) {
 	id := c.Param("id")
-	path := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("codetext_%s.json", id))
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// attempt to generate from parsed code if the structured file doesn't exist
-			if pc, perr := loadParsedCode(id); perr == nil {
-				sections := convertParsedToSections(pc)
-				if b, jerr := json.MarshalIndent(sections, "", "  "); jerr == nil {
-					_ = os.WriteFile(path, b, 0644)
-					data = b
-					broadcastCodeUpdate(id)
-				} else {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": jerr.Error()})
-					return
-				}
-			} else {
-				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	jsonPath := filepath.Join(rootDir, "dashbord-react", fmt.Sprintf("codetext_%s.json", id))
+	txtPath := filepath.Join(codesTextDir, id+".txt")
+
+	jsonStat, jsonErr := os.Stat(jsonPath)
+	txtStat, txtErr := os.Stat(txtPath)
+
+	useJSON := jsonErr == nil && (txtErr != nil || !txtStat.ModTime().After(jsonStat.ModTime()))
+	if useJSON {
+		if data, err := os.ReadFile(jsonPath); err == nil {
+			c.Data(http.StatusOK, "application/json", data)
 			return
 		}
 	}
-	c.Data(http.StatusOK, "application/json", data)
+
+	pc, err := loadParsedCode(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	sections := convertParsedToSections(pc)
+	if data, jerr := json.MarshalIndent(sections, "", "  "); jerr == nil {
+		_ = os.WriteFile(jsonPath, data, 0644)
+		broadcastCodeUpdate(id)
+		c.Data(http.StatusOK, "application/json", data)
+		return
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": jerr.Error()})
+		return
+	}
 }
 
 // saveCodeTextJSON stores the structured code text as JSON.
