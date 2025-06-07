@@ -43,7 +43,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
   const chapterRe = /^Capitolul/i;
   const sectionRe = /^Sec[tț]iunea/i;
   const subsectionRe = /^Subsec[tț]iunea/i;
-  const articleRe = /^Articolul\s+(\d+)/i;
+  const articleRe = /^Articolul\s+(\d+)\s*(?:-\s*(.+))?/i;
   const noteRe = /^Not[aă]/i;
   const decisionRe = /^Decizie/i;
   const editRe = /^Edit\b/i;
@@ -261,6 +261,7 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
       articleOrder++;
       lastArticleNum = numVal;
       const num = artMatch[1] || "";
+      const inlineTitle = artMatch[2] || "";
       if (!currentSection && !currentSub) {
         // create default section
         sectionOrder++;
@@ -290,11 +291,11 @@ export function parseRawCode(text: string, id = "custom", title = "Cod personal"
           ? `book_${bookOrder}_title_${titleOrder}_ch_${chapterOrder}_sec_${sectionOrder}_sub_${subOrder}_art_${articleOrder}`
           : `book_${bookOrder}_title_${titleOrder}_ch_${chapterOrder}_sec_${sectionOrder}_art_${articleOrder}`,
         number: num,
-        title: "",
+        title: inlineTitle,
         content: "",
         notes: [],
       };
-      expectTitle = true;
+      expectTitle = inlineTitle === "";
       continue;
     }
 

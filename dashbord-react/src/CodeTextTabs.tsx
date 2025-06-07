@@ -479,7 +479,9 @@ export default function CodeTextTabs() {
           </div>
         ) : (
           <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-lg mt-2">
+            <h3
+              className={`font-semibold mt-2 ${level === 0 ? "text-xl" : "text-lg"}`}
+            >
               {section.type} {section.name}
             </h3>
             <Button
@@ -679,7 +681,9 @@ export default function CodeTextTabs() {
         ) : (
           <div className="p-2 border rounded bg-gray-50">
             <div className="flex items-center space-x-2">
-              <span className="text-sm">{note.type}</span>
+              <span className="text-sm">
+                {note.type === "Decision" ? "Decizie" : note.type}
+              </span>
               <Button
                 variant="outline"
                 size="sm"
