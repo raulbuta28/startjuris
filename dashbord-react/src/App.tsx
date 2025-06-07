@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
-import CodeTextTabs from './CodeTextTabs';
+import CodeEditor from './CodeEditor';
 
 interface LoginProps {
   onLogin: () => void;
@@ -336,7 +336,7 @@ function Dashboard({ onLogout }: DashboardProps) {
       return <NewsList items={news} onUpdate={updateNews} onEdit={setEditingNews} />;
     }
     if (section === 'coduri_lazi') {
-      return <CodeTextTabs />;
+      return <CodeEditor />;
     }
     const s = sections.find((x) => x.key === section);
     return (
