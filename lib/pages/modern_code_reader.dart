@@ -17,6 +17,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   bool _loading = true;
   String? _error;
 
+  final List<_ArticleRef> _allArticles = [];
+  int _selectedTab = 0;
+  int _articlesPerDay = 5;
+
   @override
   void initState() {
     super.initState();
@@ -61,14 +65,23 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); });
     } finally {
-      if (mounted) setState(() { _loading = false; });
+          if (mounted) setState(() { _loading = false; });
+          _buildArticleIndex();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.codeTitle)),
+      appBar: AppBar(
+        title: Text(widget.codeTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: _onSearch,
+          ),
+        ],
+      ),
       body: Container(
         color: Colors.white,
         child: _loading
@@ -79,6 +92,24 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                     padding: const EdgeInsets.all(16),
                     children: _sections.map((s) => _buildSection(s)).toList(),
                   ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedTab,
+        onTap: (i) {
+          setState(() => _selectedTab = i);
+          if (i == 3) _showPlanDialog();
+        },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Favorite'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.highlight), label: 'Evidențiate'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.bookmark), label: 'Salvate'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.schedule), label: 'Plan de citit'),
+        ],
       ),
     );
   }
@@ -109,7 +140,20 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
               'Art. ${article.number} ${article.title}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-          ...article.content.map((l) => Text(l)),
+          ...article.content.map((l) => Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.yellow.shade100, Colors.yellow.shade50],
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                child: Text(
+                  l,
+                  textAlign: TextAlign.justify,
+                ),
+              )),
           if (article.amendments.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(top: 4),
@@ -135,14 +179,25 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        gradient: LinearGradient(
+          colors: [Colors.yellow.shade100, Colors.yellow.shade50],
+        ),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(note.type, style: const TextStyle(fontStyle: FontStyle.italic)),
-          ...note.content.map((l) => Text(l, style: const TextStyle(fontSize: 12))),
+          Text(
+            note.type == 'Decision' ? 'Decizie' : note.type,
+            style: const TextStyle(fontStyle: FontStyle.italic),
+          ),
+          ...note.content.map(
+            (l) => Text(
+              l,
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.justify,
+            ),
+          ),
         ],
       ),
     );
@@ -336,5 +391,154 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
     clean(structure);
     return structure;
+  }
+
+  void _buildArticleIndex() {
+    _allArticles.clear();
+    void traverse(List<dynamic> items, List<String> path) {
+      for (final item in items) {
+        if (item is CodeTextSection) {
+          traverse(item.content, [...path, '${item.type} ${item.name}']);
+        } else if (item is CodeTextArticle) {
+          _allArticles.add(_ArticleRef(item, path));
+        }
+      }
+    }
+
+    for (final sec in _sections) {
+      traverse(sec.content, ['${sec.type} ${sec.name}']);
+    }
+  }
+
+  void _onSearch() {
+    showSearch(context: context, delegate: CodeSearchDelegate(_allArticles));
+  }
+
+  void _showPlanDialog() {
+    int temp = _articlesPerDay;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Setează articole/zi'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Slider(
+                    min: 1,
+                    max: 20,
+                    divisions: 19,
+                    value: temp.toDouble(),
+                    label: '$temp',
+                    onChanged: (v) => setState(() => temp = v.round()),
+                  ),
+                  Text('$temp articole pe zi'),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Anulează'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() => _articlesPerDay = temp);
+                Navigator.pop(context);
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ArticleRef {
+  final CodeTextArticle article;
+  final List<String> path;
+  _ArticleRef(this.article, this.path);
+}
+
+class CodeSearchDelegate extends SearchDelegate<void> {
+  final List<_ArticleRef> articles;
+  CodeSearchDelegate(this.articles);
+
+  List<_ArticleRef> _filter(String query) {
+    final q = query.toLowerCase();
+    return articles.where((r) {
+      if (r.article.number.toLowerCase().contains(q) ||
+          r.article.title.toLowerCase().contains(q)) return true;
+      return r.article.content
+          .any((l) => l.toLowerCase().contains(q));
+    }).toList();
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final results = _filter(query);
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final r = results[index];
+        final path = r.path.join(' > ');
+        return ListTile(
+          title: Text('Art. ${r.article.number} ${r.article.title}'),
+          subtitle: Text(path),
+          onTap: () => _showArticle(context, r.article),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) => buildSuggestions(context);
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () => query = '',
+      )
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
+    );
+  }
+
+  void _showArticle(BuildContext context, CodeTextArticle a) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Art. ${a.number} ${a.title}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: a.content
+                .map((l) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(l, textAlign: TextAlign.justify),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Închide'),
+          ),
+        ],
+      ),
+    );
   }
 }
