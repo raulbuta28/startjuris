@@ -79,9 +79,9 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 	bookRe := regexp.MustCompile(`(?i)^Cartea`)
 	titleRe := regexp.MustCompile(`(?i)^Titlul`)
 	chapterRe := regexp.MustCompile(`(?i)^Capitolul`)
-	sectionRe := regexp.MustCompile(`(?i)^Sec[tț]iunea`)
-	subsectionRe := regexp.MustCompile(`(?i)^Subsec[tț]iunea`)
-        articleRe := regexp.MustCompile(`(?i)^Articolul\s+(\d+)\s*(?:-\s*(.+))?$`)
+	sectionRe := regexp.MustCompile(`(?i)^Sec[tțţ]iunea`)
+	subsectionRe := regexp.MustCompile(`(?i)^Subsec[tțţ]iunea`)
+	articleRe := regexp.MustCompile(`(?i)^Articolul\s+(\d+)\s*(?:-\s*(.+))?$`)
 	noteRe := regexp.MustCompile(`(?i)^Not[aă]`)
 	refRe := regexp.MustCompile(`(?i)(monitorul oficial|legea nr|ril nr|decizia)`)
 
@@ -301,22 +301,22 @@ func parseCodeFile(path, codeID, codeTitle string) (*ParsedCode, error) {
 				currentChapter.Sections = append(currentChapter.Sections, sec)
 				currentSection = &currentChapter.Sections[len(currentChapter.Sections)-1]
 			}
-                        articleOrder++
-                        matches := articleRe.FindStringSubmatch(line)
-                        num := ""
-                        title := ""
-                        if len(matches) > 1 {
-                                num = matches[1]
-                        }
-                        if len(matches) > 2 {
-                                title = matches[2]
-                        }
-                        if currentSubsection != nil {
-                                currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_sub_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder), Number: num, Title: title, Order: articleOrder}
-                        } else {
-                                currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Title: title, Order: articleOrder}
-                        }
-                        expectTitle = title == ""
+			articleOrder++
+			matches := articleRe.FindStringSubmatch(line)
+			num := ""
+			title := ""
+			if len(matches) > 1 {
+				num = matches[1]
+			}
+			if len(matches) > 2 {
+				title = matches[2]
+			}
+			if currentSubsection != nil {
+				currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_sub_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, subsectionOrder, articleOrder), Number: num, Title: title, Order: articleOrder}
+			} else {
+				currentArticle = &Article{ID: fmt.Sprintf("book_%d_title_%d_ch_%d_sec_%d_art_%d", bookOrder, titleOrder, chapterOrder, sectionOrder, articleOrder), Number: num, Title: title, Order: articleOrder}
+			}
+			expectTitle = title == ""
 		case noteRe.MatchString(line):
 			collectingNote = true
 			noteLines = []string{line}
