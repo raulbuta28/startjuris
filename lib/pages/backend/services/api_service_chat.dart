@@ -359,9 +359,9 @@ class ApiServiceChat extends ApiService {
 
   void connectDashboardWebSocket() {
     try {
-      print('Connecting to Dashboard WebSocket at: ws://192.168.8.123:8080/api/dashboard/ws');
+      print('Connecting to Dashboard WebSocket at: ${ApiService.wsBaseUrl}/dashboard/ws');
       _dashboardWsChannel = WebSocketChannel.connect(
-        Uri.parse('ws://192.168.8.123:8080/api/dashboard/ws'),
+        Uri.parse('${ApiService.wsBaseUrl}/dashboard/ws'),
       );
 
       _dashboardWsStream = _dashboardWsChannel!.stream.asBroadcastStream();

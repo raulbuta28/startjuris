@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../pages/backend/services/api_service.dart';
 
 class AdminBook {
   final String id;
@@ -21,7 +22,7 @@ class AdminBook {
 
 class BookService {
   static Future<List<AdminBook>> fetchBooks() async {
-    final uri = Uri.parse('http://localhost:8080/api/books');
+    final uri = Uri.parse('${ApiService.baseUrl}/books');
     final res = await http.get(uri);
     if (res.statusCode == 200) {
       final List<dynamic> data = jsonDecode(res.body);

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/code_text.dart';
+import 'backend/services/api_service.dart';
 
 class ModernCodeReader extends StatefulWidget {
   final String codeId;
@@ -28,7 +29,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Future<void> _load() async {
-    final baseUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+    final baseUrl = ApiService.baseUrl.replaceFirst('/api', '');
     if (mounted) {
       setState(() {
         _loading = true;

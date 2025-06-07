@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/code_structure.dart';
+import '../pages/backend/services/api_service.dart';
 
 class CodeParser {
-  static const String _baseUrl = String.fromEnvironment('API_URL', 
-      defaultValue: 'http://localhost:8080');
+  static final String _baseUrl = ApiService.baseUrl.replaceFirst('/api', '');
   
   static final Map<String, String> _codeTitles = {
     'civil': 'Codul Civil',
