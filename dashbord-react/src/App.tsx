@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
 import CodeEditor from './CodeEditor';
+import CodurileLaZi from './CodurileLaZi';
 
 interface LoginProps {
   onLogin: () => void;
@@ -65,6 +66,7 @@ function Login({ onLogin }: LoginProps) {
 const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
   { key: 'coduri_lazi', label: 'Codurile actualizate', icon: 'article' },
+  { key: 'codurile_la_zi', label: 'Codurile la zi', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
@@ -337,6 +339,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'coduri_lazi') {
       return <CodeEditor />;
+    }
+    if (section === 'codurile_la_zi') {
+      return <CodurileLaZi />;
     }
     const s = sections.find((x) => x.key === section);
     return (
