@@ -330,7 +330,71 @@ func saveCodeTextJSON(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	txt := convertSectionsToText(payload)
+	_ = os.WriteFile(filepath.Join(codesTextDir, id+".txt"), []byte(txt), 0644)
+
 	c.Status(http.StatusOK)
+}
+
+func convertSectionsToText(v interface{}) string {
+	var lines []string
+	var walk func(interface{})
+	walk = func(item interface{}) {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			return
+		}
+		if t, ok := m["type"].(string); ok {
+			switch t {
+			case "Note", "Decision":
+				lines = append(lines, t)
+				if arr, ok := m["content"].([]interface{}); ok {
+					for _, l := range arr {
+						lines = append(lines, fmt.Sprint(l))
+					}
+				}
+				return
+			default:
+				name := fmt.Sprint(m["name"])
+				if name != "" {
+					lines = append(lines, fmt.Sprintf("%s %s", t, name))
+				}
+				if arr, ok := m["content"].([]interface{}); ok {
+					for _, sub := range arr {
+						walk(sub)
+					}
+				}
+				return
+			}
+		}
+		if _, ok := m["number"]; ok {
+			num := fmt.Sprint(m["number"])
+			title := strings.TrimSpace(fmt.Sprint(m["title"]))
+			if title != "" {
+				lines = append(lines, fmt.Sprintf("Articolul %s - %s", num, title))
+			} else {
+				lines = append(lines, fmt.Sprintf("Articolul %s", num))
+			}
+			if arr, ok := m["content"].([]interface{}); ok {
+				for _, l := range arr {
+					lines = append(lines, fmt.Sprint(l))
+				}
+			}
+			if arr, ok := m["amendments"].([]interface{}); ok {
+				for _, l := range arr {
+					lines = append(lines, fmt.Sprint(l))
+				}
+			}
+		}
+	}
+
+	if arr, ok := v.([]interface{}); ok {
+		for _, item := range arr {
+			walk(item)
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func loadParsedCode(id string) (*ParsedCode, error) {
