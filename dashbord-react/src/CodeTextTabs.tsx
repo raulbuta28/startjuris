@@ -110,7 +110,7 @@ export default function CodeTextTabs() {
 
     const amendmentRegex = /^\(la \d{2}-\d{2}-\d{4},.*\)$/;
     const sectionRegex =
-      /^(Cartea|Titlul|Capitolul|Secţiunea|Subsecţiunea)\s+([IVXLC]+|[a-zA-Z\s\d-]+(\*\*\))?)$/i;
+      /^(Cartea|Titlul|Capitolul|Secţiunea|Subsecţiunea)\s+(.+)$/i;
     const articleRegex = /^Articolul\s+(\d+)\s*(?:-\s*(.+))?$/;
     const noteRegex = /^Notă$/;
     const decisionRegex = /^Decizie de admitere:/;
@@ -280,7 +280,8 @@ export default function CodeTextTabs() {
         } else if (
           item.title &&
           item.content.length > 0 &&
-          item.content[0].trim() === item.title.trim()
+          item.content[0].trim().toLowerCase() ===
+            item.title.trim().toLowerCase()
         ) {
           item.content.shift();
         }
@@ -497,7 +498,15 @@ export default function CodeTextTabs() {
         ) : (
           <div className="flex items-center space-x-2">
             <h3
-              className={`font-semibold mt-2 ${level === 0 ? "text-xl" : "text-lg"}`}
+              className={`font-bold mt-2 ${
+                section.type === "Cartea"
+                  ? "text-2xl"
+                  : section.type === "Titlul"
+                    ? "text-xl"
+                    : section.type === "Capitolul"
+                      ? "text-lg"
+                      : "text-base"
+              }`}
             >
               {section.type} {section.name}
             </h3>
@@ -636,7 +645,7 @@ export default function CodeTextTabs() {
                 </Button>
               </div>
             )}
-            {article.title && (
+            {!article.number && article.title && (
               <p className="text-sm whitespace-pre-wrap mt-1">
                 {article.title}
               </p>
