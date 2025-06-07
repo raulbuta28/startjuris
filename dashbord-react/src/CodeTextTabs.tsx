@@ -271,6 +271,23 @@ export default function CodeTextTabs() {
       parent.content.push(currentNote);
     }
 
+    function cleanContent(items: (Section | Article | Note)[]) {
+      for (const item of items) {
+        if ("type" in item) {
+          if (item.type !== "Note" && item.type !== "Decision") {
+            cleanContent(item.content);
+          }
+        } else if (
+          item.title &&
+          item.content.length > 0 &&
+          item.content[0].trim() === item.title.trim()
+        ) {
+          item.content.shift();
+        }
+      }
+    }
+
+    cleanContent(structure);
     return structure;
   }
 
