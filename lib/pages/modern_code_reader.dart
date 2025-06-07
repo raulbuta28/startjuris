@@ -24,43 +24,101 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Future<void> _load() async {
-    final baseUrl = const String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8080');
+    final baseUrl = const String.fromEnvironment(
+      'API_URL',
+      defaultValue: 'http://localhost:8080',
+    );
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
-      final res =
-          await http.get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         if (decoded is List) {
-          setState(() {
-            _sections = decoded;
-          });
-        } else {
-          setState(() {
-            _error = 'Invalid data format';
-          });
+          setState(() => _sections = decoded);
+          return;
         }
       } else if (res.statusCode == 404) {
-        setState(() {
-          _error = 'Code not found';
-        });
-      } else {
-        setState(() {
-          _error = 'Failed to load code';
-        });
+        // try loading parsed code as fallback
+        final parsed = await http
+            .get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
+        if (parsed.statusCode == 200) {
+          final decoded = jsonDecode(parsed.body);
+          if (decoded is Map<String, dynamic>) {
+            setState(() => _sections = _fromParsedCode(decoded));
+            return;
+          }
+        } else if (parsed.statusCode == 404) {
+          setState(() => _error = 'Code not found');
+          return;
+        }
       }
+
+      setState(() => _error = 'Failed to load code');
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
+      setState(() => _error = e.toString());
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
+  }
+
+  List<dynamic> _fromParsedCode(Map<String, dynamic> data) {
+    Map<String, dynamic> _sectionFromUnit(
+      String type,
+      String name,
+      Map unit,
+    ) {
+      final content = <dynamic>[];
+
+      if (unit['titles'] is List) {
+        content.addAll(
+          (unit['titles'] as List)
+              .map((t) => _sectionFromUnit('Titlul', t['title'] ?? '', t)),
+        );
+      }
+      if (unit['chapters'] is List) {
+        content.addAll(
+          (unit['chapters'] as List)
+              .map((c) => _sectionFromUnit('Capitolul', c['title'] ?? '', c)),
+        );
+      }
+      if (unit['sections'] is List) {
+        content.addAll(
+          (unit['sections'] as List)
+              .map((s) => _sectionFromUnit('Secțiunea', s['title'] ?? '', s)),
+        );
+      }
+      if (unit['subsections'] is List) {
+        content.addAll(
+          (unit['subsections'] as List)
+              .map((s) => _sectionFromUnit('Subsecțiunea', s['title'] ?? '', s)),
+        );
+      }
+      if (unit['articles'] is List) {
+        content.addAll((unit['articles'] as List).map((a) => {
+              'number': a['number'] ?? '',
+              'title': a['title'] ?? '',
+              'content': (a['content'] ?? '').toString().split('\n'),
+              'amendments': List<String>.from(a['notes'] ?? []),
+            }));
+      }
+
+      return {
+        'type': type,
+        'name': name,
+        'content': content,
+      };
+    }
+
+    final books = data['books'] as List? ?? [];
+    return books
+        .map((b) => _sectionFromUnit('Cartea', b['title'] ?? '', b))
+        .toList();
   }
 
   @override
