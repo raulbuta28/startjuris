@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
-import CodeEditor from './CodeEditor';
-import RawCodeEditor from './RawCodeEditor';
 import CodeTextTabs from './CodeTextTabs';
 
 interface LoginProps {
@@ -66,9 +64,7 @@ function Login({ onLogin }: LoginProps) {
 
 const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
-  { key: 'codes', label: 'Codurile actualizate', icon: 'library_books' },
-  { key: 'codes2', label: 'Codurile 2', icon: 'description' },
-  { key: 'coduri_lazi', label: 'Codurile la zi', icon: 'article' },
+  { key: 'coduri_lazi', label: 'Codurile actualizate', icon: 'article' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
@@ -338,12 +334,6 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'noutati') {
       return <NewsList items={news} onUpdate={updateNews} onEdit={setEditingNews} />;
-    }
-    if (section === 'codes') {
-      return <CodeEditor />;
-    }
-    if (section === 'codes2') {
-      return <RawCodeEditor />;
     }
     if (section === 'coduri_lazi') {
       return <CodeTextTabs />;
