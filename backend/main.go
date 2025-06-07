@@ -134,6 +134,8 @@ type Conversation struct {
 var conversations = make(map[string]*Conversation)
 var userConversations = make(map[string][]*Conversation)
 var wsClients = make(map[string]*websocket.Conn)
+var codeUpdateConns = make(map[*websocket.Conn]struct{})
+var codeUpdateMu sync.Mutex
 
 // mapping of available code text files
 var codeFiles = map[string]struct {
@@ -293,6 +295,8 @@ func saveParsedCodeHandler(c *gin.Context) {
 			return
 		}
 	}
+
+	broadcastCodeUpdate(id)
 	c.Status(http.StatusOK)
 }
 
@@ -333,6 +337,8 @@ func saveCodeTextJSON(c *gin.Context) {
 
 	txt := convertSectionsToText(payload)
 	_ = os.WriteFile(filepath.Join(codesTextDir, id+".txt"), []byte(txt), 0644)
+
+	broadcastCodeUpdate(id)
 
 	c.Status(http.StatusOK)
 }
@@ -885,6 +891,44 @@ func wsHandler(c *gin.Context) {
 	conn.Close()
 }
 
+func codeUpdatesWSHandler(c *gin.Context) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		return
+	}
+
+	codeUpdateMu.Lock()
+	codeUpdateConns[conn] = struct{}{}
+	codeUpdateMu.Unlock()
+
+	for {
+		if _, _, err := conn.NextReader(); err != nil {
+			break
+		}
+	}
+
+	codeUpdateMu.Lock()
+	delete(codeUpdateConns, conn)
+	codeUpdateMu.Unlock()
+	conn.Close()
+}
+
+func broadcastCodeUpdate(id string) {
+	codeUpdateMu.Lock()
+	defer codeUpdateMu.Unlock()
+	for conn := range codeUpdateConns {
+		_ = conn.WriteJSON(gin.H{"type": "code_update", "id": id})
+	}
+}
+
 func getConversationsHandler(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	user, ok := getUserFromToken(token)
@@ -1263,6 +1307,7 @@ func main() {
 		api.POST("/messages/send/:id", sendMessageHandler)
 		api.POST("/messages/mark-read/:id", markReadHandler)
 		api.GET("/ws", wsHandler)
+		api.GET("/code-updates", codeUpdatesWSHandler)
 
 		api.GET("/books", listBooks)
 		api.POST("/save-books", saveBooks)
