@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../models/code_text.dart';
 
 class ModernCodeReader extends StatefulWidget {
   final String codeId;
@@ -12,7 +13,7 @@ class ModernCodeReader extends StatefulWidget {
 }
 
 class _ModernCodeReaderState extends State<ModernCodeReader> {
-  Map<String, dynamic>? _code;
+  List<CodeTextSection> _sections = [];
   bool _loading = true;
   String? _error;
 
@@ -29,32 +30,23 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       _error = null;
     });
     try {
-      final res =
-          await http.get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
+      final res = await http.get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
-        if (decoded is Map<String, dynamic>) {
+        if (decoded is List) {
           setState(() {
-            _code = decoded;
+            _sections = decoded.map((e) => CodeTextSection.fromJson(e as Map<String, dynamic>)).toList();
           });
         } else {
-          setState(() {
-            _error = 'Invalid data format';
-          });
+          setState(() { _error = 'Invalid data format'; });
         }
       } else {
-        setState(() {
-          _error = 'Failed to load code';
-        });
+        setState(() { _error = 'Failed to load code'; });
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
+      setState(() { _error = e.toString(); });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() { _loading = false; });
     }
   }
 
@@ -62,99 +54,82 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.codeTitle)),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!))
-              : _code == null
-                  ? const SizedBox()
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: _buildBooks(
-                          _code!['books'] is List ? _code!['books'] as List : []),
-                    ),
+      body: Container(
+        color: Colors.white,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(child: Text(_error!))
+                : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: _sections.map((s) => _buildSection(s)).toList(),
+                  ),
+      ),
     );
   }
 
-  List<Widget> _buildBooks(List<dynamic> books) {
-    return books.map((b) {
-      final titles = b is Map && b['titles'] is List ? b['titles'] as List : [];
-      return ExpansionTile(
-        title: Text('${b is Map ? b['title'] ?? '' : ''}'),
-        children: _buildTitles(titles),
-      );
+  Widget _buildSection(CodeTextSection section) {
+    final children = section.content.map((e) {
+      if (e is CodeTextSection) return _buildSection(e);
+      if (e is CodeTextArticle) return _buildArticle(e);
+      if (e is CodeTextNote) return _buildNote(e);
+      return const SizedBox();
     }).toList();
+
+    return ExpansionTile(
+      title: Text('${section.type} ${section.name}'),
+      initiallyExpanded: true,
+      children: children,
+    );
   }
 
-  List<Widget> _buildTitles(List<dynamic> titles) {
-    return titles.map((t) {
-      final chapters = t is Map && t['chapters'] is List ? t['chapters'] as List : [];
-      return ExpansionTile(
-        title: Text('${t is Map ? t['title'] ?? '' : ''}'),
-        children: _buildChapters(chapters),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildChapters(List<dynamic> chapters) {
-    return chapters.map((c) {
-      final secs = c is Map && c['sections'] is List ? c['sections'] as List : [];
-      return ExpansionTile(
-        title: Text('${c is Map ? c['title'] ?? '' : ''}'),
-        children: _buildSections(secs),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildSections(List<dynamic> sections) {
-    return sections.map((s) {
-      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
-      final subs = s is Map && s['subsections'] is List ? s['subsections'] as List : [];
-      return ExpansionTile(
-        title: Text('${s is Map ? s['title'] ?? '' : ''}'),
+  Widget _buildArticle(CodeTextArticle article) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ..._buildArticles(arts),
-          ..._buildSubsections(subs),
-        ],
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildSubsections(List<dynamic> subs) {
-    return subs.map((s) {
-      final arts = s is Map && s['articles'] is List ? s['articles'] as List : [];
-      return ExpansionTile(
-        title: Text('${s is Map ? s['title'] ?? '' : ''}'),
-        children: _buildArticles(arts),
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildArticles(List<dynamic> arts) {
-    return arts.map((a) {
-      final refs = a is Map && a['references'] is List ? a['references'] as List : [];
-      return ListTile(
-        title: Text('Art. ${a is Map ? a['number'] ?? '' : ''} ${a is Map ? a['title'] ?? '' : ''}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(a is Map ? (a['content'] ?? '') : ''),
-            if (refs.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  refs.join('\n'),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
+          if (article.number.isNotEmpty || article.title.isNotEmpty)
+            Text(
+              'Art. ${article.number} ${article.title}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ...article.content.map((l) => Text(l)),
+          if (article.amendments.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(4),
               ),
-          ],
-        ),
-      );
-    }).toList();
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: article.amendments
+                    .map((a) => Text(a, style: const TextStyle(fontSize: 12)))
+                    .toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNote(CodeTextNote note) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(note.type, style: const TextStyle(fontStyle: FontStyle.italic)),
+          ...note.content.map((l) => Text(l, style: const TextStyle(fontSize: 12))),
+        ],
+      ),
+    );
   }
 }
