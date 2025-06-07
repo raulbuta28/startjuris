@@ -665,7 +665,7 @@ export default function CodeTextTabs() {
                 {line}
               </p>
             ))}
-            {article.amendments.length > 0 && (
+            {article.amendments && article.amendments.length > 0 && (
               <div className="mt-2 p-2 border rounded bg-gradient-to-r from-gray-100 to-gray-200">
                 {article.amendments.map((amendment, i) => (
                   <p key={i} className="text-sm text-gray-700">
