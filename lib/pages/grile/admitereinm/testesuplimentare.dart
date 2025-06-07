@@ -373,6 +373,7 @@ class _ThemeCard extends StatelessWidget {
 // 8. MAIN
 // ────────────────────────────────────────────────────────────────────────────
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

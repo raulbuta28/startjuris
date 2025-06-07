@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart' as intl_data;
 import 'dart:ui' show TextDirection, Matrix4, Rect, ImageFilter;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   intl_data.initializeDateFormatting('ro_RO', null).then((_) {
     runApp(const MyApp());
   });
