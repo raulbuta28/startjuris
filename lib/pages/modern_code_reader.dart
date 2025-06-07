@@ -35,28 +35,28 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     });
 
     try {
-      final res = await http
-          .get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
+      final res =
+          await http.get(Uri.parse('$baseUrl/api/code-text-json/${widget.codeId}'));
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
         if (decoded is List) {
           setState(() => _sections = decoded);
           return;
         }
-      } else if (res.statusCode == 404) {
-        // try loading parsed code as fallback
-        final parsed = await http
-            .get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
-        if (parsed.statusCode == 200) {
-          final decoded = jsonDecode(parsed.body);
-          if (decoded is Map<String, dynamic>) {
-            setState(() => _sections = _fromParsedCode(decoded));
-            return;
-          }
-        } else if (parsed.statusCode == 404) {
-          setState(() => _error = 'Code not found');
+      }
+
+      // fallback to parsed code if anything went wrong
+      final parsed =
+          await http.get(Uri.parse('$baseUrl/api/parsed-code/${widget.codeId}'));
+      if (parsed.statusCode == 200) {
+        final decoded = jsonDecode(parsed.body);
+        if (decoded is Map<String, dynamic>) {
+          setState(() => _sections = _fromParsedCode(decoded));
           return;
         }
+      } else if (parsed.statusCode == 404) {
+        setState(() => _error = 'Code not found');
+        return;
       }
 
       setState(() => _error = 'Failed to load code');
@@ -215,14 +215,16 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
         final name = item['name'] ?? '';
         final content = item['content'] is List ? item['content'] as List : [];
         return Padding(
-          padding: EdgeInsets.only(left: 16.0 * level),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            title: Text(
-              '${item['type']} $name',
-              style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
-            ),
-            children: _buildSectionWidgets(content, level + 1),
+          padding: EdgeInsets.only(left: 16.0 * level, bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${item['type']} $name',
+                style: GoogleFonts.merriweather(fontWeight: FontWeight.w600),
+              ),
+              ..._buildSectionWidgets(content, level + 1),
+            ],
           ),
         );
       }
