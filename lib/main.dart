@@ -10,6 +10,7 @@ import 'pages/backend/providers/level_provider.dart';
 import 'providers/obiective_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

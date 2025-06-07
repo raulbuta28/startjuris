@@ -413,6 +413,7 @@ class SimulariPage extends StatelessWidget {
 // 6. MAIN
 // ────────────────────────────────────────────────────────────────────────────
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

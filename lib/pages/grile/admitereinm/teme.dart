@@ -616,6 +616,7 @@ List<Map<String, dynamic>> _filterCategories(List<String> headers) =>
 // 7. MAIN
 // ────────────────────────────────────────────────────────────────────────────
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
