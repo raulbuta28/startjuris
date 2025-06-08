@@ -4,12 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import '../../../config.dart' as config;
 
 class ApiService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_URL',
-    defaultValue: 'http://192.168.8.123:8080/api',
-  );
+  static const String baseUrl = config.apiBaseUrl;
+  static String get wsBaseUrl => config.wsBaseUrl;
   final String? token;
   final Dio _dio = Dio();
   final _storage = const FlutterSecureStorage();

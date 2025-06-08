@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../pages/backend/services/api_service.dart';
 
 class NewsItem {
   final String id;
@@ -32,7 +33,7 @@ class NewsItem {
 
 class NewsService {
   static Future<List<NewsItem>> fetchNews() async {
-    final uri = Uri.parse('http://localhost:8080/api/news');
+    final uri = Uri.parse('${ApiService.baseUrl}/news');
     final res = await http.get(uri);
     if (res.statusCode == 200) {
       final List<dynamic> data = jsonDecode(res.body);

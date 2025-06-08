@@ -8,6 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/chat_models.dart';
 import '../models/user_model.dart';
 import '../services/api_service_chat.dart';
+import '../services/api_service.dart';
 import '../services/api_service_login.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -62,7 +63,7 @@ class ChatProvider with ChangeNotifier {
     _reconnectTimer?.cancel();
     _channel?.sink.close();
 
-    final baseUrl = 'ws://192.168.8.123:8080/api/ws';
+    final baseUrl = '${ApiService.wsBaseUrl}/ws';
 
     try {
       print('Connecting to WebSocket: $baseUrl');

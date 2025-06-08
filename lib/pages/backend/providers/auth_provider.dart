@@ -266,7 +266,7 @@ class AuthProvider extends ChangeNotifier {
       final tempApiService = ApiServiceLogin(token: null);
       
       final response = await http.get(
-        Uri.parse('http://192.168.8.123:8080/api/profile'),
+        Uri.parse('${ApiService.baseUrl}/profile'),
         headers: {'Content-Type': 'application/json'},
       );
       
