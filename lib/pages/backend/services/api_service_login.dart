@@ -21,11 +21,12 @@ class ApiServiceLogin extends ApiService {
   Future<Map<String, dynamic>> login({
     required String identifier,
     required String password,
+    String? baseUrl,
   }) async {
     print('Attempting login for identifier: $identifier');
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/auth/login'),
+        Uri.parse('${baseUrl ?? ApiService.baseUrl}/auth/login'),
         headers: headers,
         body: jsonEncode({
           identifier.contains('@') ? 'email' : 'username': identifier,
@@ -52,11 +53,12 @@ class ApiServiceLogin extends ApiService {
     required String username,
     required String email,
     required String password,
+    String? baseUrl,
   }) async {
     print('Attempting registration for email: $email');
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/auth/register'),
+        Uri.parse('${baseUrl ?? ApiService.baseUrl}/auth/register'),
         headers: headers,
         body: jsonEncode({
           'username': username,

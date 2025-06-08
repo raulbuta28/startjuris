@@ -53,7 +53,11 @@ class AuthProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
   ApiServiceLogin get apiService => _apiService;
 
-  Future<void> login({required String identifier, required String password}) async {
+  Future<void> login({
+    required String identifier,
+    required String password,
+    String? baseUrl,
+  }) async {
     try {
       print('Starting login process');
 
@@ -61,6 +65,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await tempApiService.login(
         identifier: identifier,
         password: password,
+        baseUrl: baseUrl,
       );
 
       _token = response['token'];
@@ -86,6 +91,7 @@ class AuthProvider extends ChangeNotifier {
     required String username,
     required String email,
     required String password,
+    String? baseUrl,
   }) async {
     try {
       print('Starting registration process');
@@ -95,6 +101,7 @@ class AuthProvider extends ChangeNotifier {
         username: username,
         email: email,
         password: password,
+        baseUrl: baseUrl,
       );
       print('Registration successful');
     } catch (e) {

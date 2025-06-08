@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import '../providers/auth_provider.dart';
 import 'register_page.dart';
 import '../../../main_container.dart';
@@ -53,10 +54,19 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       print('Attempting login from LoginPage'); // Debug print
+      String baseUrl;
+      if (kIsWeb) {
+        baseUrl = 'http://localhost:8080';
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        baseUrl = 'http://10.0.2.2:8080';
+      } else {
+        baseUrl = 'http://192.168.8.123:8080';
+      }
       final authProvider = context.read<AuthProvider>();
       await authProvider.login(
         identifier: _identifierController.text,
         password: _passwordController.text,
+        baseUrl: baseUrl,
       );
       print('Login successful, checking authentication status'); // Debug print
       print('isAuthenticated: ${authProvider.isAuthenticated}'); // Debug print
