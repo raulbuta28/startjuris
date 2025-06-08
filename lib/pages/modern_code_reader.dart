@@ -123,10 +123,22 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       return const SizedBox();
     }).toList();
 
-    return ExpansionTile(
-      title: Text('${section.type} ${section.name}'),
-      initiallyExpanded: true,
-      children: children,
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Colors.grey, width: 1),
+          bottom: BorderSide(color: Colors.grey, width: 1),
+        ),
+      ),
+      child: ExpansionTile(
+        title: Text(
+          '${section.type} ${section.name}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        initiallyExpanded: true,
+        children: children,
+      ),
     );
   }
 
@@ -141,20 +153,22 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
               'Art. ${article.number} ${article.title}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-          ...article.content.map((l) => Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.yellow.shade100, Colors.yellow.shade50],
-                  ),
+          ...article.content.map(
+            (l) => Container(
+              width: double.infinity,
+              color: Colors.white,
+              padding:
+                  const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+              child: Text(
+                l,
+                textAlign: TextAlign.justify,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
                 ),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-                child: Text(
-                  l,
-                  textAlign: TextAlign.justify,
-                ),
-              )),
+              ),
+            ),
+          ),
           if (article.amendments.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(top: 4),
@@ -195,7 +209,11 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           ...note.content.map(
             (l) => Text(
               l,
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
+              ),
               textAlign: TextAlign.justify,
             ),
           ),
