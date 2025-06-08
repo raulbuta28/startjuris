@@ -94,6 +94,31 @@ func saveTokens() {
 var mu sync.Mutex
 var userUtils = make(map[string]map[string]interface{})
 
+type ArticlePrefs struct {
+	Likes     []string `json:"likes"`
+	Favorites []string `json:"favorites"`
+	Saved     []string `json:"saved"`
+}
+
+var userArticlePrefs = make(map[string]*ArticlePrefs)
+var userArticlePrefsFile = filepath.Join(rootDir, "backend", "user_articles.json")
+
+func loadArticlePrefs() {
+	data, err := os.ReadFile(userArticlePrefsFile)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, &userArticlePrefs)
+}
+
+func saveArticlePrefs() {
+	data, err := json.MarshalIndent(userArticlePrefs, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(userArticlePrefsFile, data, 0644)
+}
+
 var userFile = filepath.Join(rootDir, "backend", "users.json")
 
 func loadUsers() {
@@ -1052,6 +1077,90 @@ func updateUtilsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func getPrefSlice(prefs *ArticlePrefs, kind string) []string {
+	switch kind {
+	case "likes":
+		return prefs.Likes
+	case "favorites":
+		return prefs.Favorites
+	case "saved":
+		return prefs.Saved
+	}
+	return []string{}
+}
+
+func togglePref(prefs *ArticlePrefs, kind, id string) {
+	slice := getPrefSlice(prefs, kind)
+	found := false
+	for i, v := range slice {
+		if v == id {
+			slice = append(slice[:i], slice[i+1:]...)
+			found = true
+			break
+		}
+	}
+	if !found {
+		slice = append(slice, id)
+	}
+	switch kind {
+	case "likes":
+		prefs.Likes = slice
+	case "favorites":
+		prefs.Favorites = slice
+	case "saved":
+		prefs.Saved = slice
+	}
+}
+
+func getArticlePrefsHandler(kind string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader("Authorization")
+		user, ok := getUserFromToken(token)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		mu.Lock()
+		prefs, ok := userArticlePrefs[user.ID]
+		if !ok {
+			prefs = &ArticlePrefs{}
+			userArticlePrefs[user.ID] = prefs
+		}
+		data := getPrefSlice(prefs, kind)
+		mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{kind: data})
+	}
+}
+
+func toggleArticlePrefsHandler(kind string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader("Authorization")
+		user, ok := getUserFromToken(token)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		var payload struct {
+			ID string `json:"id"`
+		}
+		if err := c.BindJSON(&payload); err != nil || payload.ID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+			return
+		}
+		mu.Lock()
+		prefs, ok := userArticlePrefs[user.ID]
+		if !ok {
+			prefs = &ArticlePrefs{}
+			userArticlePrefs[user.ID] = prefs
+		}
+		togglePref(prefs, kind, payload.ID)
+		saveArticlePrefs()
+		data := getPrefSlice(prefs, kind)
+		mu.Unlock()
+		c.JSON(http.StatusOK, gin.H{kind: data})
+	}
+}
+
 func getOnlineUsersHandler(c *gin.Context) {
 	mu.Lock()
 	users := make([]string, 0, len(wsClients))
@@ -1209,6 +1318,7 @@ func main() {
 	loadUsers()
 	loadTokens()
 	loadCodes()
+	loadArticlePrefs()
 	preloadParsedCodes()
 	r := gin.Default()
 
@@ -1249,6 +1359,13 @@ func main() {
 
 		api.GET("/utils", getUtilsHandler)
 		api.PUT("/utils", updateUtilsHandler)
+
+		api.GET("/favorites", getArticlePrefsHandler("favorites"))
+		api.POST("/favorites", toggleArticlePrefsHandler("favorites"))
+		api.GET("/likes", getArticlePrefsHandler("likes"))
+		api.POST("/likes", toggleArticlePrefsHandler("likes"))
+		api.GET("/saved", getArticlePrefsHandler("saved"))
+		api.POST("/saved", toggleArticlePrefsHandler("saved"))
 
 		api.GET("/users/online", getOnlineUsersHandler)
 
