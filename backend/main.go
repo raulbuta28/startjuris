@@ -1280,5 +1280,7 @@ func main() {
 
 	r.Static("/uploads", "./uploads")
 
-	r.Run(":8080")
+	// Listen on all network interfaces so the API is reachable from other
+	// devices on the local network (e.g. using the machine's IP address)
+	r.Run("0.0.0.0:8080")
 }
