@@ -14,15 +14,17 @@ class ModernCodeReader extends StatefulWidget {
 }
 
 class _ModernCodeReaderState extends State<ModernCodeReader> {
+  List<Widget> _contentWidgets = [];
   List<CodeTextSection> _sections = [];
   bool _loading = true;
   String? _error;
   double _fontSize = 12.0;
   bool _isDarkMode = false;
+  final Set<String> _favoriteArticles = {};
+  final Set<String> _highlightedArticles = {};
+  final Set<String> _savedArticles = {};
 
   final List<_ArticleRef> _allArticles = [];
-  final Set<CodeTextArticle> _favoriteArticles = {};
-  final Set<CodeTextArticle> _savedArticles = {};
   int _selectedTab = 0;
   int _articlesPerDay = 5;
 
@@ -49,6 +51,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           if (mounted) {
             setState(() {
               _sections = decoded.map((e) => CodeTextSection.fromJson(e as Map<String, dynamic>)).toList();
+              _contentWidgets = _buildContentWidgets(_sections);
             });
           }
         } else {
@@ -60,7 +63,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
         if (txtRes.statusCode == 200) {
           final filtered = _filterCodeText(txtRes.body);
           final parsed = _parseText(filtered);
-          if (mounted) setState(() { _sections = parsed; });
+          if (mounted) setState(() {
+            _sections = parsed;
+            _contentWidgets = _buildContentWidgets(parsed);
+          });
         } else {
           if (mounted) setState(() { _error = 'Failed to load code'; });
         }
@@ -73,6 +79,23 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       if (mounted) setState(() { _loading = false; });
       _buildArticleIndex();
     }
+  }
+
+  List<Widget> _buildContentWidgets(List<CodeTextSection> sections) {
+    final widgets = <Widget>[];
+    for (var section in sections) {
+      widgets.add(_buildSection(section));
+      for (var content in section.content) {
+        if (content is CodeTextSection) {
+          widgets.addAll(_buildContentWidgets([content]));
+        } else if (content is CodeTextArticle) {
+          widgets.add(_buildArticle(content));
+        } else if (content is CodeTextNote) {
+          widgets.add(_buildNote(content));
+        }
+      }
+    }
+    return widgets;
   }
 
   @override
@@ -90,7 +113,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
               color: _isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
-          backgroundColor: _isDarkMode ? Colors.black : Colors.white,
+          backgroundColor: Colors.white,
           elevation: 0,
           actions: [
             IconButton(
@@ -107,7 +130,19 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? Center(child: Text(_error!))
-                : _buildBody(),
+                : _selectedTab == 0
+                    ? ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                        physics: const ClampingScrollPhysics(),
+                        children: _contentWidgets,
+                      )
+                    : PlaceholderPage(
+                        tabIndex: _selectedTab,
+                        favoriteArticles: _favoriteArticles,
+                        highlightedArticles: _highlightedArticles,
+                        savedArticles: _savedArticles,
+                        allArticles: _allArticles,
+                      ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (i) {
@@ -121,29 +156,21 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           elevation: 0,
           selectedLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(color: Colors.black54),
-          items: [
+          items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite, size: 28, shadows: [
-                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
-              ]),
+              icon: Icon(Icons.favorite),
               label: 'Favorite',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.star, size: 28, shadows: [
-                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
-              ]),
+              icon: Icon(Icons.star),
               label: 'Evidențiate',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark, size: 28, shadows: [
-                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
-              ]),
+              icon: Icon(Icons.bookmark),
               label: 'Salvate',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today, size: 28, shadows: [
-                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
-              ]),
+              icon: Icon(Icons.calendar_today),
               label: 'Plan de citit',
             ),
           ],
@@ -153,121 +180,139 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Widget _buildSection(CodeTextSection section) {
-    final children = section.content.map((e) {
-      if (e is CodeTextSection) return _buildSection(e);
-      if (e is CodeTextArticle) return _buildArticle(e);
-      if (e is CodeTextNote) return _buildNote(e);
-      return const SizedBox();
-    }).toList();
-
-    return ExpansionTile(
-      title: Text(
-        '${section.type} ${section.name}',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: _fontSize + 4,
-          color: _isDarkMode ? Colors.white : Colors.black87,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Container(
+        constraints: BoxConstraints.tightFor(
+          width: MediaQuery.of(context).size.width - 8,
+        ),
+        child: Text(
+          '${section.type} ${section.name}',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: _fontSize + 4,
+            color: _isDarkMode ? Colors.white : Colors.black87,
+          ),
+          overflow: TextOverflow.ellipsis,
         ),
       ),
-      initiallyExpanded: true,
-      tilePadding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
-      childrenPadding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
-      iconColor: Colors.blueAccent,
-      collapsedIconColor: Colors.grey,
-      children: children,
     );
   }
 
   Widget _buildArticle(CodeTextArticle article) {
-    final isFav = _favoriteArticles.contains(article);
-    final isSaved = _savedArticles.contains(article);
+    final articleId = '${article.number}-${article.title}';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (article.number.isNotEmpty || article.title.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Art. ${article.number} ${article.title}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: _fontSize + 2,
-                        color: _isDarkMode ? Colors.white : Colors.black87,
+      child: Container(
+        constraints: BoxConstraints.tightFor(
+          width: MediaQuery.of(context).size.width - 8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (article.number.isNotEmpty || article.title.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Art. ${article.number} ${article.title}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: _fontSize + 2,
+                          color: _isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      isFav ? Icons.favorite : Icons.favorite_border,
-                      color: Colors.red,
-                      size: 20,
+                    IconButton(
+                      icon: Icon(
+                        _favoriteArticles.contains(articleId) ? Icons.favorite : Icons.favorite_border,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_favoriteArticles.contains(articleId)) {
+                            _favoriteArticles.remove(articleId);
+                          } else {
+                            _favoriteArticles.add(articleId);
+                          }
+                        });
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        if (isFav) {
-                          _favoriteArticles.remove(article);
-                        } else {
-                          _favoriteArticles.add(article);
-                        }
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      isSaved ? Icons.bookmark : Icons.bookmark_border,
-                      color: Colors.blueAccent,
-                      size: 20,
+                    IconButton(
+                      icon: Icon(
+                        _highlightedArticles.contains(articleId) ? Icons.star : Icons.star_border,
+                        color: Colors.yellow[700],
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_highlightedArticles.contains(articleId)) {
+                            _highlightedArticles.remove(articleId);
+                          } else {
+                            _highlightedArticles.add(articleId);
+                          }
+                        });
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        if (isSaved) {
-                          _savedArticles.remove(article);
-                        } else {
-                          _savedArticles.add(article);
-                        }
-                      });
-                    },
-                  ),
-                ],
+                    IconButton(
+                      icon: Icon(
+                        _savedArticles.contains(articleId) ? Icons.bookmark : Icons.bookmark_border,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_savedArticles.contains(articleId)) {
+                            _savedArticles.remove(articleId);
+                          } else {
+                            _savedArticles.add(articleId);
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ...article.content.map(
-            (l) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 3),
-              child: Text(
-                l,
-                textAlign: TextAlign.justify,
-                style: TextStyle(
-                  fontSize: _fontSize,
-                  color: _isDarkMode ? Colors.white70 : Colors.black87,
+            ...article.content.map(
+              (l) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                child: Text(
+                  l,
+                  textAlign: TextAlign.justify,
+                  style: TextStyle(
+                    fontSize: _fontSize,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: _isDarkMode ? Colors.white70 : Colors.black87,
+                  ),
                 ),
               ),
             ),
-          ),
-          if (article.amendments.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 3, right: 3),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: article.amendments
-                    .map((a) => Text(
-                          a,
-                          textAlign: TextAlign.justify,
-                          style: TextStyle(
-                            fontSize: _fontSize - 2,
-                            color: _isDarkMode ? Colors.white54 : Colors.black54,
-                          ),
-                        ))
-                    .toList(),
+            if (article.amendments.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: article.amendments
+                      .map((a) => Text(
+                            a,
+                            textAlign: TextAlign.justify,
+                            style: TextStyle(
+                              fontSize: _fontSize - 2,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                              color: _isDarkMode ? Colors.white54 : Colors.black54,
+                            ),
+                          ))
+                      .toList(),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -275,29 +320,40 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   Widget _buildNote(CodeTextNote note) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            note.type == 'Decision' ? 'Decizie' : note.type,
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.bold,
-              color: _isDarkMode ? Colors.white : Colors.black87,
-              fontSize: _fontSize,
-            ),
+      child: Container(
+        constraints: BoxConstraints.tightFor(
+          width: MediaQuery.of(context).size.width - 8,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.yellow.shade100,
+              Colors.blue.shade50,
+            ],
           ),
-          ...note.content.map(
-            (l) => Text(
-              l,
-              textAlign: TextAlign.justify,
-              style: TextStyle(
-                fontSize: _fontSize - 2,
-                color: _isDarkMode ? Colors.white70 : Colors.black87,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: note.content.map(
+            (l) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+              child: Text(
+                l,
+                textAlign: TextAlign.justify,
+                style: TextStyle(
+                  fontSize: _fontSize - 2,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                  color: _isDarkMode ? Colors.black87 : Colors.black87,
+                ),
               ),
             ),
-          ),
-        ],
+          ).toList(),
+        ),
       ),
     );
   }
@@ -305,8 +361,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   String _filterCodeText(String text) {
     final lines = text.split(RegExp(r'\r?\n'));
     final startIndex = lines.indexWhere((line) =>
-        RegExp(r'^(titlul|partea|cartea|capitolul|articolul)', caseSensitive: false)
-            .hasMatch(line.trim()));
+        RegExp(r'^(titlul|partea|cartea|capitolul|articolul)', caseSensitive: false).hasMatch(line.trim()));
     final sliced = startIndex >= 0 ? lines.sublist(startIndex) : lines;
     return sliced.join('\n').trim();
   }
@@ -494,44 +549,20 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   void _buildArticleIndex() {
     _allArticles.clear();
-    void traverse(List<dynamic> items, List<String> path) {
+    void traverse(List<dynamic> items, List<String> path, String parentId) {
       for (final item in items) {
         if (item is CodeTextSection) {
-          traverse(item.content, [...path, '${item.type} ${item.name}']);
+          traverse(item.content, [...path, '${item.type} ${item.name}'], parentId);
         } else if (item is CodeTextArticle) {
-          _allArticles.add(_ArticleRef(item, path));
+          final articleId = '${item.number}-${item.title}';
+          _allArticles.add(_ArticleRef(item, [...path], articleId));
         }
       }
     }
 
-    for (final sec in _sections) {
-      traverse(sec.content, ['${sec.type} ${sec.name}']);
+    for (final section in _sections) {
+      traverse([section], ['${section.type} ${section.name}'], '');
     }
-  }
-
-  Widget _buildBody() {
-    if (_selectedTab == 0) {
-      return _buildArticleList(_favoriteArticles.toList());
-    } else if (_selectedTab == 2) {
-      return _buildArticleList(_savedArticles.toList());
-    }
-    return _buildSectionsList();
-  }
-
-  Widget _buildSectionsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
-      itemCount: _sections.length,
-      itemBuilder: (context, index) => _buildSection(_sections[index]),
-    );
-  }
-
-  Widget _buildArticleList(List<CodeTextArticle> articles) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
-      itemCount: articles.length,
-      itemBuilder: (context, index) => _buildArticle(articles[index]),
-    );
   }
 
   void _onSearch() {
@@ -544,71 +575,150 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       builder: (context) {
         double tempFontSize = _fontSize;
         bool tempDarkMode = _isDarkMode;
-        return AlertDialog(
-          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'Setări',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: _isDarkMode ? Colors.white : Colors.black87,
-            ),
-          ),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Mărime text',
-                    style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
-                  ),
-                  Slider(
-                    min: 10,
-                    max: 20,
-                    divisions: 10,
-                    value: tempFontSize,
-                    label: tempFontSize.round().toString(),
-                    activeColor: Colors.blueAccent,
-                    onChanged: (v) => setState(() => tempFontSize = v),
-                  ),
-                  ListTile(
-                    title: Text(
-                      'Mod întunecat',
-                      style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
-                    ),
-                    trailing: Switch(
-                      value: tempDarkMode,
-                      activeColor: Colors.blueAccent,
-                      onChanged: (v) => setState(() => tempDarkMode = v),
-                    ),
-                  ),
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.blue.shade100.withOpacity(0.8),
+                  Colors.purple.shade100.withOpacity(0.8),
                 ],
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Anulează',
-                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
               ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _fontSize = tempFontSize;
-                  _isDarkMode = tempDarkMode;
-                });
-                Navigator.pop(context);
+            padding: const EdgeInsets.all(24),
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Setări',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        color: Colors.black87,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4,
+                            color: Colors.black.withOpacity(0.2),
+                            offset: const Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mărime text',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Slider(
+                            min: 10,
+                            max: 20,
+                            divisions: 10,
+                            value: tempFontSize,
+                            label: tempFontSize.round().toString(),
+                            activeColor: Colors.blueAccent,
+                            inactiveColor: Colors.grey[300],
+                            onChanged: (v) => setState(() => tempFontSize = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Mod întunecat',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Switch(
+                            value: tempDarkMode,
+                            activeColor: Colors.blueAccent,
+                            onChanged: (v) => setState(() => tempDarkMode = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Anulează',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _fontSize = tempFontSize;
+                              _isDarkMode = tempDarkMode;
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                          child: const Text(
+                            'OK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
               },
-              child: Text(
-                'OK',
-                style: TextStyle(color: Colors.blueAccent),
-              ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -688,10 +798,143 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 }
 
+class PlaceholderPage extends StatelessWidget {
+  final int tabIndex;
+  final Set<String> favoriteArticles;
+  final Set<String> highlightedArticles;
+  final Set<String> savedArticles;
+  final List<_ArticleRef> allArticles;
+
+  const PlaceholderPage({
+    Key? key,
+    required this.tabIndex,
+    required this.favoriteArticles,
+    required this.highlightedArticles,
+    required this.savedArticles,
+    required this.allArticles,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final articles = tabIndex == 1
+        ? favoriteArticles
+        : tabIndex == 2
+            ? highlightedArticles
+            : savedArticles;
+    final message = tabIndex == 1
+        ? 'Nu ai încă articole favorite.'
+        : tabIndex == 2
+            ? 'Nu ai încă articole evidențiate.'
+            : 'Nu ai încă articole salvate.';
+
+    if (articles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              tabIndex == 1
+                  ? Icons.favorite_border
+                  : tabIndex == 2
+                      ? Icons.star_border
+                      : Icons.bookmark_border,
+              size: 64,
+              color: isDarkMode ? Colors.white54 : Colors.black54,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white70 : Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final filteredArticles = allArticles.where((ref) => articles.contains(ref.articleId)).toList();
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+      itemCount: filteredArticles.length,
+      separatorBuilder: (context, index) => Divider(
+        color: isDarkMode ? Colors.white24 : Colors.black12,
+        thickness: 1,
+      ),
+      itemBuilder: (context, index) {
+        final article = filteredArticles[index].article;
+        final path = filteredArticles[index].path.join(' > ');
+        return ListTile(
+          title: Text(
+            'Art. ${article.number} ${article.title}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge!.color,
+            ),
+          ),
+          subtitle: Text(
+            path,
+            style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
+          ),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: Text(
+                  'Art. ${article.number} ${article.title}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge!.color,
+                  ),
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: article.content
+                        .map((l) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                l,
+                                textAlign: TextAlign.justify,
+                                style: TextStyle(
+                                  color: Theme.of(context).textTheme.bodyLarge!.color,
+                                ),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Închide',
+                      style: TextStyle(color: Colors.blueAccent),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class _ArticleRef {
   final CodeTextArticle article;
   final List<String> path;
-  _ArticleRef(this.article, this.path);
+  final String articleId;
+
+  _ArticleRef(this.article, this.path, this.articleId);
 }
 
 class ModernCodeSearchDelegate extends SearchDelegate<void> {
@@ -710,62 +953,69 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    final results = query.isEmpty ? <_ArticleRef>[] : _filter(query);
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TextField(
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Caută în cod...',
-              hintStyle: TextStyle(color: Theme.of(context).hintColor),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[800]
-                  : Colors.grey[100],
-              prefixIcon: Icon(Icons.search, color: Theme.of(context).hintColor),
-            ),
-            onChanged: (value) => query = value,
-          ),
-          if (results.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final r = results[index];
-                  final path = r.path.join(' > ');
-                  return ListTile(
-                    title: Text(
-                      'Art. ${r.article.number} ${r.article.title}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge!.color,
-                      ),
-                    ),
-                    subtitle: Text(
-                      path,
-                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
-                    ),
-                    onTap: () => _showArticle(context, r.article),
-                  );
+    return Stack(
+      children: [
+        Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Caută ceva în cod...',
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]
+                      : Colors.grey[100],
+                  prefixIcon: Icon(Icons.search, color: Theme.of(context).hintColor),
+                ),
+                onSubmitted: (value) {
+                  query = value;
+                  showResults(context);
                 },
               ),
-            ),
-          ],
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   @override
-  Widget buildResults(BuildContext context) => buildSuggestions(context);
+  Widget buildResults(BuildContext context) {
+    final results = _filter(query);
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.all(16),
+      child: ListView.builder(
+        itemCount: results.length,
+        itemBuilder: (context, index) {
+          final r = results[index];
+          final path = r.path.join(' > ');
+          return ListTile(
+            title: Text(
+              'Art. ${r.article.number} ${r.article.title}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge!.color,
+              ),
+            ),
+            subtitle: Text(
+              path,
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
+            ),
+            onTap: () => _showArticle(context, r.article),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   List<Widget>? buildActions(BuildContext context) {
