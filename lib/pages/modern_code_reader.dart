@@ -22,9 +22,14 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   final List<_ArticleRef> _allArticles = [];
   final Set<CodeTextArticle> _favoriteArticles = {};
+  final Set<CodeTextArticle> _highlightedArticles = {};
   final Set<CodeTextArticle> _savedArticles = {};
   int _selectedTab = 0;
   int _articlesPerDay = 5;
+
+  bool _showSearch = false;
+  final TextEditingController _searchController = TextEditingController();
+  List<_ArticleRef> _searchResults = [];
 
   @override
   void initState() {
@@ -92,6 +97,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           ),
           backgroundColor: _isDarkMode ? Colors.black : Colors.white,
           elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
           actions: [
             IconButton(
               icon: Icon(Icons.search, color: _isDarkMode ? Colors.white : Colors.black87, size: 24),
@@ -112,7 +119,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           currentIndex: _selectedTab,
           onTap: (i) {
             setState(() => _selectedTab = i);
-            if (i == 3) _showPlanDialog();
+            if (i == 4) _showPlanDialog();
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.black,
@@ -122,6 +129,12 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           selectedLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(color: Colors.black54),
           items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article, size: 28, shadows: [
+                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
+              ]),
+              label: 'Coduri',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite, size: 28, shadows: [
                 Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
@@ -180,6 +193,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   Widget _buildArticle(CodeTextArticle article) {
     final isFav = _favoriteArticles.contains(article);
+    final isHighlighted = _highlightedArticles.contains(article);
     final isSaved = _savedArticles.contains(article);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -196,8 +210,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                     child: Text(
                       'Art. ${article.number} ${article.title}',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: _fontSize + 2,
+                        fontWeight: FontWeight.w800,
+                        fontSize: _fontSize + 4,
                         color: _isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
@@ -214,6 +228,22 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                           _favoriteArticles.remove(article);
                         } else {
                           _favoriteArticles.add(article);
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isHighlighted ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (isHighlighted) {
+                          _highlightedArticles.remove(article);
+                        } else {
+                          _highlightedArticles.add(article);
                         }
                       });
                     },
@@ -510,9 +540,14 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Widget _buildBody() {
-    if (_selectedTab == 0) {
+    if (_showSearch) {
+      return _buildSearchView();
+    }
+    if (_selectedTab == 1) {
       return _buildArticleList(_favoriteArticles.toList());
     } else if (_selectedTab == 2) {
+      return _buildArticleList(_highlightedArticles.toList());
+    } else if (_selectedTab == 3) {
       return _buildArticleList(_savedArticles.toList());
     }
     return _buildSectionsList();
@@ -534,8 +569,77 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     );
   }
 
+  void _filterSearch(String query) {
+    final q = query.toLowerCase();
+    setState(() {
+      _searchResults = _allArticles.where((r) {
+        if (r.article.number.toLowerCase().contains(q) ||
+            r.article.title.toLowerCase().contains(q)) return true;
+        return r.article.content.any((l) => l.toLowerCase().contains(q));
+      }).toList();
+    });
+  }
+
+  Widget _buildSearchView() {
+    return Column(
+      children: [
+        Container(
+          color: _isDarkMode ? Colors.black : Colors.white,
+          padding: const EdgeInsets.all(8),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Caută în cod...',
+              filled: true,
+              fillColor: _isDarkMode ? Colors.grey[800] : Colors.white,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _showSearch = false;
+                    _searchController.clear();
+                    _searchResults.clear();
+                  });
+                },
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: _filterSearch,
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
+            itemCount: _searchResults.length,
+            itemBuilder: (context, index) {
+              final r = _searchResults[index];
+              final path = r.path.join(' > ');
+              return ListTile(
+                title: Text(
+                  'Art. ${r.article.number} ${r.article.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(path),
+                onTap: () => _showArticle(context, r.article),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   void _onSearch() {
-    showSearch(context: context, delegate: ModernCodeSearchDelegate(_allArticles));
+    setState(() {
+      _showSearch = true;
+      _searchResults.clear();
+      _searchController.clear();
+    });
   }
 
   void _showSettings() {
@@ -685,6 +789,12 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }
 
