@@ -1399,5 +1399,5 @@ func main() {
 
 	// Listen on localhost. If you need to access the API from other
 	// devices on your network, bind to your machine's IP or "0.0.0.0".
-	r.Run(":8080")
+        r.Run("0.0.0.0:8080")
 }

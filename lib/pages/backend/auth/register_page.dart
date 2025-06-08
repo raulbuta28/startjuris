@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import '../providers/auth_provider.dart';
 import '../../../main_container.dart';
 
@@ -50,11 +51,20 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
+      String baseUrl;
+      if (kIsWeb) {
+        baseUrl = 'http://localhost:8080';
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        baseUrl = 'http://10.0.2.2:8080';
+      } else {
+        baseUrl = 'http://192.168.8.123:8080';
+      }
       // Înregistrare utilizator
       await context.read<AuthProvider>().register(
         username: _usernameController.text,
         email: _emailController.text,
         password: _passwordController.text,
+        baseUrl: baseUrl,
       );
 
       // Autentificare automată după înregistrare
@@ -62,6 +72,7 @@ class _RegisterPageState extends State<RegisterPage> {
         await context.read<AuthProvider>().login(
           identifier: _emailController.text,
           password: _passwordController.text,
+          baseUrl: baseUrl,
         );
 
         // Dacă autentificarea a reușit, navigăm direct în aplicație
