@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../models/code_text.dart';
+import 'backend/providers/auth_provider.dart';
 import 'backend/services/api_service.dart';
 
 class ModernCodeReader extends StatefulWidget {
@@ -34,6 +36,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   void initState() {
     super.initState();
     _load();
+    _loadPreferences();
   }
 
   Future<void> _load() async {
@@ -81,6 +84,56 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       if (mounted) setState(() { _loading = false; });
       _buildArticleIndex();
     }
+  }
+
+  Future<void> _togglePreference(String kind, String articleId, Set<String> set) async {
+    setState(() {
+      if (set.contains(articleId)) {
+        set.remove(articleId);
+      } else {
+        set.add(articleId);
+      }
+    });
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isAuthenticated && auth.token != null) {
+      final api = ApiService(token: auth.token);
+      try {
+        await api.post('/$kind', data: {'id': articleId});
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _loadPreferences() async {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isAuthenticated || auth.token == null) return;
+    final api = ApiService(token: auth.token);
+    try {
+      final likesRes = await api.get('/likes');
+      if (likesRes.statusCode == 200 && likesRes.data is Map) {
+        final data = likesRes.data as Map;
+        setState(() {
+          _favoriteArticles.clear();
+          _favoriteArticles.addAll(List<String>.from(data['likes'] ?? []));
+        });
+      }
+      final favRes = await api.get('/favorites');
+      if (favRes.statusCode == 200 && favRes.data is Map) {
+        final data = favRes.data as Map;
+        setState(() {
+          _highlightedArticles.clear();
+          _highlightedArticles.addAll(List<String>.from(data['favorites'] ?? []));
+        });
+      }
+      final savedRes = await api.get('/saved');
+      if (savedRes.statusCode == 200 && savedRes.data is Map) {
+        final data = savedRes.data as Map;
+        setState(() {
+          _savedArticles.clear();
+          _savedArticles.addAll(List<String>.from(data['saved'] ?? []));
+        });
+      }
+    } catch (_) {}
   }
 
   List<Widget> _buildContentWidgets(List<CodeTextSection> sections) {
@@ -241,15 +294,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                         color: Colors.red,
                         size: 20,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          if (_favoriteArticles.contains(articleId)) {
-                            _favoriteArticles.remove(articleId);
-                          } else {
-                            _favoriteArticles.add(articleId);
-                          }
-                        });
-                      },
+                      onPressed: () => _togglePreference('likes', articleId, _favoriteArticles),
                     ),
                     IconButton(
                       padding: EdgeInsets.zero,
@@ -260,15 +305,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                         color: Colors.yellow[700],
                         size: 20,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          if (_highlightedArticles.contains(articleId)) {
-                            _highlightedArticles.remove(articleId);
-                          } else {
-                            _highlightedArticles.add(articleId);
-                          }
-                        });
-                      },
+                      onPressed: () => _togglePreference('favorites', articleId, _highlightedArticles),
                     ),
                     IconButton(
                       padding: EdgeInsets.zero,
@@ -279,15 +316,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                         color: Colors.blue,
                         size: 20,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          if (_savedArticles.contains(articleId)) {
-                            _savedArticles.remove(articleId);
-                          } else {
-                            _savedArticles.add(articleId);
-                          }
-                        });
-                      },
+                      onPressed: () => _togglePreference('saved', articleId, _savedArticles),
                     ),
                   ],
                 ),
