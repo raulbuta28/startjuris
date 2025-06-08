@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../config.dart' as config;
 
 class ApiService {
-  static const String baseUrl = config.apiBaseUrl;
+  static final String baseUrl = config.apiBaseUrl;
   static String get wsBaseUrl => config.wsBaseUrl;
   final String? token;
   final Dio _dio = Dio();
