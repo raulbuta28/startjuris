@@ -21,6 +21,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   bool _isDarkMode = false;
 
   final List<_ArticleRef> _allArticles = [];
+  final Set<CodeTextArticle> _favoriteArticles = {};
+  final Set<CodeTextArticle> _savedArticles = {};
   int _selectedTab = 0;
   int _articlesPerDay = 5;
 
@@ -105,10 +107,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? Center(child: Text(_error!))
-                : ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
-                    children: _sections.map((s) => _buildSection(s)).toList(),
-                  ),
+                : _buildBody(),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (i) {
@@ -180,6 +179,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Widget _buildArticle(CodeTextArticle article) {
+    final isFav = _favoriteArticles.contains(article);
+    final isSaved = _savedArticles.contains(article);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
@@ -188,13 +189,52 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           if (article.number.isNotEmpty || article.title.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                'Art. ${article.number} ${article.title}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: _fontSize + 2,
-                  color: _isDarkMode ? Colors.white : Colors.black87,
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Art. ${article.number} ${article.title}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: _fontSize + 2,
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isFav ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (isFav) {
+                          _favoriteArticles.remove(article);
+                        } else {
+                          _favoriteArticles.add(article);
+                        }
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: Colors.blueAccent,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (isSaved) {
+                          _savedArticles.remove(article);
+                        } else {
+                          _savedArticles.add(article);
+                        }
+                      });
+                    },
+                  ),
+                ],
               ),
             ),
           ...article.content.map(
@@ -469,6 +509,31 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     }
   }
 
+  Widget _buildBody() {
+    if (_selectedTab == 0) {
+      return _buildArticleList(_favoriteArticles.toList());
+    } else if (_selectedTab == 2) {
+      return _buildArticleList(_savedArticles.toList());
+    }
+    return _buildSectionsList();
+  }
+
+  Widget _buildSectionsList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
+      itemCount: _sections.length,
+      itemBuilder: (context, index) => _buildSection(_sections[index]),
+    );
+  }
+
+  Widget _buildArticleList(List<CodeTextArticle> articles) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
+      itemCount: articles.length,
+      itemBuilder: (context, index) => _buildArticle(articles[index]),
+    );
+  }
+
   void _onSearch() {
     showSearch(context: context, delegate: ModernCodeSearchDelegate(_allArticles));
   }
@@ -645,7 +710,7 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    final results = _filter(query);
+    final results = query.isEmpty ? <_ArticleRef>[] : _filter(query);
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.all(16),
@@ -654,7 +719,7 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
           TextField(
             autofocus: true,
             decoration: InputDecoration(
-              hintText: 'Caută ceva în cod...',
+              hintText: 'Caută în cod...',
               hintStyle: TextStyle(color: Theme.of(context).hintColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -668,30 +733,32 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
             ),
             onChanged: (value) => query = value,
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: results.length,
-              itemBuilder: (context, index) {
-                final r = results[index];
-                final path = r.path.join(' > ');
-                return ListTile(
-                  title: Text(
-                    'Art. ${r.article.number} ${r.article.title}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge!.color,
+          if (results.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final r = results[index];
+                  final path = r.path.join(' > ');
+                  return ListTile(
+                    title: Text(
+                      'Art. ${r.article.number} ${r.article.title}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge!.color,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    path,
-                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
-                  ),
-                  onTap: () => _showArticle(context, r.article),
-                );
-              },
+                    subtitle: Text(
+                      path,
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
+                    ),
+                    onTap: () => _showArticle(context, r.article),
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
