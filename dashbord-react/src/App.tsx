@@ -4,6 +4,7 @@ import NewsEditor, { NewsItem } from './NewsEditor';
 import CodeEditor from './CodeEditor';
 import CodurileLaZi from './CodurileLaZi';
 import CodeTextTabs from './CodeTextTabs';
+import Grile from './Grile';
 
 interface LoginProps {
   onLogin: () => void;
@@ -347,6 +348,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'codurile_2_0') {
       return <CodeTextTabs />;
+    }
+    if (section === 'grile') {
+      return <Grile />;
     }
     const s = sections.find((x) => x.key === section);
     return (
