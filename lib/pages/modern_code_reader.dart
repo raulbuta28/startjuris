@@ -26,10 +26,9 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
 
   final List<_ArticleRef> _allArticles = [];
   int _selectedTab = 0;
-  int _articlesPerDay = 5;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  List<_ArticleRef> _searchResults = [];
+  List<_SearchResult> _searchResults = [];
 
   @override
   void initState() {
@@ -149,12 +148,12 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                             highlightedArticles: _highlightedArticles,
                             savedArticles: _savedArticles,
                             allArticles: _allArticles,
+                            articleBuilder: _buildArticle,
                           ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (i) {
             setState(() => _selectedTab = i);
-            if (i == 4) _showPlanDialog();
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.black,
@@ -180,10 +179,6 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
               icon: Icon(Icons.bookmark),
               label: 'Salvate',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Plan de citit',
-            ),
           ],
         ),
       ),
@@ -201,7 +196,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           '${section.type} ${section.name}',
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize: _fontSize + 4,
+            fontSize: _fontSize + 2,
             color: _isDarkMode ? Colors.white : Colors.black87,
           ),
           overflow: TextOverflow.ellipsis,
@@ -238,6 +233,9 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                       ),
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(),
                       icon: Icon(
                         _favoriteArticles.contains(articleId) ? Icons.favorite : Icons.favorite_border,
                         color: Colors.red,
@@ -254,6 +252,9 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                       },
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(),
                       icon: Icon(
                         _highlightedArticles.contains(articleId) ? Icons.star : Icons.star_border,
                         color: Colors.yellow[700],
@@ -270,6 +271,9 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                       },
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(),
                       icon: Icon(
                         _savedArticles.contains(articleId) ? Icons.bookmark : Icons.bookmark_border,
                         color: Colors.blue,
@@ -593,6 +597,11 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
         if (r.article.number.toLowerCase().contains(q) ||
             r.article.title.toLowerCase().contains(q)) return true;
         return r.article.content.any((l) => l.toLowerCase().contains(q));
+      }).map((r) {
+        String snippet = r.article.content.firstWhere(
+            (l) => l.toLowerCase().contains(q),
+            orElse: () => r.article.content.isNotEmpty ? r.article.content.first : '');
+        return _SearchResult(r.article, r.path, snippet);
       }).toList();
     });
   }
@@ -666,13 +675,12 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
             itemCount: _searchResults.length,
             itemBuilder: (context, index) {
               final r = _searchResults[index];
-              final path = r.path.join(' > ');
               return ListTile(
                 title: Text(
                   'Art. ${r.article.number} ${r.article.title}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(path),
+                subtitle: Text(r.snippet),
                 onTap: () => _showArticleDialog(r.article),
               );
             },
@@ -756,7 +764,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                             label: tempFontSize.round().toString(),
                             activeColor: Colors.blueAccent,
                             inactiveColor: Colors.grey[300],
-                            onChanged: (v) => setState(() => tempFontSize = v),
+                            onChanged: (v) {
+                              setState(() => tempFontSize = v);
+                              this.setState(() => _fontSize = v);
+                            },
                           ),
                         ],
                       ),
@@ -782,7 +793,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                           Switch(
                             value: tempDarkMode,
                             activeColor: Colors.blueAccent,
-                            onChanged: (v) => setState(() => tempDarkMode = v),
+                            onChanged: (v) {
+                              setState(() => tempDarkMode = v);
+                              this.setState(() => _isDarkMode = v);
+                            },
                           ),
                         ],
                       ),
@@ -837,78 +851,6 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     );
   }
 
-  void _showPlanDialog() {
-    int temp = _articlesPerDay;
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.all(16),
-          title: Text(
-            'Plan de citit',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: _isDarkMode ? Colors.white : Colors.black87,
-            ),
-          ),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Articole pe zi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _isDarkMode ? Colors.white70 : Colors.black87,
-                    ),
-                  ),
-                  Slider(
-                    min: 1,
-                    max: 20,
-                    divisions: 19,
-                    value: temp.toDouble(),
-                    label: '$temp',
-                    activeColor: Colors.blueAccent,
-                    onChanged: (v) => setState(() => temp = v.round()),
-                  ),
-                  Text(
-                    '$temp articole pe zi',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _isDarkMode ? Colors.white70 : Colors.black87,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Anulează',
-                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() => _articlesPerDay = temp);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'OK',
-                style: TextStyle(color: Colors.blueAccent),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 class PlaceholderPage extends StatelessWidget {
@@ -917,6 +859,7 @@ class PlaceholderPage extends StatelessWidget {
   final Set<String> highlightedArticles;
   final Set<String> savedArticles;
   final List<_ArticleRef> allArticles;
+  final Widget Function(CodeTextArticle) articleBuilder;
 
   const PlaceholderPage({
     Key? key,
@@ -925,6 +868,7 @@ class PlaceholderPage extends StatelessWidget {
     required this.highlightedArticles,
     required this.savedArticles,
     required this.allArticles,
+    required this.articleBuilder,
   }) : super(key: key);
 
   @override
@@ -981,62 +925,7 @@ class PlaceholderPage extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final article = filteredArticles[index].article;
-        final path = filteredArticles[index].path.join(' > ');
-        return ListTile(
-          title: Text(
-            'Art. ${article.number} ${article.title}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).textTheme.bodyLarge!.color,
-            ),
-          ),
-          subtitle: Text(
-            path,
-            style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
-          ),
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (_) => AlertDialog(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                title: Text(
-                  'Art. ${article.number} ${article.title}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.bodyLarge!.color,
-                  ),
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: article.content
-                        .map((l) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                l,
-                                textAlign: TextAlign.justify,
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyLarge!.color,
-                                ),
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Închide',
-                      style: TextStyle(color: Colors.blueAccent),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+        return articleBuilder(article);
       },
     );
   }
@@ -1050,17 +939,30 @@ class _ArticleRef {
   _ArticleRef(this.article, this.path, this.articleId);
 }
 
+class _SearchResult {
+  final CodeTextArticle article;
+  final List<String> path;
+  final String snippet;
+
+  _SearchResult(this.article, this.path, this.snippet);
+}
+
 class ModernCodeSearchDelegate extends SearchDelegate<void> {
   final List<_ArticleRef> articles;
 
   ModernCodeSearchDelegate(this.articles);
 
-  List<_ArticleRef> _filter(String query) {
+  List<_SearchResult> _filter(String query) {
     final q = query.toLowerCase();
     return articles.where((r) {
       if (r.article.number.toLowerCase().contains(q) ||
           r.article.title.toLowerCase().contains(q)) return true;
       return r.article.content.any((l) => l.toLowerCase().contains(q));
+    }).map((r) {
+      String snippet = r.article.content.firstWhere(
+          (l) => l.toLowerCase().contains(q),
+          orElse: () => r.article.content.isNotEmpty ? r.article.content.first : '');
+      return _SearchResult(r.article, r.path, snippet);
     }).toList();
   }
 
@@ -1110,7 +1012,6 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
         itemCount: results.length,
         itemBuilder: (context, index) {
           final r = results[index];
-          final path = r.path.join(' > ');
           return ListTile(
             title: Text(
               'Art. ${r.article.number} ${r.article.title}',
@@ -1120,7 +1021,7 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
               ),
             ),
             subtitle: Text(
-              path,
+              r.snippet,
               style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
             ),
             onTap: () => _showArticle(context, r.article),
