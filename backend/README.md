@@ -23,4 +23,5 @@ go run .
 This compiles all Go files in the directory, including `parser.go` which
 defines helper functions used by `main.go`.
 
-The server listens on `localhost:8080`.
+The server listens on `0.0.0.0:8080`, allowing access from `http://localhost:8080`
+or using your computer's local IP address such as `http://192.168.8.123:8080`.
