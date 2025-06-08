@@ -24,9 +24,10 @@ cd backend
 go run .
 ```
 
-By default the server listens on `0.0.0.0:8080` so it can be reached from the
-host machine via `http://localhost:8080` or from other devices on your local
-network using your machine's IP address (for example `http://192.168.8.123:8080`).
+By default the server listens on `localhost:8080`.
+If you need to reach it from other devices on your local network you can
+change the address in `backend/main.go` to bind to your machine's IP or
+`0.0.0.0`.
 
 ### Setting the API URL
 
