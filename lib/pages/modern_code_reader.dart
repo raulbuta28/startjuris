@@ -27,6 +27,9 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   final List<_ArticleRef> _allArticles = [];
   int _selectedTab = 0;
   int _articlesPerDay = 5;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  List<_ArticleRef> _searchResults = [];
 
   @override
   void initState() {
@@ -115,9 +118,11 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           ),
           backgroundColor: Colors.white,
           elevation: 0,
+          scrolledUnderElevation: 0,
           actions: [
             IconButton(
-              icon: Icon(Icons.search, color: _isDarkMode ? Colors.white : Colors.black87, size: 24),
+              icon: Icon(_isSearching ? Icons.close : Icons.search,
+                  color: _isDarkMode ? Colors.white : Colors.black87, size: 24),
               onPressed: _onSearch,
             ),
             IconButton(
@@ -130,24 +135,26 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? Center(child: Text(_error!))
-                : _selectedTab == 0
-                    ? ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-                        physics: const ClampingScrollPhysics(),
-                        children: _contentWidgets,
-                      )
-                    : PlaceholderPage(
-                        tabIndex: _selectedTab,
-                        favoriteArticles: _favoriteArticles,
-                        highlightedArticles: _highlightedArticles,
-                        savedArticles: _savedArticles,
-                        allArticles: _allArticles,
-                      ),
+                : _isSearching
+                    ? _buildSearchView()
+                    : _selectedTab == 0
+                        ? ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                            physics: const ClampingScrollPhysics(),
+                            children: _contentWidgets,
+                          )
+                        : PlaceholderPage(
+                            tabIndex: _selectedTab,
+                            favoriteArticles: _favoriteArticles,
+                            highlightedArticles: _highlightedArticles,
+                            savedArticles: _savedArticles,
+                            allArticles: _allArticles,
+                          ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedTab,
           onTap: (i) {
             setState(() => _selectedTab = i);
-            if (i == 3) _showPlanDialog();
+            if (i == 4) _showPlanDialog();
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.black,
@@ -157,6 +164,10 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           selectedLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(color: Colors.black54),
           items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.article),
+              label: 'Coduri',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite),
               label: 'Favorite',
@@ -220,7 +231,7 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
                         'Art. ${article.number} ${article.title}',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          fontSize: _fontSize + 2,
+                          fontSize: _fontSize + 4,
                           color: _isDarkMode ? Colors.white : Colors.black87,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -566,7 +577,109 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   void _onSearch() {
-    showSearch(context: context, delegate: ModernCodeSearchDelegate(_allArticles));
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _searchResults.clear();
+      }
+    });
+  }
+
+  void _updateSearchResults(String query) {
+    final q = query.toLowerCase();
+    setState(() {
+      _searchResults = _allArticles.where((r) {
+        if (r.article.number.toLowerCase().contains(q) ||
+            r.article.title.toLowerCase().contains(q)) return true;
+        return r.article.content.any((l) => l.toLowerCase().contains(q));
+      }).toList();
+    });
+  }
+
+  void _showArticleDialog(CodeTextArticle a) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Art. ${a.number} ${a.title}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge!.color,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: a.content
+                .map((l) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        l,
+                        textAlign: TextAlign.justify,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge!.color,
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Închide',
+              style: TextStyle(color: Colors.blueAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchView() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Caută în cod...',
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: _updateSearchResults,
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _searchResults.length,
+            itemBuilder: (context, index) {
+              final r = _searchResults[index];
+              final path = r.path.join(' > ');
+              return ListTile(
+                title: Text(
+                  'Art. ${r.article.number} ${r.article.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(path),
+                onTap: () => _showArticleDialog(r.article),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   void _showSettings() {
@@ -963,7 +1076,7 @@ class ModernCodeSearchDelegate extends SearchDelegate<void> {
               TextField(
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Caută ceva în cod...',
+                  hintText: 'Caută în cod...',
                   hintStyle: TextStyle(color: Theme.of(context).hintColor),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
