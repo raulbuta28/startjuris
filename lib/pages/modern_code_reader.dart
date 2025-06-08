@@ -17,6 +17,8 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   List<CodeTextSection> _sections = [];
   bool _loading = true;
   String? _error;
+  double _fontSize = 12.0;
+  bool _isDarkMode = false;
 
   final List<_ArticleRef> _allArticles = [];
   int _selectedTab = 0;
@@ -66,51 +68,87 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); });
     } finally {
-          if (mounted) setState(() { _loading = false; });
-          _buildArticleIndex();
+      if (mounted) setState(() { _loading = false; });
+      _buildArticleIndex();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.codeTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _onSearch,
+    return Theme(
+      data: _isDarkMode ? ThemeData.dark() : ThemeData.light(),
+      child: Scaffold(
+        backgroundColor: _isDarkMode ? Colors.black : Colors.white,
+        appBar: AppBar(
+          title: Text(
+            widget.codeTitle,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 24,
+              color: _isDarkMode ? Colors.white : Colors.black87,
+            ),
           ),
-        ],
-      ),
-      body: Container(
-        color: Colors.white,
-        child: _loading
+          backgroundColor: _isDarkMode ? Colors.black : Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.search, color: _isDarkMode ? Colors.white : Colors.black87, size: 24),
+              onPressed: _onSearch,
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: _isDarkMode ? Colors.white : Colors.black87, size: 24),
+              onPressed: _showSettings,
+            ),
+          ],
+        ),
+        body: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
                 ? Center(child: Text(_error!))
                 : ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
                     children: _sections.map((s) => _buildSection(s)).toList(),
                   ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedTab,
-        onTap: (i) {
-          setState(() => _selectedTab = i);
-          if (i == 3) _showPlanDialog();
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.favorite), label: 'Favorite'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.highlight), label: 'Evidențiate'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark), label: 'Salvate'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.schedule), label: 'Plan de citit'),
-        ],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedTab,
+          onTap: (i) {
+            setState(() => _selectedTab = i);
+            if (i == 3) _showPlanDialog();
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.black,
+          unselectedItemColor: Colors.black54,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: const TextStyle(color: Colors.black54),
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite, size: 28, shadows: [
+                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
+              ]),
+              label: 'Favorite',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.star, size: 28, shadows: [
+                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
+              ]),
+              label: 'Evidențiate',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bookmark, size: 28, shadows: [
+                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
+              ]),
+              label: 'Salvate',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today, size: 28, shadows: [
+                Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(1, 1)),
+              ]),
+              label: 'Plan de citit',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -123,64 +161,69 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       return const SizedBox();
     }).toList();
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey, width: 1),
-          bottom: BorderSide(color: Colors.grey, width: 1),
+    return ExpansionTile(
+      title: Text(
+        '${section.type} ${section.name}',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: _fontSize + 4,
+          color: _isDarkMode ? Colors.white : Colors.black87,
         ),
       ),
-      child: ExpansionTile(
-        title: Text(
-          '${section.type} ${section.name}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        initiallyExpanded: true,
-        children: children,
-      ),
+      initiallyExpanded: true,
+      tilePadding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+      childrenPadding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
+      iconColor: Colors.blueAccent,
+      collapsedIconColor: Colors.grey,
+      children: children,
     );
   }
 
   Widget _buildArticle(CodeTextArticle article) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (article.number.isNotEmpty || article.title.isNotEmpty)
-            Text(
-              'Art. ${article.number} ${article.title}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Art. ${article.number} ${article.title}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: _fontSize + 2,
+                  color: _isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
             ),
           ...article.content.map(
-            (l) => Container(
-              width: double.infinity,
-              color: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+            (l) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 3),
               child: Text(
                 l,
                 textAlign: TextAlign.justify,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
+                style: TextStyle(
+                  fontSize: _fontSize,
+                  color: _isDarkMode ? Colors.white70 : Colors.black87,
                 ),
               ),
             ),
           ),
           if (article.amendments.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 3, right: 3),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: article.amendments
-                    .map((a) => Text(a, style: const TextStyle(fontSize: 12)))
+                    .map((a) => Text(
+                          a,
+                          textAlign: TextAlign.justify,
+                          style: TextStyle(
+                            fontSize: _fontSize - 2,
+                            color: _isDarkMode ? Colors.white54 : Colors.black54,
+                          ),
+                        ))
                     .toList(),
               ),
             ),
@@ -190,31 +233,28 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   Widget _buildNote(CodeTextNote note) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.yellow.shade100, Colors.yellow.shade50],
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             note.type == 'Decision' ? 'Decizie' : note.type,
-            style: const TextStyle(fontStyle: FontStyle.italic),
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.bold,
+              color: _isDarkMode ? Colors.white : Colors.black87,
+              fontSize: _fontSize,
+            ),
           ),
           ...note.content.map(
             (l) => Text(
               l,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.3,
-              ),
               textAlign: TextAlign.justify,
+              style: TextStyle(
+                fontSize: _fontSize - 2,
+                color: _isDarkMode ? Colors.white70 : Colors.black87,
+              ),
             ),
           ),
         ],
@@ -430,7 +470,83 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
   }
 
   void _onSearch() {
-    showSearch(context: context, delegate: CodeSearchDelegate(_allArticles));
+    showSearch(context: context, delegate: ModernCodeSearchDelegate(_allArticles));
+  }
+
+  void _showSettings() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double tempFontSize = _fontSize;
+        bool tempDarkMode = _isDarkMode;
+        return AlertDialog(
+          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Setări',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: _isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Mărime text',
+                    style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+                  ),
+                  Slider(
+                    min: 10,
+                    max: 20,
+                    divisions: 10,
+                    value: tempFontSize,
+                    label: tempFontSize.round().toString(),
+                    activeColor: Colors.blueAccent,
+                    onChanged: (v) => setState(() => tempFontSize = v),
+                  ),
+                  ListTile(
+                    title: Text(
+                      'Mod întunecat',
+                      style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+                    ),
+                    trailing: Switch(
+                      value: tempDarkMode,
+                      activeColor: Colors.blueAccent,
+                      onChanged: (v) => setState(() => tempDarkMode = v),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Anulează',
+                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _fontSize = tempFontSize;
+                  _isDarkMode = tempDarkMode;
+                });
+                Navigator.pop(context);
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(color: Colors.blueAccent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showPlanDialog() {
@@ -439,21 +555,45 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Setează articole/zi'),
+          backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(16),
+          title: Text(
+            'Plan de citit',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: _isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
           content: StatefulBuilder(
             builder: (context, setState) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Text(
+                    'Articole pe zi',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                   Slider(
                     min: 1,
                     max: 20,
                     divisions: 19,
                     value: temp.toDouble(),
                     label: '$temp',
+                    activeColor: Colors.blueAccent,
                     onChanged: (v) => setState(() => temp = v.round()),
                   ),
-                  Text('$temp articole pe zi'),
+                  Text(
+                    '$temp articole pe zi',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
                 ],
               );
             },
@@ -461,14 +601,20 @@ class _ModernCodeReaderState extends State<ModernCodeReader> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Anulează'),
+              child: Text(
+                'Anulează',
+                style: TextStyle(color: _isDarkMode ? Colors.white70 : Colors.black87),
+              ),
             ),
             TextButton(
               onPressed: () {
                 setState(() => _articlesPerDay = temp);
                 Navigator.pop(context);
               },
-              child: const Text('OK'),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: Colors.blueAccent),
+              ),
             ),
           ],
         );
@@ -483,34 +629,71 @@ class _ArticleRef {
   _ArticleRef(this.article, this.path);
 }
 
-class CodeSearchDelegate extends SearchDelegate<void> {
+class ModernCodeSearchDelegate extends SearchDelegate<void> {
   final List<_ArticleRef> articles;
-  CodeSearchDelegate(this.articles);
+
+  ModernCodeSearchDelegate(this.articles);
 
   List<_ArticleRef> _filter(String query) {
     final q = query.toLowerCase();
     return articles.where((r) {
       if (r.article.number.toLowerCase().contains(q) ||
           r.article.title.toLowerCase().contains(q)) return true;
-      return r.article.content
-          .any((l) => l.toLowerCase().contains(q));
+      return r.article.content.any((l) => l.toLowerCase().contains(q));
     }).toList();
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     final results = _filter(query);
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final r = results[index];
-        final path = r.path.join(' > ');
-        return ListTile(
-          title: Text('Art. ${r.article.number} ${r.article.title}'),
-          subtitle: Text(path),
-          onTap: () => _showArticle(context, r.article),
-        );
-      },
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          TextField(
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Caută ceva în cod...',
+              hintStyle: TextStyle(color: Theme.of(context).hintColor),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[100],
+              prefixIcon: Icon(Icons.search, color: Theme.of(context).hintColor),
+            ),
+            onChanged: (value) => query = value,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: results.length,
+              itemBuilder: (context, index) {
+                final r = results[index];
+                final path = r.path.join(' > ');
+                return ListTile(
+                  title: Text(
+                    'Art. ${r.article.number} ${r.article.title}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge!.color,
+                    ),
+                  ),
+                  subtitle: Text(
+                    path,
+                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
+                  ),
+                  onTap: () => _showArticle(context, r.article),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -523,7 +706,7 @@ class CodeSearchDelegate extends SearchDelegate<void> {
       IconButton(
         icon: const Icon(Icons.clear),
         onPressed: () => query = '',
-      )
+      ),
     ];
   }
 
@@ -539,14 +722,28 @@ class CodeSearchDelegate extends SearchDelegate<void> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Art. ${a.number} ${a.title}'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Art. ${a.number} ${a.title}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge!.color,
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: a.content
                 .map((l) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(l, textAlign: TextAlign.justify),
+                      child: Text(
+                        l,
+                        textAlign: TextAlign.justify,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge!.color,
+                        ),
+                      ),
                     ))
                 .toList(),
           ),
@@ -554,7 +751,10 @@ class CodeSearchDelegate extends SearchDelegate<void> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Închide'),
+            child: Text(
+              'Închide',
+              style: TextStyle(color: Colors.blueAccent),
+            ),
           ),
         ],
       ),
