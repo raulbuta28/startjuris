@@ -32,6 +32,8 @@ export default function Grile() {
   const [showAddTest, setShowAddTest] = useState(false);
   const [newTest, setNewTest] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>({});
+  const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
 
   const parseInput = (): Question[] => {
     const lines = input
@@ -156,39 +158,124 @@ export default function Grile() {
               <>
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
-                  <div key={qi} className="border-t pt-4 space-y-1">
-                    <p>{q.text}</p>
-                    {q.answers.map((a, ai) => (
-                      <label
-                        key={ai}
-                        className={cn(
-                          'flex items-center space-x-2 p-2 rounded border',
-                          q.correct.includes(ai)
-                            ? 'border-blue-500'
-                            : 'border-transparent'
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={q.correct.includes(ai)}
-                          onChange={(e) => {
-                            setQuestions((prev) => {
-                              const copy = [...prev];
-                              const corr = copy[qi].correct;
-                              if (e.target.checked) {
-                                if (!corr.includes(ai)) {
-                                  corr.push(ai);
+                  <div key={qi} className="border-t pt-4 space-y-2">
+                    <p>{qi + 1}. {q.text}</p>
+                    {q.answers.map((a, ai) => {
+                      const key = `${qi}-${ai}`;
+                      const isEditing = editingAnswers[key] !== undefined;
+                      return (
+                        <div
+                          key={ai}
+                          className={cn(
+                            'flex items-center space-x-2 p-2 rounded border',
+                            q.correct.includes(ai)
+                              ? 'border-blue-500'
+                              : 'border-transparent'
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={q.correct.includes(ai)}
+                            onChange={(e) => {
+                              setQuestions((prev) => {
+                                const copy = [...prev];
+                                const corr = copy[qi].correct;
+                                if (e.target.checked) {
+                                  if (!corr.includes(ai)) {
+                                    corr.push(ai);
+                                  }
+                                } else {
+                                  copy[qi].correct = corr.filter((c) => c !== ai);
                                 }
-                              } else {
-                                copy[qi].correct = corr.filter((c) => c !== ai);
-                              }
-                              return copy;
-                            });
-                          }}
+                                return copy;
+                              });
+                            }}
+                          />
+                          {isEditing ? (
+                            <>
+                              <input
+                                className="border p-1 rounded flex-1"
+                                value={editingAnswers[key]}
+                                onChange={(e) =>
+                                  setEditingAnswers((s) => ({ ...s, [key]: e.target.value }))
+                                }
+                              />
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  setQuestions((prev) => {
+                                    const copy = [...prev];
+                                    copy[qi].answers[ai] = editingAnswers[key];
+                                    return copy;
+                                  });
+                                  setEditingAnswers((s) => {
+                                    const { [key]: _, ...rest } = s;
+                                    return rest;
+                                  });
+                                }}
+                              >
+                                Salvează
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="flex-1">
+                                {String.fromCharCode(65 + ai)}. {a}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  setEditingAnswers((s) => ({ ...s, [key]: a }))
+                                }
+                              >
+                                Editează
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {addingAnswer[qi] !== undefined ? (
+                      <div className="flex items-center space-x-2 pl-6">
+                        <input
+                          className="border p-1 rounded flex-1"
+                          value={addingAnswer[qi]}
+                          onChange={(e) =>
+                            setAddingAnswer((s) => ({ ...s, [qi]: e.target.value }))
+                          }
                         />
-                        <span>{String.fromCharCode(65 + ai)}. {a}</span>
-                      </label>
-                    ))}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            if (addingAnswer[qi].trim()) {
+                              setQuestions((prev) => {
+                                const copy = [...prev];
+                                copy[qi].answers.push(addingAnswer[qi]);
+                                return copy;
+                              });
+                              setAddingAnswer((s) => {
+                                const { [qi]: _, ...rest } = s;
+                                return rest;
+                              });
+                            }
+                          }}
+                        >
+                          Adaugă
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-6"
+                        onClick={() => setAddingAnswer((s) => ({ ...s, [qi]: '' }))}
+                      >
+                        + Adaugă răspuns
+                      </Button>
+                    )}
                   </div>
                 ))}
                 <div className="text-right">
@@ -202,7 +289,7 @@ export default function Grile() {
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-2">
-                    <p>{q.text}</p>
+                    <p>{qi + 1}. {q.text}</p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4">
                         {String.fromCharCode(65 + ai)}. {a}
@@ -240,7 +327,7 @@ export default function Grile() {
                 </div>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
-                    <p>{q.text}</p>
+                    <p>{qi + 1}. {q.text}</p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4">
                         {String.fromCharCode(65 + ai)}. {a}
