@@ -53,6 +53,7 @@ export default function Grile() {
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
   const [selectedSubject, setSelectedSubject] = useState("");
   const [savedTests, setSavedTests] = useState<Test[]>([]);
+  const [testsLoaded, setTestsLoaded] = useState(false);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
@@ -61,7 +62,10 @@ export default function Grile() {
     const token = localStorage.getItem('token') || '';
     fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setSavedTests)
+      .then((data) => {
+        setSavedTests(data);
+        setTestsLoaded(true);
+      })
       .catch(() => {
         const stored = localStorage.getItem('savedTests');
         if (stored) {
@@ -71,10 +75,12 @@ export default function Grile() {
             /* ignore */
           }
         }
+        setTestsLoaded(true);
       });
   }, []);
 
   useEffect(() => {
+    if (!testsLoaded) return;
     localStorage.setItem('savedTests', JSON.stringify(savedTests));
     fetch('/api/save-tests', {
       method: 'POST',
@@ -84,7 +90,7 @@ export default function Grile() {
       },
       body: JSON.stringify(savedTests),
     }).catch(() => {});
-  }, [savedTests]);
+  }, [savedTests, testsLoaded]);
 
   const stripAnswerPrefix = (t: string) => {
     const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
@@ -694,6 +700,7 @@ export default function Grile() {
                   <ul className="pl-4">
                     {savedTests
                       .filter((t) => t.subject === subject)
+                      .sort((a, b) => a.name.localeCompare(b.name))
                       .map((test) => (
                         <li
                           key={test.id}
