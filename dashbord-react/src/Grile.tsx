@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Tab {
   id: string;
@@ -8,12 +8,12 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: 'creare', label: 'Creare grile' },
-  { id: 'teme', label: 'Teme' },
-  { id: 'suplimentare', label: 'Teste suplimentare' },
-  { id: 'combinate', label: 'Teste combinate' },
-  { id: 'simulari', label: 'Simulări' },
-  { id: 'ani', label: 'Grile date în anii anteriori' },
+  { id: "creare", label: "Creare grile" },
+  { id: "teme", label: "Teme" },
+  { id: "suplimentare", label: "Teste suplimentare" },
+  { id: "combinate", label: "Teste combinate" },
+  { id: "simulari", label: "Simulări" },
+  { id: "ani", label: "Grile date în anii anteriori" },
 ];
 
 type Question = {
@@ -26,19 +26,40 @@ type Question = {
 export default function Grile() {
   const [active, setActive] = useState<string>(tabs[0].id);
   const [step, setStep] = useState(1);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [tests, setTests] = useState<string[]>([]);
-  const [selectedTest, setSelectedTest] = useState('');
+  const [selectedTest, setSelectedTest] = useState("");
   const [showAddTest, setShowAddTest] = useState(false);
-  const [newTest, setNewTest] = useState('');
+  const [newTest, setNewTest] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>({});
+  const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>(
+    {},
+  );
+  const [editingQuestions, setEditingQuestions] = useState<
+    Record<number, string>
+  >({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
 
+  const stripAnswerPrefix = (t: string) => {
+    const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
+    return m ? m[1] : t.trim();
+  };
+
+  const toggleCorrect = (qi: number, ai: number) => {
+    setQuestions((prev) => {
+      const copy = [...prev];
+      const corr = copy[qi].correct;
+      if (corr.includes(ai)) {
+        copy[qi].correct = corr.filter((c) => c !== ai);
+      } else {
+        corr.push(ai);
+      }
+      return copy;
+    });
+  };
+
   const parseInput = (): Question[] => {
-    const lines = input
-      .split(/\r?\n/)
-      .map((l) => l.trim());
+    const lines = input.split(/\r?\n/).map((l) => l.trim());
 
     const questions: Question[] = [];
     let current: Question | null = null;
@@ -55,7 +76,7 @@ export default function Grile() {
           text: qMatch[1],
           answers: [],
           correct: [],
-          note: '',
+          note: "",
         };
         continue;
       }
@@ -63,7 +84,7 @@ export default function Grile() {
       const aMatch = line.match(aReg);
       if (aMatch) {
         if (!current) {
-          current = { text: '', answers: [], correct: [], note: '' };
+          current = { text: "", answers: [], correct: [], note: "" };
         }
         current.answers.push(aMatch[1]);
         continue;
@@ -95,7 +116,7 @@ export default function Grile() {
 
   const renderTab = () => {
     switch (active) {
-      case 'creare':
+      case "creare":
         return (
           <div className="space-y-4">
             {step === 1 && (
@@ -141,7 +162,7 @@ export default function Grile() {
                         if (newTest.trim()) {
                           setTests([...tests, newTest]);
                           setSelectedTest(newTest);
-                          setNewTest('');
+                          setNewTest("");
                           setShowAddTest(false);
                         }
                       }}
@@ -159,7 +180,52 @@ export default function Grile() {
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-2">
-                    <p>{qi + 1}. {q.text}</p>
+                    {editingQuestions[qi] !== undefined ? (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          className="border p-1 rounded flex-1"
+                          value={editingQuestions[qi]}
+                          onChange={(e) =>
+                            setEditingQuestions((s) => ({
+                              ...s,
+                              [qi]: e.target.value,
+                            }))
+                          }
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setQuestions((prev) => {
+                              const copy = [...prev];
+                              copy[qi].text = editingQuestions[qi];
+                              return copy;
+                            });
+                            setEditingQuestions((s) => {
+                              const { [qi]: _, ...rest } = s;
+                              return rest;
+                            });
+                          }}
+                        >
+                          Salvează
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <p className="flex-1">
+                          {qi + 1}. {q.text}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            setEditingQuestions((s) => ({ ...s, [qi]: q.text }))
+                          }
+                        >
+                          Editează întrebarea
+                        </Button>
+                      </div>
+                    )}
                     {q.answers.map((a, ai) => {
                       const key = `${qi}-${ai}`;
                       const isEditing = editingAnswers[key] !== undefined;
@@ -167,29 +233,18 @@ export default function Grile() {
                         <div
                           key={ai}
                           className={cn(
-                            'flex items-center space-x-2 p-2 rounded border',
+                            "flex items-center space-x-2 p-2 rounded border",
                             q.correct.includes(ai)
-                              ? 'border-blue-500'
-                              : 'border-transparent'
+                              ? "border-blue-500"
+                              : "border-transparent",
                           )}
+                          onClick={() => toggleCorrect(qi, ai)}
                         >
                           <input
                             type="checkbox"
                             checked={q.correct.includes(ai)}
-                            onChange={(e) => {
-                              setQuestions((prev) => {
-                                const copy = [...prev];
-                                const corr = copy[qi].correct;
-                                if (e.target.checked) {
-                                  if (!corr.includes(ai)) {
-                                    corr.push(ai);
-                                  }
-                                } else {
-                                  copy[qi].correct = corr.filter((c) => c !== ai);
-                                }
-                                return copy;
-                              });
-                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => toggleCorrect(qi, ai)}
                           />
                           {isEditing ? (
                             <>
@@ -197,7 +252,10 @@ export default function Grile() {
                                 className="border p-1 rounded flex-1"
                                 value={editingAnswers[key]}
                                 onChange={(e) =>
-                                  setEditingAnswers((s) => ({ ...s, [key]: e.target.value }))
+                                  setEditingAnswers((s) => ({
+                                    ...s,
+                                    [key]: e.target.value,
+                                  }))
                                 }
                               />
                               <Button
@@ -206,7 +264,9 @@ export default function Grile() {
                                 onClick={() => {
                                   setQuestions((prev) => {
                                     const copy = [...prev];
-                                    copy[qi].answers[ai] = editingAnswers[key];
+                                    copy[qi].answers[ai] = stripAnswerPrefix(
+                                      editingAnswers[key],
+                                    );
                                     return copy;
                                   });
                                   setEditingAnswers((s) => {
@@ -232,6 +292,22 @@ export default function Grile() {
                               >
                                 Editează
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setQuestions((prev) => {
+                                    const copy = [...prev];
+                                    copy[qi].answers.splice(ai, 1);
+                                    copy[qi].correct = copy[qi].correct
+                                      .filter((c) => c !== ai)
+                                      .map((c) => (c > ai ? c - 1 : c));
+                                    return copy;
+                                  });
+                                }}
+                              >
+                                Șterge
+                              </Button>
                             </>
                           )}
                         </div>
@@ -243,7 +319,10 @@ export default function Grile() {
                           className="border p-1 rounded flex-1"
                           value={addingAnswer[qi]}
                           onChange={(e) =>
-                            setAddingAnswer((s) => ({ ...s, [qi]: e.target.value }))
+                            setAddingAnswer((s) => ({
+                              ...s,
+                              [qi]: e.target.value,
+                            }))
                           }
                         />
                         <Button
@@ -253,7 +332,9 @@ export default function Grile() {
                             if (addingAnswer[qi].trim()) {
                               setQuestions((prev) => {
                                 const copy = [...prev];
-                                copy[qi].answers.push(addingAnswer[qi]);
+                                copy[qi].answers.push(
+                                  stripAnswerPrefix(addingAnswer[qi]),
+                                );
                                 return copy;
                               });
                               setAddingAnswer((s) => {
@@ -271,7 +352,9 @@ export default function Grile() {
                         variant="ghost"
                         size="sm"
                         className="ml-6"
-                        onClick={() => setAddingAnswer((s) => ({ ...s, [qi]: '' }))}
+                        onClick={() =>
+                          setAddingAnswer((s) => ({ ...s, [qi]: "" }))
+                        }
                       >
                         + Adaugă răspuns
                       </Button>
@@ -289,14 +372,19 @@ export default function Grile() {
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-2">
-                    <p>{qi + 1}. {q.text}</p>
+                    <p>
+                      {qi + 1}. {q.text}
+                    </p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4">
                         {String.fromCharCode(65 + ai)}. {a}
                       </p>
                     ))}
                     <p className="text-sm italic">
-                      Răspuns corect: {q.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
+                      Răspuns corect:{" "}
+                      {q.correct
+                        .map((c) => String.fromCharCode(65 + c))
+                        .join(", ")}
                     </p>
                     <textarea
                       className="w-full border rounded p-2"
@@ -323,20 +411,29 @@ export default function Grile() {
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
                   <h3 className="text-lg font-semibold">{selectedTest}</h3>
-                  <Button variant="outline">Generează explicații la grile</Button>
+                  <Button variant="outline">
+                    Generează explicații la grile
+                  </Button>
                 </div>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
-                    <p>{qi + 1}. {q.text}</p>
+                    <p>
+                      {qi + 1}. {q.text}
+                    </p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4">
                         {String.fromCharCode(65 + ai)}. {a}
                       </p>
                     ))}
                     <p className="text-sm italic">
-                      Răspuns corect: {q.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
+                      Răspuns corect:{" "}
+                      {q.correct
+                        .map((c) => String.fromCharCode(65 + c))
+                        .join(", ")}
                       {q.note && (
-                        <span className="ml-2 text-xs text-gray-600">Nota: {q.note}</span>
+                        <span className="ml-2 text-xs text-gray-600">
+                          Nota: {q.note}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -345,15 +442,15 @@ export default function Grile() {
             )}
           </div>
         );
-      case 'teme':
+      case "teme":
         return <div></div>;
-      case 'suplimentare':
+      case "suplimentare":
         return <div></div>;
-      case 'combinate':
+      case "combinate":
         return <div></div>;
-      case 'simulari':
+      case "simulari":
         return <div></div>;
-      case 'ani':
+      case "ani":
         return <div></div>;
       default:
         return null;
@@ -366,7 +463,7 @@ export default function Grile() {
         {tabs.map((t) => (
           <Button
             key={t.id}
-            variant={active === t.id ? 'default' : 'secondary'}
+            variant={active === t.id ? "default" : "secondary"}
             onClick={() => setActive(t.id)}
           >
             {t.label}
