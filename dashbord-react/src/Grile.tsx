@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { explainQuestion, generateGrila } from "@/lib/agent";
+import { explainQuestion } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -57,9 +57,6 @@ export default function Grile() {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
-  const [genPrompt, setGenPrompt] = useState("");
-  const [generatedQ, setGeneratedQ] = useState<Question | null>(null);
-  const [loadingGen, setLoadingGen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
@@ -123,11 +120,8 @@ export default function Grile() {
     const lines = input.split(/\r?\n/).map((l) => l.trim());
     const questions: Question[] = [];
     let current: Question | null = null;
-    // Match either "1." style questions or lines starting with "Intrebare"/"Întrebare"
     const qReg = /^(?:\d+[.)]|[IiÎî]ntrebare)\s*[:.)]?\s*(.+)$/;
-    // Answers may start with just the letter or with a "Raspuns" prefix
     const aReg = /^(?:R(?:ă|a)spuns\s+)?([A-Za-z])[.)]\s*(.+)$/;
-    // Lines specifying the correct answer(s)
     const correctReg = /^R(?:ă|a)spuns(?:uri)?\s+corect[e]?[:]?\s*(.+)$/i;
 
     for (const line of lines) {
@@ -262,20 +256,6 @@ export default function Grile() {
     }
   };
 
-  const generateNewGrila = async () => {
-    if (!genPrompt.trim()) return;
-    setLoadingGen(true);
-    try {
-      const q = await generateGrila(genPrompt.trim());
-      setGeneratedQ({ text: q.text, answers: q.answers, correct: q.correct, note: "", explanation: q.explanation });
-    } catch (err) {
-      console.error(err);
-      alert("Eroare la generarea grilei");
-    } finally {
-      setLoadingGen(false);
-    }
-  };
-
   const publishTest = () => {
     if (!selectedSubject || !selectedTest) return;
 
@@ -323,7 +303,7 @@ export default function Grile() {
                     onChange={(e) => setSelectedTest(e.target.value)}
                   >
                     <option value="">Selectează testul</option>
-                    {Array.from(new Set([...tests, ...savedTests.map((s) => s.name)])).sort().map((t) => (
+                    {tests.map((t) => (
                       <option key={t} value={t}>
                         {t}
                       </option>
@@ -772,33 +752,6 @@ export default function Grile() {
                         )}
                       </div>
                     ))}
-                  <div className="mt-4 space-y-2">
-                    <textarea
-                      className="w-full border rounded p-2"
-                      placeholder="Ex: Fa o grilă din articolele 324-231 Cod civil"
-                      value={genPrompt}
-                      onChange={(e) => setGenPrompt(e.target.value)}
-                    />
-                    <Button onClick={generateNewGrila} disabled={loadingGen}>
-                      {loadingGen ? 'Se generează...' : 'Generează grilă'}
-                    </Button>
-                    {generatedQ && (
-                      <div className="border p-2 rounded space-y-1 mt-2">
-                        <p className="font-bold leading-tight">{generatedQ.text}</p>
-                        {generatedQ.answers.map((a, i) => (
-                          <p key={i} className="pl-4 leading-tight">
-                            {String.fromCharCode(65 + i)}. {a}
-                          </p>
-                        ))}
-                        <p className="text-sm italic">
-                          Răspuns corect: {generatedQ.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
-                        </p>
-                        {generatedQ.explanation && (
-                          <p className="text-sm">Explicație: {generatedQ.explanation}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </>
               )}
               {editingTest && (
@@ -1013,32 +966,30 @@ export default function Grile() {
                           + Adaugă răspuns
                         </Button>
                       )}
+                      <textarea
+                        className="w-full border rounded p-2 mt-2"
+                        placeholder="Nota"
+                        value={q.note}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditingTest((prev) => {
+                            if (!prev) return prev;
+                            const copy = { ...prev, questions: [...prev.questions] };
+                            copy.questions[qi].note = val;
+                            return copy;
+                          });
+                        }}
+                      />
+                      {q.explanation && (
+                        <p className="text-sm mt-1">Explicație: {q.explanation}</p>
+                      )}
                     </div>
-                    ))}
-                    <textarea
-                      className="w-full border rounded p-2 mt-2"
-                      placeholder="Nota"
-                      value={q.note}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEditingTest((prev) => {
-                          if (!prev) return prev;
-                          const copy = { ...prev, questions: [...prev.questions] };
-                          copy.questions[qi].note = val;
-                          return copy;
-                        });
-                      }}
-                    />
-                    {q.explanation && (
-                      <p className="text-sm mt-1">Explicație: {q.explanation}</p>
-                    )}
+                  ))}
+                  <div className="text-right">
+                    <Button onClick={updateTest}>Publică</Button>
                   </div>
-                ))}
-                <div className="text-right">
-                  <Button onClick={updateTest}>Publică</Button>
-                </div>
-              </>
-            )}
+                </>
+              )}
             </div>
           </div>
         );
