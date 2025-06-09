@@ -7,6 +7,13 @@ interface Tab {
   label: string;
 }
 
+interface Test {
+  id: string;
+  name: string;
+  subject: string;
+  questions: Question[];
+}
+
 const tabs: Tab[] = [
   { id: "creare", label: "Creare grile" },
   { id: "teme", label: "Teme" },
@@ -16,11 +23,19 @@ const tabs: Tab[] = [
   { id: "ani", label: "Grile date în anii anteriori" },
 ];
 
+const subjects = [
+  "Drept civil",
+  "Drept procesual civil",
+  "Drept penal",
+  "Drept procesual penal",
+];
+
 type Question = {
   text: string;
   answers: string[];
   correct: number[];
   note: string;
+  explanation?: string;
 };
 
 export default function Grile() {
@@ -32,35 +47,40 @@ export default function Grile() {
   const [showAddTest, setShowAddTest] = useState(false);
   const [newTest, setNewTest] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>(
-    {},
-  );
-  const [editingQuestions, setEditingQuestions] = useState<
-    Record<number, string>
-  >({});
+  const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>({});
+  const [editingQuestions, setEditingQuestions] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [savedTests, setSavedTests] = useState<Test[]>([]);
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const [editingTest, setEditingTest] = useState<Test | null>(null);
 
   const stripAnswerPrefix = (t: string) => {
     const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
     return m ? m[1] : t.trim();
   };
 
-  const toggleCorrect = (qi: number, ai: number) => {
-    setQuestions((prev) => {
+  const toggleCorrect = (qi: number, ai: number, isEditing = false) => {
+    const targetQuestions = isEditing && editingTest ? editingTest.questions : questions;
+    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+
+    setTargetQuestions((prev) => {
       const copy = [...prev];
-      const corr = copy[qi].correct;
+      const question = { ...copy[qi] };
+      const corr = [...question.correct];
       if (corr.includes(ai)) {
-        copy[qi].correct = corr.filter((c) => c !== ai);
+        question.correct = corr.filter((c) => c !== ai);
       } else {
-        corr.push(ai);
+        question.correct = [...corr, ai];
       }
+      copy[qi] = question;
+      console.log(`Toggled answer ${ai} for question ${qi}:`, question.correct);
       return copy;
     });
   };
 
   const parseInput = (): Question[] => {
     const lines = input.split(/\r?\n/).map((l) => l.trim());
-
     const questions: Question[] = [];
     let current: Question | null = null;
     const qReg = /^\d+[.)]\s*(.+)$/;
@@ -101,7 +121,6 @@ export default function Grile() {
     }
 
     if (current) questions.push(current);
-
     return questions.filter((q) => q.text && q.answers.length);
   };
 
@@ -112,6 +131,54 @@ export default function Grile() {
       setTests([...tests, selectedTest]);
     }
     setStep(2);
+  };
+
+  const deleteAnswer = (qi: number, ai: number, isEditing = false) => {
+    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+
+    setTargetQuestions((prev) => {
+      const copy = [...prev];
+      copy[qi].answers.splice(ai, 1);
+      copy[qi].correct = copy[qi].correct
+        .filter((c) => c !== ai)
+        .map((c) => (c > ai ? c - 1 : c));
+      return copy;
+    });
+  };
+
+  const generateExplanation = (qi: number) => {
+    setQuestions((prev) => {
+      const copy = [...prev];
+      copy[qi].explanation = `Explicație generată pentru întrebarea ${qi + 1}.`;
+      return copy;
+    });
+  };
+
+  const publishTest = () => {
+    if (!selectedSubject || !selectedTest) return;
+
+    const test: Test = {
+      id: Date.now().toString(),
+      name: selectedTest,
+      subject: selectedSubject,
+      questions: questions.map((q) => ({ ...q })),
+    };
+
+    setSavedTests((prev) => [...prev, test]);
+    setSelectedSubject("");
+    setSelectedTest("");
+    setQuestions([]);
+    setStep(1);
+    setActive("teme");
+  };
+
+  const updateTest = () => {
+    if (!editingTest) return;
+
+    setSavedTests((prev) =>
+      prev.map((t) => (t.id === editingTest.id ? editingTest : t))
+    );
+    setEditingTest(null);
   };
 
   const renderTab = () => {
@@ -171,14 +238,13 @@ export default function Grile() {
                     </Button>
                   </div>
                 )}
-                <Button onClick={generate}>Generează automat</Button>
+                <Button onClick={generate}>Generează</Button>
               </>
             )}
-
             {step === 2 && (
               <>
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
-                {questions.map((q, qi) => (
+                {(editingTest ? editingTest.questions : questions).map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
                     {editingQuestions[qi] !== undefined ? (
                       <div className="flex items-center space-x-2">
@@ -196,15 +262,17 @@ export default function Grile() {
                           size="sm"
                           variant="secondary"
                           onClick={() => {
-                            setQuestions((prev) => {
+                            const targetQuestions = editingTest ? editingTest.questions : questions;
+                            const setTargetQuestions = editingTest
+                              ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
+                              : setQuestions;
+
+                            setTargetQuestions((prev) => {
                               const copy = [...prev];
-                              copy[qi].text = editingQuestions[qi];
+                              copy[qi].text = editingQuestions[qi].trim() || copy[qi].text;
                               return copy;
                             });
-                            setEditingQuestions((s) => {
-                              const { [qi]: _, ...rest } = s;
-                              return rest;
-                            });
+                            setEditingQuestions({});
                           }}
                         >
                           Salvează
@@ -222,7 +290,7 @@ export default function Grile() {
                             setEditingQuestions((s) => ({ ...s, [qi]: q.text }))
                           }
                         >
-                          Editează întrebarea
+                          Editează
                         </Button>
                       </div>
                     )}
@@ -231,21 +299,19 @@ export default function Grile() {
                       const isEditing = editingAnswers[key] !== undefined;
                       return (
                         <div
-                          key={ai}
+                          key={`${key}-${q.correct.includes(ai)}`}
                           className={cn(
-                            "flex items-center space-x-2 p-2 rounded border cursor-pointer",
+                            "flex items-center space-x-2 p-2 rounded border",
                             q.correct.includes(ai)
-                              ? "border-blue-500"
+                              ? "border-blue-500 bg-blue-100"
                               : "border-transparent",
                           )}
-                          onClick={() => toggleCorrect(qi, ai)}
                         >
                           <input
                             type="checkbox"
                             checked={q.correct.includes(ai)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={() => toggleCorrect(qi, ai)}
-                            className="mr-1"
+                            onChange={() => toggleCorrect(qi, ai, !!editingTest)}
+                            className="mr-2"
                           />
                           {isEditing ? (
                             <>
@@ -263,17 +329,19 @@ export default function Grile() {
                                 size="sm"
                                 variant="secondary"
                                 onClick={() => {
-                                  setQuestions((prev) => {
+                                  const targetQuestions = editingTest ? editingTest.questions : questions;
+                                  const setTargetQuestions = editingTest
+                                    ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
+                                    : setQuestions;
+
+                                  setTargetQuestions((prev) => {
                                     const copy = [...prev];
                                     copy[qi].answers[ai] = stripAnswerPrefix(
-                                      editingAnswers[key],
+                                      editingAnswers[key].trim() || a
                                     );
                                     return copy;
                                   });
-                                  setEditingAnswers((s) => {
-                                    const { [key]: _, ...rest } = s;
-                                    return rest;
-                                  });
+                                  setEditingAnswers({});
                                 }}
                               >
                                 Salvează
@@ -281,7 +349,10 @@ export default function Grile() {
                             </>
                           ) : (
                             <>
-                              <span className="flex-1">
+                              <span
+                                className="flex-1 cursor-pointer"
+                                onClick={() => toggleCorrect(qi, ai, !!editingTest)}
+                              >
                                 {String.fromCharCode(65 + ai)}. {a}
                               </span>
                               <Button
@@ -296,16 +367,7 @@ export default function Grile() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setQuestions((prev) => {
-                                    const copy = [...prev];
-                                    copy[qi].answers.splice(ai, 1);
-                                    copy[qi].correct = copy[qi].correct
-                                      .filter((c) => c !== ai)
-                                      .map((c) => (c > ai ? c - 1 : c));
-                                    return copy;
-                                  });
-                                }}
+                                onClick={() => deleteAnswer(qi, ai, !!editingTest)}
                               >
                                 Șterge
                               </Button>
@@ -331,17 +393,18 @@ export default function Grile() {
                           variant="secondary"
                           onClick={() => {
                             if (addingAnswer[qi].trim()) {
-                              setQuestions((prev) => {
+                              const setTargetQuestions = editingTest
+                                ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
+                                : setQuestions;
+
+                              setTargetQuestions((prev) => {
                                 const copy = [...prev];
                                 copy[qi].answers.push(
                                   stripAnswerPrefix(addingAnswer[qi]),
                                 );
                                 return copy;
                               });
-                              setAddingAnswer((s) => {
-                                const { [qi]: _, ...rest } = s;
-                                return rest;
-                              });
+                              setAddingAnswer({});
                             }
                           }}
                         >
@@ -367,7 +430,6 @@ export default function Grile() {
                 </div>
               </>
             )}
-
             {step === 3 && (
               <>
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
@@ -407,20 +469,38 @@ export default function Grile() {
                 </div>
               </>
             )}
-
             {step === 4 && (
               <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-semibold">{selectedTest}</h3>
-                  <Button variant="outline">
-                    Generează explicații la grile
-                  </Button>
-                </div>
+                <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
-                    <p className="font-bold leading-tight">
-                      {qi + 1}. {q.text}
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold leading-tight">
+                        {qi + 1}. {q.text}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => generateExplanation(qi)}
+                        className="flex items-center space-x-1"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                          />
+                        </svg>
+                        <span>Explicație AI</span>
+                      </Button>
+                    </div>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4 leading-tight">
                         {String.fromCharCode(65 + ai)}. {a}
@@ -439,12 +519,310 @@ export default function Grile() {
                     </p>
                   </div>
                 ))}
+                <div className="text-right">
+                  <Button onClick={() => setStep(5)}>Mai departe</Button>
+                </div>
+              </div>
+            )}
+            {step === 5 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">{selectedTest}</h3>
+                {questions.map((q, qi) => (
+                  <div key={qi} className="border-t pt-4 space-y-1">
+                    <p className="font-bold leading-tight">
+                      {qi + 1}. {q.text}
+                    </p>
+                    {q.answers.map((a, ai) => (
+                      <p key={ai} className="pl-4 leading-tight">
+                        {String.fromCharCode(65 + ai)}. {a}
+                      </p>
+                    ))}
+                    <p className="text-sm italic">
+                      Răspuns corect:{" "}
+                      {q.correct
+                        .map((c) => String.fromCharCode(65 + c))
+                        .join(", ")}
+                    </p>
+                    {q.note && (
+                      <p className="text-sm text-gray-600">Nota: {q.note}</p>
+                    )}
+                    {q.explanation && (
+                      <p className="text-sm">Explicație: {q.explanation}</p>
+                    )}
+                  </div>
+                ))}
+                <div className="flex items-center space-x-2">
+                  <select
+                    className="border p-2 rounded flex-1"
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                  >
+                    <option value="">Selectează materia</option>
+                    {subjects.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={publishTest}
+                    disabled={!selectedSubject || !selectedTest}
+                  >
+                    Publică
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         );
       case "teme":
-        return <div></div>;
+        return (
+          <div className="flex space-x-4">
+            <div className="w-1/4 border-r pr-4">
+              <h3 className="text-lg font-semibold mb-4">Materii</h3>
+              {subjects.map((subject) => (
+                <div key={subject} className="mb-4">
+                  <h4 className="font-medium">{subject}</h4>
+                  <ul className="pl-4">
+                    {savedTests
+                      .filter((t) => t.subject === subject)
+                      .map((test) => (
+                        <li
+                          key={test.id}
+                          className="cursor-pointer hover:text-blue-500"
+                          onClick={() => setSelectedTestId(test.id)}
+                        >
+                          {test.name}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div className="w-3/4">
+              {selectedTestId && !editingTest && (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">
+                      {savedTests.find((t) => t.id === selectedTestId)?.name}
+                    </h3>
+                    <Button
+                      onClick={() =>
+                        setEditingTest(savedTests.find((t) => t.id === selectedTestId) || null)
+                      }
+                    >
+                      Editează
+                    </Button>
+                  </div>
+                  {savedTests
+                    .find((t) => t.id === selectedTestId)
+                    ?.questions.map((q, qi) => (
+                      <div key={qi} className="border-t pt-4 space-y-1">
+                        <p className="font-bold leading-tight">
+                          {qi + 1}. {q.text}
+                        </p>
+                        {q.answers.map((a, ai) => (
+                          <p key={ai} className="pl-4 leading-tight">
+                            {String.fromCharCode(65 + ai)}. {a}
+                          </p>
+                        ))}
+                        <p className="text-sm italic">
+                          Răspuns corect:{" "}
+                          {q.correct
+                            .map((c) => String.fromCharCode(65 + c))
+                            .join(", ")}
+                        </p>
+                        {q.note && (
+                          <p className="text-sm text-gray-600">Nota: {q.note}</p>
+                        )}
+                        {q.explanation && (
+                          <p className="text-sm">Explicație: {q.explanation}</p>
+                        )}
+                      </div>
+                    ))}
+                </>
+              )}
+              {editingTest && (
+                <>
+                  <h3 className="text-lg font-semibold mb-4">{editingTest.name}</h3>
+                  {editingTest.questions.map((q, qi) => (
+                    <div key={qi} className="border-t pt-4 space-y-1">
+                      {editingQuestions[qi] !== undefined ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            className="border p-1 rounded flex-1"
+                            value={editingQuestions[qi]}
+                            onChange={(e) =>
+                              setEditingQuestions((s) => ({
+                                ...s,
+                                [qi]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setEditingTest((prev) => {
+                                if (!prev) return prev;
+                                const copy = { ...prev, questions: [...prev.questions] };
+                                copy.questions[qi].text = editingQuestions[qi].trim() || copy.questions[qi].text;
+                                return copy;
+                              });
+                              setEditingQuestions({});
+                            }}
+                          >
+                            Salvează
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <p className="flex-1 font-bold leading-tight">
+                            {qi + 1}. {q.text}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setEditingQuestions((s) => ({ ...s, [qi]: q.text }))
+                            }
+                          >
+                            Editează
+                          </Button>
+                        </div>
+                      )}
+                      {q.answers.map((a, ai) => {
+                        const key = `${qi}-${ai}`;
+                        const isEditing = editingAnswers[key] !== undefined;
+                        return (
+                          <div
+                            key={`${key}-${q.correct.includes(ai)}`}
+                            className={cn(
+                              "flex items-center space-x-2 p-2 rounded border",
+                              q.correct.includes(ai)
+                                ? "border-blue-500 bg-blue-100"
+                                : "border-transparent",
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={q.correct.includes(ai)}
+                              onChange={() => toggleCorrect(qi, ai, true)}
+                              className="mr-2"
+                            />
+                            {isEditing ? (
+                              <>
+                                <input
+                                  className="border p-1 rounded flex-1"
+                                  value={editingAnswers[key]}
+                                  onChange={(e) =>
+                                    setEditingAnswers((s) => ({
+                                      ...s,
+                                      [key]: e.target.value,
+                                    }))
+                                  }
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setEditingTest((prev) => {
+                                      if (!prev) return prev;
+                                      const copy = { ...prev, questions: [...prev.questions] };
+                                      copy.questions[qi].answers[ai] = stripAnswerPrefix(
+                                        editingAnswers[key].trim() || a
+                                      );
+                                      return copy;
+                                    });
+                                    setEditingAnswers({});
+                                  }}
+                                >
+                                  Salvează
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <span
+                                  className="flex-1 cursor-pointer"
+                                  onClick={() => toggleCorrect(qi, ai, true)}
+                                >
+                                  {String.fromCharCode(65 + ai)}. {a}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setEditingAnswers((s) => ({ ...s, [key]: a }))
+                                  }
+                                >
+                                  Editează
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteAnswer(qi, ai, true)}
+                                >
+                                  Șterge
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {addingAnswer[qi] !== undefined ? (
+                        <div className="flex items-center space-x-2 pl-6">
+                          <input
+                            className="border p-1 rounded flex-1"
+                            value={addingAnswer[qi]}
+                            onChange={(e) =>
+                              setAddingAnswer((s) => ({
+                                ...s,
+                                [qi]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              if (addingAnswer[qi].trim()) {
+                                setEditingTest((prev) => {
+                                  if (!prev) return prev;
+                                  const copy = { ...prev, questions: [...prev.questions] };
+                                  copy.questions[qi].answers.push(
+                                    stripAnswerPrefix(addingAnswer[qi])
+                                  );
+                                  return copy;
+                                });
+                                setAddingAnswer({});
+                              }
+                            }}
+                          >
+                            Adaugă
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="ml-6"
+                          onClick={() =>
+                            setAddingAnswer((s) => ({ ...s, [qi]: "" }))
+                          }
+                        >
+                          + Adaugă răspuns
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="text-right">
+                    <Button onClick={updateTest}>Publică</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
       case "suplimentare":
         return <div></div>;
       case "combinate":
