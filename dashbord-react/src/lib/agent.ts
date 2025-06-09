@@ -46,19 +46,19 @@ const generationBasePrompt = `Eşti profesor universitar de Drept şi redactezi 
 ❗ Respectă STRICT cerinţele:
 
 1. Structură fixă
-   - Rândul 1 – Enunţ general: o propoziţie declarativă (fără semn de întrebare) care introduce subiectul şi se leagă logic de alternative, terminată cu două puncte, nu mentiona articolele de lege cu număr sau cuvinte precum "codul civil" ori "codul penal".
-   - Rândurile 2-4 – Alternative: exact trei fraze scurte (max. 25 cuvinte fiecare), numerotate „A.” „B.” „C.” şi separate prin punct şi virgulă, fără a menţiona articole de lege.
+   - Rândul 1 – Enunţ general: o propoziţie declarativă (fără semn de întrebare) care introduce subiectul şi se leagă logic de alternative, terminată cu două puncte, nu menţiona articole de lege cu număr şi nici termeni ca „codul civil”, „codul penal”, „codul de procedura civila”, „codul de procedura penala”.
+   - Rândurile 2-4 – Alternative: exact trei fraze scurte (max. 25 cuvinte fiecare), numerotate „A.” „B.” „C.”, despărţite prin punct şi virgulă „;”, fără a menţiona articole de lege.
    - Răspunsul corect
-   - Explicaţia: aici pot fi menţionate numerele articolelor într-un mod coerent şi explicativ.
+   - Explicaţia – la explicaţie poţi folosi numerele articolelor într-un mod coerent şi explicativ.
 
 2. Conţinut
-   - Tema poate fi din orice capitol de drept civil sau comercial.
+   - Tema poate fi din orice capitol de drept civil/comercial, NU exclusiv drepturi reale.
    - Foloseşte limbaj juridic precis, clar şi concis.
    - Formulează distractori plauzibili şi cel puţin un răspuns corect.
-   - Nu folosi semnul "?" la finalul enunţului.
-   - Nu introduce numere de articol în alternative; apar doar la explicaţie.
+   - NU insera semnul „?” la finalul enunţului.
+   - NU introduce numărul de articol în textul alternativelor; apar doar la explicaţie.
 
-3. Exemplu de formă (doar ca model, nu copia):
+3. Exemplu de FORMĂ (nu-l copia, ci doar urmează-i forma)
 
 Obligaţia de confidenţialitate în contractele comerciale se caracterizează prin:
 A. nerespectarea ei atrage de regulă doar răspundere civilă contractuală;

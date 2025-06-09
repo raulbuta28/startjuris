@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { explainQuestion } from "@/lib/agent";
+import { explainQuestion, generateGrila } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -57,6 +57,8 @@ export default function Grile() {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
+  const [generatePrompt, setGeneratePrompt] = useState('');
+  const [loadingGenerate, setLoadingGenerate] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
@@ -64,13 +66,16 @@ export default function Grile() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
         setSavedTests(data);
+        setTests(Array.from(new Set(data.map((t: Test) => t.name))));
         setTestsLoaded(true);
       })
       .catch(() => {
         const stored = localStorage.getItem('savedTests');
         if (stored) {
           try {
-            setSavedTests(JSON.parse(stored));
+            const parsed = JSON.parse(stored);
+            setSavedTests(parsed);
+            setTests(Array.from(new Set(parsed.map((t: Test) => t.name))));
           } catch {
             /* ignore */
           }
@@ -90,6 +95,15 @@ export default function Grile() {
       },
       body: JSON.stringify(savedTests),
     }).catch(() => {});
+  }, [savedTests, testsLoaded]);
+
+  useEffect(() => {
+    if (!testsLoaded) return;
+    setTests((prev) => {
+      const names = savedTests.map((t) => t.name);
+      const unique = Array.from(new Set([...prev, ...names]));
+      return unique.length === prev.length ? prev : unique;
+    });
   }, [savedTests, testsLoaded]);
 
   const stripAnswerPrefix = (t: string) => {
@@ -256,6 +270,32 @@ export default function Grile() {
     }
   };
 
+  const generateNewQuestion = async () => {
+    if (!selectedTestId || !generatePrompt.trim()) return;
+    setLoadingGenerate(true);
+    try {
+      const q = await generateGrila(generatePrompt.trim());
+      const newQ: Question = {
+        text: q.text,
+        answers: q.answers,
+        correct: q.correct,
+        note: '',
+        explanation: q.explanation,
+      };
+      setSavedTests((prev) =>
+        prev.map((t) =>
+          t.id === selectedTestId ? { ...t, questions: [...t.questions, newQ] } : t
+        )
+      );
+      setGeneratePrompt('');
+    } catch (err) {
+      console.error(err);
+      alert('Eroare la generarea grilei');
+    } finally {
+      setLoadingGenerate(false);
+    }
+  };
+
   const publishTest = () => {
     if (!selectedSubject || !selectedTest) return;
 
@@ -267,6 +307,7 @@ export default function Grile() {
     };
 
     setSavedTests((prev) => [...prev, test]);
+    setTests((prev) => Array.from(new Set([...prev, selectedTest])));
     setSelectedSubject("");
     setSelectedTest("");
     setQuestions([]);
@@ -752,6 +793,17 @@ export default function Grile() {
                         )}
                       </div>
                     ))}
+                  <div className="mt-4 space-y-2">
+                    <textarea
+                      className="w-full border rounded p-2"
+                      placeholder="Tema pentru grilă"
+                      value={generatePrompt}
+                      onChange={(e) => setGeneratePrompt(e.target.value)}
+                    />
+                    <Button onClick={generateNewQuestion} disabled={loadingGenerate}>
+                      {loadingGenerate ? 'Se generează...' : 'Generează o grilă'}
+                    </Button>
+                  </div>
                 </>
               )}
               {editingTest && (
