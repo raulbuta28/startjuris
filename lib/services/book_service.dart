@@ -11,10 +11,14 @@ class AdminBook {
   AdminBook({required this.id, required this.title, required this.image, required this.content});
 
   factory AdminBook.fromJson(Map<String, dynamic> json) {
+    String image = (json['image'] as String?)?.replaceFirst('../', '') ?? '';
+    if (!image.startsWith('http') && !image.startsWith('assets/')) {
+      image = 'assets/' + image;
+    }
     return AdminBook(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
-      image: (json['image'] as String?)?.replaceFirst('../', '') ?? '',
+      image: image,
       content: json['content'] ?? '',
     );
   }
