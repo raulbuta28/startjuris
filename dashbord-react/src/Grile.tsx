@@ -58,18 +58,32 @@ export default function Grile() {
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    const stored = localStorage.getItem('savedTests');
-    if (stored) {
-      try {
-        setSavedTests(JSON.parse(stored));
-      } catch {
-        /* ignore */
-      }
-    }
+    const token = localStorage.getItem('token') || '';
+    fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setSavedTests)
+      .catch(() => {
+        const stored = localStorage.getItem('savedTests');
+        if (stored) {
+          try {
+            setSavedTests(JSON.parse(stored));
+          } catch {
+            /* ignore */
+          }
+        }
+      });
   }, []);
 
   useEffect(() => {
     localStorage.setItem('savedTests', JSON.stringify(savedTests));
+    fetch('/api/save-tests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: JSON.stringify(savedTests),
+    }).catch(() => {});
   }, [savedTests]);
 
   const stripAnswerPrefix = (t: string) => {

@@ -568,6 +568,38 @@ func listNews(c *gin.Context) {
 	c.JSON(http.StatusOK, news)
 }
 
+func saveTests(c *gin.Context) {
+	var tests []map[string]interface{}
+	if err := c.BindJSON(&tests); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(tests, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "tests.json"), data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func listTests(c *gin.Context) {
+	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "tests.json"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var tests []map[string]interface{}
+	if err := json.Unmarshal(data, &tests); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, tests)
+}
+
 func uploadNewsImage(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -1389,6 +1421,9 @@ func main() {
 		api.POST("/save-news", saveNews)
 		api.POST("/news/upload-image", uploadNewsImage)
 
+		api.GET("/tests", listTests)
+		api.POST("/save-tests", saveTests)
+
 		api.POST("/save-code/:id", saveCode)
 	}
 
@@ -1399,5 +1434,5 @@ func main() {
 
 	// Listen on localhost. If you need to access the API from other
 	// devices on your network, bind to your machine's IP or "0.0.0.0".
-        r.Run("0.0.0.0:8080")
+	r.Run("0.0.0.0:8080")
 }
