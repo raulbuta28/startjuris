@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { explainQuestion } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -146,12 +147,18 @@ export default function Grile() {
     });
   };
 
-  const generateExplanation = (qi: number) => {
-    setQuestions((prev) => {
-      const copy = [...prev];
-      copy[qi].explanation = `Explicație generată pentru întrebarea ${qi + 1}.`;
-      return copy;
-    });
+  const generateExplanation = async (qi: number) => {
+    try {
+      const exp = await explainQuestion(questions[qi]);
+      setQuestions((prev) => {
+        const copy = [...prev];
+        copy[qi].explanation = exp;
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Eroare la generarea explicației");
+    }
   };
 
   const publishTest = () => {
