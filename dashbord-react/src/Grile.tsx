@@ -111,11 +111,23 @@ export default function Grile() {
     return m ? m[1] : t.trim();
   };
 
-  const toggleCorrect = (qi: number, ai: number, isEditing = false) => {
-    const targetQuestions = isEditing && editingTest ? editingTest.questions : questions;
-    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+  const updateQuestionsState = (
+    updater: (prev: Question[]) => Question[],
+    isEditing: boolean = false
+  ) => {
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        const questions = updater(prev.questions);
+        return { ...prev, questions };
+      });
+    } else {
+      setQuestions(updater);
+    }
+  };
 
-    setTargetQuestions((prev) => {
+  const toggleCorrect = (qi: number, ai: number, isEditing = false) => {
+    updateQuestionsState((prev) => {
       const copy = [...prev];
       const question = { ...copy[qi] };
       const corr = [...question.correct];
@@ -127,7 +139,7 @@ export default function Grile() {
       copy[qi] = question;
       console.log(`Toggled answer ${ai} for question ${qi}:`, question.correct);
       return copy;
-    });
+    }, isEditing);
   };
 
   const parseInput = (): Question[] => {
@@ -199,32 +211,26 @@ export default function Grile() {
   };
 
   const deleteAnswer = (qi: number, ai: number, isEditing = false) => {
-    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
-
-    setTargetQuestions((prev) => {
+    updateQuestionsState((prev) => {
       const copy = [...prev];
       copy[qi].answers.splice(ai, 1);
       copy[qi].correct = copy[qi].correct
         .filter((c) => c !== ai)
         .map((c) => (c > ai ? c - 1 : c));
       return copy;
-    });
+    }, isEditing);
   };
 
   const deleteQuestion = (qi: number, isEditing = false) => {
-    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
-
-    setTargetQuestions((prev) => {
+    updateQuestionsState((prev) => {
       const copy = [...prev];
       copy.splice(qi, 1);
       return copy;
-    });
+    }, isEditing);
   };
 
   const moveQuestion = (qi: number, dir: number, isEditing = false) => {
-    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
-
-    setTargetQuestions((prev) => {
+    updateQuestionsState((prev) => {
       const copy = [...prev];
       const ni = qi + dir;
       if (ni < 0 || ni >= copy.length) return copy;
@@ -232,15 +238,16 @@ export default function Grile() {
       copy[qi] = copy[ni];
       copy[ni] = tmp;
       return copy;
-    });
+    }, isEditing);
   };
 
   const addQuestion = (isEditing = false) => {
     const newQ: Question = { text: "", answers: [], correct: [], note: "", explanation: "" };
-    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
-
-    setTargetQuestions((prev) => [...prev, newQ]);
-    setEditingQuestions((s) => ({ ...s, [(isEditing && editingTest ? editingTest.questions.length : questions.length)]: "" }));
+    updateQuestionsState((prev) => [...prev, newQ], isEditing);
+    setEditingQuestions((s) => ({
+      ...s,
+      [isEditing && editingTest ? editingTest.questions.length : questions.length]: "",
+    }));
   };
 
   const generateExplanation = async (qi: number, isEditing = false) => {
@@ -324,6 +331,23 @@ export default function Grile() {
     setEditingTest(null);
   };
 
+  const deleteTest = (id: string) => {
+    if (!window.confirm('Sigur dorești să ștergi testul?')) return;
+    const updated = savedTests.filter((t) => t.id !== id);
+    setSavedTests(updated);
+    setTests(Array.from(new Set(updated.map((t) => t.name))));
+    if (selectedTestId === id) setSelectedTestId(null);
+    if (editingTest && editingTest.id === id) setEditingTest(null);
+    fetch('/api/save-tests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: JSON.stringify(updated),
+    }).catch(() => {});
+  };
+
   const renderTab = () => {
     switch (active) {
       case "creare":
@@ -405,16 +429,11 @@ export default function Grile() {
                           size="sm"
                           variant="secondary"
                           onClick={() => {
-                            const targetQuestions = editingTest ? editingTest.questions : questions;
-                            const setTargetQuestions = editingTest
-                              ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
-                              : setQuestions;
-
-                            setTargetQuestions((prev) => {
+                            updateQuestionsState((prev) => {
                               const copy = [...prev];
                               copy[qi].text = editingQuestions[qi].trim() || copy[qi].text;
                               return copy;
-                            });
+                            }, !!editingTest);
                             setEditingQuestions({});
                           }}
                         >
@@ -472,18 +491,13 @@ export default function Grile() {
                                 size="sm"
                                 variant="secondary"
                                 onClick={() => {
-                                  const targetQuestions = editingTest ? editingTest.questions : questions;
-                                  const setTargetQuestions = editingTest
-                                    ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
-                                    : setQuestions;
-
-                                  setTargetQuestions((prev) => {
+                                  updateQuestionsState((prev) => {
                                     const copy = [...prev];
                                     copy[qi].answers[ai] = stripAnswerPrefix(
                                       editingAnswers[key].trim() || a
                                     );
                                     return copy;
-                                  });
+                                  }, !!editingTest);
                                   setEditingAnswers({});
                                 }}
                               >
@@ -536,17 +550,13 @@ export default function Grile() {
                           variant="secondary"
                           onClick={() => {
                             if (addingAnswer[qi].trim()) {
-                              const setTargetQuestions = editingTest
-                                ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs })
-                                : setQuestions;
-
-                              setTargetQuestions((prev) => {
+                              updateQuestionsState((prev) => {
                                 const copy = [...prev];
                                 copy[qi].answers.push(
                                   stripAnswerPrefix(addingAnswer[qi]),
                                 );
                                 return copy;
-                              });
+                              }, !!editingTest);
                               setAddingAnswer({});
                             }
                           }}
@@ -759,13 +769,21 @@ export default function Grile() {
                     <h3 className="text-lg font-semibold">
                       {savedTests.find((t) => t.id === selectedTestId)?.name}
                     </h3>
-                    <Button
-                      onClick={() =>
-                        setEditingTest(savedTests.find((t) => t.id === selectedTestId) || null)
-                      }
-                    >
-                      Editează
-                    </Button>
+                    <div className="space-x-2">
+                      <Button
+                        variant="destructive"
+                        onClick={() => deleteTest(selectedTestId)}
+                      >
+                        Șterge test
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setEditingTest(savedTests.find((t) => t.id === selectedTestId) || null)
+                        }
+                      >
+                        Editează
+                      </Button>
+                    </div>
                   </div>
                   {savedTests
                     .find((t) => t.id === selectedTestId)
