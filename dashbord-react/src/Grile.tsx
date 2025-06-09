@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface Tab {
   id: string;
@@ -37,10 +38,17 @@ export default function Grile() {
       .trim()
       .split(/\n{2,}/)
       .map((block) => {
-        const lines = block.split(/\n/).map((l) => l.trim()).filter((l) => l);
+        const lines = block
+          .split(/\n/)
+          .map((l) => l.trim())
+          .filter((l) => l);
+        const text = lines[0] || '';
+        const answers = lines.slice(1).map((ans) =>
+          ans.replace(/^[A-Za-z][.)]\s*/, '').trim()
+        );
         return {
-          text: lines[0] || '',
-          answers: lines.slice(1),
+          text,
+          answers,
           correct: [],
           note: '',
         } as Question;
@@ -125,7 +133,15 @@ export default function Grile() {
                   <div key={qi} className="border-t pt-4 space-y-1">
                     <p>{q.text}</p>
                     {q.answers.map((a, ai) => (
-                      <label key={ai} className="flex items-center space-x-2">
+                      <label
+                        key={ai}
+                        className={cn(
+                          'flex items-center space-x-2 p-2 rounded border',
+                          q.correct.includes(ai)
+                            ? 'border-blue-500'
+                            : 'border-transparent'
+                        )}
+                      >
                         <input
                           type="checkbox"
                           checked={q.correct.includes(ai)}
@@ -134,7 +150,9 @@ export default function Grile() {
                               const copy = [...prev];
                               const corr = copy[qi].correct;
                               if (e.target.checked) {
-                                corr.push(ai);
+                                if (!corr.includes(ai)) {
+                                  corr.push(ai);
+                                }
                               } else {
                                 copy[qi].correct = corr.filter((c) => c !== ai);
                               }
@@ -159,6 +177,11 @@ export default function Grile() {
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-2">
                     <p>{q.text}</p>
+                    {q.answers.map((a, ai) => (
+                      <p key={ai} className="pl-4">
+                        {String.fromCharCode(65 + ai)}. {a}
+                      </p>
+                    ))}
                     <p className="text-sm italic">
                       Răspuns corect: {q.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
                     </p>
