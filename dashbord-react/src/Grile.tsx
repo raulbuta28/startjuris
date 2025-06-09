@@ -179,7 +179,7 @@ export default function Grile() {
               <>
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
-                  <div key={qi} className="border-t pt-4 space-y-2">
+                  <div key={qi} className="border-t pt-4 space-y-1">
                     {editingQuestions[qi] !== undefined ? (
                       <div className="flex items-center space-x-2">
                         <input
@@ -212,7 +212,7 @@ export default function Grile() {
                       </div>
                     ) : (
                       <div className="flex items-center space-x-2">
-                        <p className="flex-1">
+                        <p className="flex-1 font-bold leading-tight">
                           {qi + 1}. {q.text}
                         </p>
                         <Button
@@ -233,7 +233,7 @@ export default function Grile() {
                         <div
                           key={ai}
                           className={cn(
-                            "flex items-center space-x-2 p-2 rounded border",
+                            "flex items-center space-x-2 p-2 rounded border cursor-pointer",
                             q.correct.includes(ai)
                               ? "border-blue-500"
                               : "border-transparent",
@@ -244,7 +244,8 @@ export default function Grile() {
                             type="checkbox"
                             checked={q.correct.includes(ai)}
                             onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => toggleCorrect(qi, ai)}
+                            onChange={() => toggleCorrect(qi, ai)}
+                            className="mr-1"
                           />
                           {isEditing ? (
                             <>
@@ -371,12 +372,12 @@ export default function Grile() {
               <>
                 <h3 className="text-lg font-semibold">{selectedTest}</h3>
                 {questions.map((q, qi) => (
-                  <div key={qi} className="border-t pt-4 space-y-2">
-                    <p>
+                  <div key={qi} className="border-t pt-4 space-y-1">
+                    <p className="font-bold leading-tight">
                       {qi + 1}. {q.text}
                     </p>
                     {q.answers.map((a, ai) => (
-                      <p key={ai} className="pl-4">
+                      <p key={ai} className="pl-4 leading-tight">
                         {String.fromCharCode(65 + ai)}. {a}
                       </p>
                     ))}
@@ -417,11 +418,11 @@ export default function Grile() {
                 </div>
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
-                    <p>
+                    <p className="font-bold leading-tight">
                       {qi + 1}. {q.text}
                     </p>
                     {q.answers.map((a, ai) => (
-                      <p key={ai} className="pl-4">
+                      <p key={ai} className="pl-4 leading-tight">
                         {String.fromCharCode(65 + ai)}. {a}
                       </p>
                     ))}
