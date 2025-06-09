@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { explainQuestion } from "@/lib/agent";
+import { explainQuestion, generateGrila } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -57,6 +57,9 @@ export default function Grile() {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
+  const [genPrompt, setGenPrompt] = useState("");
+  const [generatedQ, setGeneratedQ] = useState<Question | null>(null);
+  const [loadingGen, setLoadingGen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
@@ -259,6 +262,20 @@ export default function Grile() {
     }
   };
 
+  const generateNewGrila = async () => {
+    if (!genPrompt.trim()) return;
+    setLoadingGen(true);
+    try {
+      const q = await generateGrila(genPrompt.trim());
+      setGeneratedQ({ text: q.text, answers: q.answers, correct: q.correct, note: "", explanation: q.explanation });
+    } catch (err) {
+      console.error(err);
+      alert("Eroare la generarea grilei");
+    } finally {
+      setLoadingGen(false);
+    }
+  };
+
   const publishTest = () => {
     if (!selectedSubject || !selectedTest) return;
 
@@ -306,7 +323,7 @@ export default function Grile() {
                     onChange={(e) => setSelectedTest(e.target.value)}
                   >
                     <option value="">Selectează testul</option>
-                    {tests.map((t) => (
+                    {Array.from(new Set([...tests, ...savedTests.map((s) => s.name)])).sort().map((t) => (
                       <option key={t} value={t}>
                         {t}
                       </option>
@@ -755,6 +772,33 @@ export default function Grile() {
                         )}
                       </div>
                     ))}
+                  <div className="mt-4 space-y-2">
+                    <textarea
+                      className="w-full border rounded p-2"
+                      placeholder="Ex: Fa o grilă din articolele 324-231 Cod civil"
+                      value={genPrompt}
+                      onChange={(e) => setGenPrompt(e.target.value)}
+                    />
+                    <Button onClick={generateNewGrila} disabled={loadingGen}>
+                      {loadingGen ? 'Se generează...' : 'Generează grilă'}
+                    </Button>
+                    {generatedQ && (
+                      <div className="border p-2 rounded space-y-1 mt-2">
+                        <p className="font-bold leading-tight">{generatedQ.text}</p>
+                        {generatedQ.answers.map((a, i) => (
+                          <p key={i} className="pl-4 leading-tight">
+                            {String.fromCharCode(65 + i)}. {a}
+                          </p>
+                        ))}
+                        <p className="text-sm italic">
+                          Răspuns corect: {generatedQ.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
+                        </p>
+                        {generatedQ.explanation && (
+                          <p className="text-sm">Explicație: {generatedQ.explanation}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               {editingTest && (

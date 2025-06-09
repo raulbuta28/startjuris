@@ -40,3 +40,68 @@ Răspuns corect: ${q.correct.map(i=>String.fromCharCode(65+i)).join(", ")}
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() ?? "";
 }
+
+const generationBasePrompt = `Eşti profesor universitar de Drept şi redactezi o SINGURĂ grilă tip examen, nivel licenţă, strict pe articolele cerute de către utilizator.
+
+❗ Respectă STRICT cerinţele:
+
+1. Structură fixă
+   - Rândul 1 – Enunţ general: o propoziţie declarativă (fără semn de întrebare) care introduce subiectul şi se leagă logic de alternative, terminată cu două puncte, nu mentiona articolele de lege cu număr sau cuvinte precum "codul civil" ori "codul penal".
+   - Rândurile 2-4 – Alternative: exact trei fraze scurte (max. 25 cuvinte fiecare), numerotate „A.” „B.” „C.” şi separate prin punct şi virgulă, fără a menţiona articole de lege.
+   - Răspunsul corect
+   - Explicaţia: aici pot fi menţionate numerele articolelor într-un mod coerent şi explicativ.
+
+2. Conţinut
+   - Tema poate fi din orice capitol de drept civil sau comercial.
+   - Foloseşte limbaj juridic precis, clar şi concis.
+   - Formulează distractori plauzibili şi cel puţin un răspuns corect.
+   - Nu folosi semnul "?" la finalul enunţului.
+   - Nu introduce numere de articol în alternative; apar doar la explicaţie.
+
+3. Exemplu de formă (doar ca model, nu copia):
+
+Obligaţia de confidenţialitate în contractele comerciale se caracterizează prin:
+A. nerespectarea ei atrage de regulă doar răspundere civilă contractuală;
+B. poate fi asumată exclusiv de profesionist, nu şi de consumator;
+C. se poate stinge prin acordul părţilor înainte de expirarea termenului stabilit;
+A,C
+1182,1270
+
+➡︎ Livrează DOAR grila finală.`;
+
+export async function generateGrila(promptText: string): Promise<GrilaQuestion & { explanation: string }> {
+  const prompt = `${generationBasePrompt}\n\nTema: ${promptText}`;
+
+  const res = await fetch(
+    `${import.meta.env.VITE_AGENT_ENDPOINT}/api/v1/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_AGENT_ACCESS_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      }),
+    }
+  );
+
+  if (!res.ok) throw new Error(`Agent error ${res.status}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+
+  const lines = text.split(/\n+/).map((l: string) => l.trim()).filter((l: string) => l);
+  const questionText = lines[0] || "";
+  const answers = lines.slice(1, 4).map((l: string) => l.replace(/^\w\.?\s*/, '').replace(/;?$/, '').trim());
+  const correctLine = lines[4] || "";
+  const explanation = lines[5] || "";
+  const correct = correctLine
+    .toUpperCase()
+    .replace(/[^A-C]/g, ' ')
+    .split(/\s+/)
+    .filter((c: string) => c)
+    .map((c: string) => c.charCodeAt(0) - 65);
+
+  return { text: questionText.replace(/:+$/, ''), answers, correct, explanation };
+}
