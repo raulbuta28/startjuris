@@ -5,6 +5,7 @@ import CodeEditor from './CodeEditor';
 import CodurileLaZi from './CodurileLaZi';
 import CodeTextTabs from './CodeTextTabs';
 import Grile from './Grile';
+import GrileSpreadsheet from './GrileSpreadsheet';
 
 interface LoginProps {
   onLogin: () => void;
@@ -72,6 +73,7 @@ const sections = [
   { key: 'codurile_2_0', label: 'Codurile 2.0', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
+  { key: 'grile_2_0', label: 'Grile 2.0', icon: 'grid_on' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
 ];
 
@@ -348,6 +350,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'codurile_2_0') {
       return <CodeTextTabs />;
+    }
+    if (section === 'grile_2_0') {
+      return <GrileSpreadsheet />;
     }
     if (section === 'grile') {
       return <Grile />;
