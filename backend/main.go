@@ -579,7 +579,7 @@ func saveTests(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "tests.json"), data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(rootDir, "backend", "tests.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -587,8 +587,11 @@ func saveTests(c *gin.Context) {
 }
 
 func listTests(c *gin.Context) {
-	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "tests.json"))
-	if err != nil {
+	path := filepath.Join(rootDir, "backend", "tests.json")
+	data, err := ioutil.ReadFile(path)
+	if os.IsNotExist(err) {
+		data = []byte("[]")
+	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
