@@ -85,8 +85,12 @@ export default function Grile() {
     const lines = input.split(/\r?\n/).map((l) => l.trim());
     const questions: Question[] = [];
     let current: Question | null = null;
-    const qReg = /^\d+[.)]\s*(.+)$/;
-    const aReg = /^[A-Za-z][.)]\s*(.+)$/;
+    // Match either "1." style questions or lines starting with "Intrebare"/"Întrebare"
+    const qReg = /^(?:\d+[.)]|[IiÎî]ntrebare)\s*[:.)]?\s*(.+)$/;
+    // Answers may start with just the letter or with a "Raspuns" prefix
+    const aReg = /^(?:R(?:ă|a)spuns\s+)?([A-Za-z])[.)]\s*(.+)$/;
+    // Lines specifying the correct answer(s)
+    const correctReg = /^R(?:ă|a)spuns(?:uri)?\s+corect[e]?[:]?\s*(.+)$/i;
 
     for (const line of lines) {
       if (!line) continue;
@@ -108,7 +112,20 @@ export default function Grile() {
         if (!current) {
           current = { text: "", answers: [], correct: [], note: "" };
         }
-        current.answers.push(aMatch[1]);
+        current.answers.push(aMatch[2] || aMatch[1]);
+        continue;
+      }
+
+      const corrMatch = line.match(correctReg);
+      if (corrMatch && current) {
+        const letters = corrMatch[1]
+          .toUpperCase()
+          .replace(/[^A-Z]/g, " ")
+          .split(/\s+/)
+          .filter((l) => l);
+        current.correct = letters
+          .map((l) => l.charCodeAt(0) - 65)
+          .filter((i) => i >= 0 && i < current.answers.length);
         continue;
       }
 
