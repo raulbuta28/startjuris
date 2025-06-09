@@ -34,26 +34,52 @@ export default function Grile() {
   const [questions, setQuestions] = useState<Question[]>([]);
 
   const parseInput = (): Question[] => {
-    return input
-      .trim()
-      .split(/\n{2,}/)
-      .map((block) => {
-        const lines = block
-          .split(/\n/)
-          .map((l) => l.trim())
-          .filter((l) => l);
-        const text = lines[0] || '';
-        const answers = lines.slice(1).map((ans) =>
-          ans.replace(/^[A-Za-z][.)]\s*/, '').trim()
-        );
-        return {
-          text,
-          answers,
+    const lines = input
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+
+    const questions: Question[] = [];
+    let current: Question | null = null;
+    const qReg = /^\d+[.)]\s*(.+)$/;
+    const aReg = /^[A-Za-z][.)]\s*(.+)$/;
+
+    for (const line of lines) {
+      if (!line) continue;
+
+      const qMatch = line.match(qReg);
+      if (qMatch) {
+        if (current) questions.push(current);
+        current = {
+          text: qMatch[1],
+          answers: [],
           correct: [],
           note: '',
-        } as Question;
-      })
-      .filter((q) => q.text);
+        };
+        continue;
+      }
+
+      const aMatch = line.match(aReg);
+      if (aMatch) {
+        if (!current) {
+          current = { text: '', answers: [], correct: [], note: '' };
+        }
+        current.answers.push(aMatch[1]);
+        continue;
+      }
+
+      if (current) {
+        if (current.answers.length === 0) {
+          current.text = `${current.text} ${line}`.trim();
+        } else {
+          const last = current.answers.length - 1;
+          current.answers[last] = `${current.answers[last]} ${line}`.trim();
+        }
+      }
+    }
+
+    if (current) questions.push(current);
+
+    return questions.filter((q) => q.text && q.answers.length);
   };
 
   const generate = () => {
