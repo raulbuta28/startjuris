@@ -970,29 +970,31 @@ export default function Grile() {
                         </Button>
                       )}
                     </div>
-                  ))}
-                  <textarea
-                    className="w-full border rounded p-2 mt-2"
-                    placeholder="Nota"
-                    value={q.note}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditingTest((prev) => {
-                        if (!prev) return prev;
-                        const copy = { ...prev, questions: [...prev.questions] };
-                        copy.questions[qi].note = val;
-                        return copy;
-                      });
-                    }}
-                  />
-                  {q.explanation && (
-                    <p className="text-sm mt-1">Explicație: {q.explanation}</p>
-                  )}
-                  <div className="text-right">
-                    <Button onClick={updateTest}>Publică</Button>
+                    ))}
+                    <textarea
+                      className="w-full border rounded p-2 mt-2"
+                      placeholder="Nota"
+                      value={q.note}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditingTest((prev) => {
+                          if (!prev) return prev;
+                          const copy = { ...prev, questions: [...prev.questions] };
+                          copy.questions[qi].note = val;
+                          return copy;
+                        });
+                      }}
+                    />
+                    {q.explanation && (
+                      <p className="text-sm mt-1">Explicație: {q.explanation}</p>
+                    )}
                   </div>
-                </>
-              )}
+                ))}
+                <div className="text-right">
+                  <Button onClick={updateTest}>Publică</Button>
+                </div>
+              </>
+            )}
             </div>
           </div>
         );
