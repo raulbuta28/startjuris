@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { explainQuestion } from "@/lib/agent";
@@ -56,6 +56,21 @@ export default function Grile() {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    const stored = localStorage.getItem('savedTests');
+    if (stored) {
+      try {
+        setSavedTests(JSON.parse(stored));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('savedTests', JSON.stringify(savedTests));
+  }, [savedTests]);
 
   const stripAnswerPrefix = (t: string) => {
     const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
@@ -165,15 +180,57 @@ export default function Grile() {
     });
   };
 
-  const generateExplanation = async (qi: number) => {
+  const deleteQuestion = (qi: number, isEditing = false) => {
+    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+
+    setTargetQuestions((prev) => {
+      const copy = [...prev];
+      copy.splice(qi, 1);
+      return copy;
+    });
+  };
+
+  const moveQuestion = (qi: number, dir: number, isEditing = false) => {
+    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+
+    setTargetQuestions((prev) => {
+      const copy = [...prev];
+      const ni = qi + dir;
+      if (ni < 0 || ni >= copy.length) return copy;
+      const tmp = copy[qi];
+      copy[qi] = copy[ni];
+      copy[ni] = tmp;
+      return copy;
+    });
+  };
+
+  const addQuestion = (isEditing = false) => {
+    const newQ: Question = { text: "", answers: [], correct: [], note: "", explanation: "" };
+    const setTargetQuestions = isEditing && editingTest ? (qs: Question[]) => setEditingTest({ ...editingTest, questions: qs }) : setQuestions;
+
+    setTargetQuestions((prev) => [...prev, newQ]);
+    setEditingQuestions((s) => ({ ...s, [(isEditing && editingTest ? editingTest.questions.length : questions.length)]: "" }));
+  };
+
+  const generateExplanation = async (qi: number, isEditing = false) => {
     setLoadingExp((s) => ({ ...s, [qi]: true }));
     try {
-      const exp = await explainQuestion(questions[qi]);
-      setQuestions((prev) => {
-        const copy = [...prev];
-        copy[qi].explanation = exp;
-        return copy;
-      });
+      const targetQuestions = isEditing && editingTest ? editingTest.questions : questions;
+      const exp = await explainQuestion(targetQuestions[qi]);
+      if (isEditing && editingTest) {
+        setEditingTest((prev) => {
+          if (!prev) return prev;
+          const copy = { ...prev, questions: [...prev.questions] };
+          copy.questions[qi].explanation = exp;
+          return copy;
+        });
+      } else {
+        setQuestions((prev) => {
+          const copy = [...prev];
+          copy[qi].explanation = exp;
+          return copy;
+        });
+      }
     } catch (err) {
       console.error(err);
       alert("Eroare la generarea explicației");
@@ -682,6 +739,11 @@ export default function Grile() {
               {editingTest && (
                 <>
                   <h3 className="text-lg font-semibold mb-4">{editingTest.name}</h3>
+                  <div className="mb-4 text-right">
+                    <Button size="sm" variant="secondary" onClick={() => addQuestion(true)}>
+                      Adaugă grilă
+                    </Button>
+                  </div>
                   {editingTest.questions.map((q, qi) => (
                     <div key={qi} className="border-t pt-4 space-y-1">
                       {editingQuestions[qi] !== undefined ? (
@@ -725,6 +787,42 @@ export default function Grile() {
                             }
                           >
                             Editează
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveQuestion(qi, -1, true)}
+                            disabled={qi === 0}
+                          >
+                            ↑
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveQuestion(qi, 1, true)}
+                            disabled={qi === (editingTest?.questions.length ?? 0) - 1}
+                          >
+                            ↓
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteQuestion(qi, true)}
+                          >
+                            Șterge
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => generateExplanation(qi, true)}
+                            className="ml-2"
+                            disabled={loadingExp[qi]}
+                          >
+                            {loadingExp[qi]
+                              ? 'Se generează...'
+                              : q.explanation
+                              ? 'Explicație generată'
+                              : 'Explicație AI'}
                           </Button>
                         </div>
                       )}
@@ -852,6 +950,23 @@ export default function Grile() {
                       )}
                     </div>
                   ))}
+                  <textarea
+                    className="w-full border rounded p-2 mt-2"
+                    placeholder="Nota"
+                    value={q.note}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingTest((prev) => {
+                        if (!prev) return prev;
+                        const copy = { ...prev, questions: [...prev.questions] };
+                        copy.questions[qi].note = val;
+                        return copy;
+                      });
+                    }}
+                  />
+                  {q.explanation && (
+                    <p className="text-sm mt-1">Explicație: {q.explanation}</p>
+                  )}
                   <div className="text-right">
                     <Button onClick={updateTest}>Publică</Button>
                   </div>
