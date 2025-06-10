@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../admitereinm/models.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class TestPage extends StatefulWidget {
   final String testTitle;
@@ -35,6 +37,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
   bool _showTools = false;
   bool _isDarkMode = false;
   int _selectedTheme = 0;
+  bool _hasSavedProgress = false;
 
   final List<List<Color>> themeColors = [
     [Colors.purple.shade200, Colors.pink.shade200], // Default
@@ -81,13 +84,74 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
       _score = (correct / widget.questions.length) * 10; // Calculăm nota din 10
       _showExplanations = true;
       _progress = 1.0;
+      _hasSavedProgress = true;
     });
+
+    _saveCompleted();
 
     _scrollController.animateTo(
       0,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeOut,
     );
+  }
+
+  Future<void> _saveCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = widget.testTitle.replaceAll(' ', '_');
+    await prefs.setBool('test_${key}_completed', true);
+    await prefs.setDouble('test_${key}_score', _score);
+    await prefs.setInt('test_${key}_completedAt', DateTime.now().millisecondsSinceEpoch);
+    await prefs.remove('test_${key}_answers');
+    await prefs.remove('test_${key}_index');
+  }
+
+  Future<void> _saveProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = widget.testTitle.replaceAll(' ', '_');
+    await prefs.setString('test_${key}_answers', jsonEncode(_selectedAnswers));
+    int nextIndex = _selectedAnswers.indexWhere((a) => a.isEmpty);
+    if (nextIndex == -1) nextIndex = widget.questions.length;
+    await prefs.setInt('test_${key}_index', nextIndex);
+    await prefs.setBool('test_${key}_completed', false);
+    setState(() {
+      _hasSavedProgress = true;
+    });
+  }
+
+  Future<void> _loadSavedProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = widget.testTitle.replaceAll(' ', '_');
+    final saved = prefs.getString('test_${key}_answers');
+    final completed = prefs.getBool('test_${key}_completed') ?? false;
+    _hasSavedProgress = saved != null || completed;
+    if (saved != null) {
+      final decoded = jsonDecode(saved) as List<dynamic>;
+      _selectedAnswers = decoded
+          .map<List<String>>((e) => List<String>.from(e as List))
+          .toList();
+      _answeredQuestions =
+          _selectedAnswers.map((e) => e.isNotEmpty).toList();
+      _progress =
+          _selectedAnswers.where((a) => a.isNotEmpty).length / widget.questions.length;
+    }
+  }
+
+  Future<void> _restartTest() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = widget.testTitle.replaceAll(' ', '_');
+    await prefs.remove('test_${key}_answers');
+    await prefs.remove('test_${key}_index');
+    await prefs.remove('test_${key}_completed');
+    await prefs.remove('test_${key}_score');
+    await prefs.remove('test_${key}_completedAt');
+    setState(() {
+      _answeredQuestions = List.filled(widget.questions.length, false);
+      _selectedAnswers = List.generate(widget.questions.length, (_) => []);
+      _progress = 0.0;
+      _showExplanations = false;
+      _hasSavedProgress = false;
+    });
   }
 
   @override
@@ -101,6 +165,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     _answeredQuestions = List.filled(widget.questions.length, false);
     _selectedAnswers = List.generate(widget.questions.length, (_) => []);
     _progress = 0.0;
+    _loadSavedProgress();
   }
 
   @override
@@ -148,14 +213,17 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
             Column(
               children: [
                 _buildHeader(),
-                if (_showExplanations) _buildTestResults(),
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.only(bottom: 100),
-                    itemCount: widget.questions.length,
+                    itemCount: widget.questions.length + (_showExplanations ? 1 : 0),
                     itemBuilder: (context, index) {
-                      return _buildQuestionCard(widget.questions[index], index);
+                      if (_showExplanations && index == 0) {
+                        return _buildTestResults();
+                      }
+                      final qIndex = _showExplanations ? index - 1 : index;
+                      return _buildQuestionCard(widget.questions[qIndex], qIndex);
                     },
                   ),
                 ),
@@ -163,6 +231,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
             ),
             if (_showTools) _buildToolsOverlay(),
             if (!_showExplanations) _buildSubmitButton(),
+            if (_hasSavedProgress) _buildRestartButton(),
           ],
         ),
       ),
@@ -445,6 +514,34 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildRestartButton() {
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: _showExplanations ? 16 : 72,
+      child: SafeArea(
+        child: ElevatedButton(
+          onPressed: _restartTest,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: Colors.grey.shade700,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            'Începe din nou',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuestionCard(Question question, int index) {
     final selectedAnswers = _selectedAnswers[index];
 
@@ -672,7 +769,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                             fontSize: 16,
                             height: 1.6,
                             color: textColor,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.normal,
                           ),
                         ),
                       ],
@@ -804,7 +901,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                 icon: Icons.bookmark_outlined,
                 text: 'Salvează progresul',
                 description: 'Continuă mai târziu de unde ai rămas',
-                onTap: () {},
+                onTap: _saveProgress,
               ),
               _buildToolButton(
                 icon: Icons.flag_outlined,

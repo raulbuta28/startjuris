@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../testegrile/test_page_new.dart';
 import 'models.dart'; // Answer, Question
@@ -136,11 +138,18 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
   TabController? _tabController;
   int _selectedIndex = 0;
   final _scrollController = ScrollController();
+  final Map<String, Map<String, dynamic>> _progressData = {};
 
   @override
   void initState() {
     super.initState();
     _loadTests();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadProgress();
   }
 
   Future<void> _loadTests() async {
@@ -165,7 +174,29 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
           setState(() => _selectedIndex = _tabController!.index);
         }
       });
+      _loadProgress();
     });
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final Map<String, Map<String, dynamic>> data = {};
+    for (final tema in _teme) {
+      final sub = tema['subheaders'] as List<dynamic>;
+      for (final sh in sub) {
+        final themes = sh['themes'] as List<TemaItem>;
+        for (final t in themes) {
+          final titleKey = t.title.replaceAll(' ', '_');
+          data[t.title] = {
+            'progress': prefs.getInt('test_${titleKey}_index') ?? 0,
+            'completed': prefs.getBool('test_${titleKey}_completed') ?? false,
+            'score': prefs.getDouble('test_${titleKey}_score') ?? 0.0,
+            'completedAt': prefs.getInt('test_${titleKey}_completedAt'),
+          };
+        }
+      }
+    }
+    setState(() => _progressData.addAll(data));
   }
 
 
@@ -236,9 +267,14 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
     for (var subheader in subheaders) {
       final themesList = subheader['themes'] as List<TemaItem>;
       for (var theme in themesList) {
+        final prog = _progressData[theme.title] ?? {};
         themes.add({
           'title': theme.title,
           'questions': theme.questions,
+          'progress': prog['progress'] ?? 0,
+          'completed': prog['completed'] ?? false,
+          'score': prog['score'] ?? 0.0,
+          'completedAt': prog['completedAt'],
         });
       }
     }
@@ -274,9 +310,9 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
                 return _ThemeCard(
                   theme: theme,
                   color: _getThemeColor(index),
-                  onTap: () {
+                  onTap: () async {
                     HapticFeedback.mediumImpact();
-                    Navigator.of(context).push(
+                    await Navigator.of(context).push(
                       PageRouteBuilder(
                         pageBuilder: (context, animation, secondaryAnimation) => TestPage(
                           testTitle: theme['title'],
@@ -292,6 +328,7 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
                         },
                       ),
                     );
+                    _loadProgress();
                   },
                 );
               },
@@ -369,6 +406,10 @@ class _ThemeCardState extends State<_ThemeCard> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
+    final int progress = widget.theme['progress'] as int? ?? 0;
+    final bool completed = widget.theme['completed'] as bool? ?? false;
+    final double score = widget.theme['score'] as double? ?? 0.0;
+    final int? completedAt = widget.theme['completedAt'] as int?;
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) => _controller.reverse(),
@@ -410,6 +451,26 @@ class _ThemeCardState extends State<_ThemeCard> with SingleTickerProviderStateMi
                   ),
                 ),
               ),
+              if (completed || progress > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: completed ? Colors.green : Colors.orange,
+                      ),
+                    ),
+                    child: Icon(
+                      completed ? Icons.check : Icons.play_arrow,
+                      size: 16,
+                      color: completed ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -445,6 +506,24 @@ class _ThemeCardState extends State<_ThemeCard> with SingleTickerProviderStateMi
                       ),
                     ),
                     const SizedBox(height: 12),
+                    if (progress > 0 && !completed)
+                      Text(
+                        'Ai rămas la grila $progress, continuă te rog..',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    if (completed)
+                      Text(
+                        'Nota ${score.toStringAsFixed(2)} - ${completedAt != null ? DateFormat('dd.MM.yyyy').format(DateTime.fromMillisecondsSinceEpoch(completedAt)) : ''}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    if (progress > 0 || completed)
+                      const SizedBox(height: 8),
                     Row(
                       children: [
                         Container(
