@@ -76,3 +76,44 @@ export async function generateGrila(prompt: string): Promise<GrilaQuestion & { e
 
   return { text: questionText.replace(/:+$/, ''), answers, correct, explanation };
 }
+
+export async function generateGrilaStrict(prompt: string): Promise<GrilaQuestion & { explanation: string }> {
+
+  const res = await fetch(
+    `${import.meta.env.VITE_GRILE_AGENT_ENDPOINT || import.meta.env.VITE_AGENT_ENDPOINT}/api/v1/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_AGENT_ACCESS_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+        max_tokens: Number(import.meta.env.VITE_GRILE_AGENT_MAX_TOKENS ?? 512),
+        temperature: Number(import.meta.env.VITE_GRILE_AGENT_TEMPERATURE ?? 0.5),
+        top_p: Number(import.meta.env.VITE_GRILE_AGENT_TOP_P ?? 0.9),
+        top_k: Number(import.meta.env.VITE_GRILE_AGENT_TOP_K ?? 10),
+        retrieval: "none",
+      }),
+    }
+  );
+
+  if (!res.ok) throw new Error(`Agent error ${res.status}`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+
+  const lines = text.split(/\n+/).map((l: string) => l.trim()).filter((l: string) => l);
+  const questionText = lines[0] || "";
+  const answers = lines.slice(1, 4).map((l: string) => l.replace(/^\w\.?\s*/, '').replace(/;?$/, '').trim());
+  const correctLine = lines[4] || "";
+  const explanation = lines[5] || "";
+  const correct = correctLine
+    .toUpperCase()
+    .replace(/[^A-C]/g, ' ')
+    .split(/\s+/)
+    .filter((c: string) => c)
+    .map((c: string) => c.charCodeAt(0) - 65);
+
+  return { text: questionText.replace(/:+$/, ''), answers, correct, explanation };
+}

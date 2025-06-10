@@ -20,6 +20,15 @@ for the dashboard to load the books data correctly.
 
 The explanation feature in `Grile.tsx` calls the AI agent specified by
 `VITE_AGENT_ENDPOINT` and authenticated via `VITE_AGENT_ACCESS_KEY`.
+For generating new questions with strict parameters, the dashboard uses the
+settings prefixed with `VITE_GRILE_AGENT_`:
+
+- `VITE_GRILE_AGENT_ENDPOINT` – endpoint of the dedicated generator agent
+- `VITE_GRILE_AGENT_MAX_TOKENS` – maximum tokens to generate (default `512`)
+- `VITE_GRILE_AGENT_TEMPERATURE` – temperature value (default `0.5`)
+- `VITE_GRILE_AGENT_TOP_P` – top-p sampling value (default `0.9`)
+- `VITE_GRILE_AGENT_TOP_K` – top-k sampling value (default `10`)
+
 These variables are loaded from the `.env` file located in the project
 root. If you run the dashboard independently, create a `.env` file in this
 folder or copy the one from `../` so Vite can access the values during

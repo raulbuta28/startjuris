@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { explainQuestion, generateGrila } from "@/lib/agent";
+import { explainQuestion, generateGrilaStrict } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -299,7 +299,7 @@ export default function Grile() {
     if (!generateTestId || !generatePrompt.trim()) return;
     setLoadingGenerate(true);
     try {
-      const q = await generateGrila(generatePrompt.trim());
+      const q = await generateGrilaStrict(generatePrompt.trim());
       const newQ: Question = {
         text: q.text,
         answers: q.answers,
