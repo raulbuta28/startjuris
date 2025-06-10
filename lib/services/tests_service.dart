@@ -8,12 +8,16 @@ class FetchedTest {
   final String name;
   final String subject;
   final List<Question> questions;
+  final List<String> categories;
+  final int order;
 
   FetchedTest({
     required this.id,
     required this.name,
     required this.subject,
     required this.questions,
+    required this.categories,
+    required this.order,
   });
 
   factory FetchedTest.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,10 @@ class FetchedTest {
       name: json['name'] ?? '',
       subject: json['subject'] ?? '',
       questions: questions,
+      categories: (json['categories'] as List? ?? ['INM', 'Barou', 'INR'])
+          .map((e) => e.toString())
+          .toList(),
+      order: json['order'] is int ? json['order'] as int : 0,
     );
   }
 }

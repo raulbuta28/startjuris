@@ -24,7 +24,7 @@ class _AdmitereBarouPageState extends State<AdmitereBarouPage> {
 
   final List<Widget> _pages = [
     const PlanuriPage(),
-    const TemePage(),
+    const TemePage(exam: 'Barou'),
     const TesteSupPage(),
     const TesteCombinate(),
     const SimulariPage(),

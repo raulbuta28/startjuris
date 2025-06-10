@@ -63,7 +63,8 @@ final _darkTheme = ThemeData(
 class TemaItem {
   final String title;
   final List<Question> questions;
-  const TemaItem({required this.title, required this.questions});
+  final int order;
+  const TemaItem({required this.title, required this.questions, required this.order});
 }
 
 const _sampleQuestions = [
@@ -128,7 +129,8 @@ class _CustomTab extends StatelessWidget {
 // 5. PAGINA PRINCIPALĂ
 // ────────────────────────────────────────────────────────────────────────────
 class TemePage extends StatefulWidget {
-  const TemePage({super.key});
+  final String exam;
+  const TemePage({super.key, required this.exam});
 
   @override
   State<TemePage> createState() => _TemePageState();
@@ -154,10 +156,14 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
 
   Future<void> _loadTests() async {
     final fetched = await TestsService.fetchTests();
+    final filtered = fetched.where((t) => t.categories.contains(widget.exam)).toList();
     final Map<String, List<TemaItem>> bySubject = {};
-    for (final t in fetched) {
-      final item = TemaItem(title: t.name, questions: t.questions);
+    for (final t in filtered) {
+      final item = TemaItem(title: t.name, questions: t.questions, order: t.order);
       bySubject.putIfAbsent(t.subject, () => []).add(item);
+    }
+    for (final list in bySubject.values) {
+      list.sort((a, b) => a.order.compareTo(b.order));
     }
     setState(() {
       _teme = bySubject.entries
@@ -599,7 +605,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Teme App',
         theme: p.themeData,
-        home: const TemePage(),
+        home: const TemePage(exam: 'INM'),
       ),
     );
   }

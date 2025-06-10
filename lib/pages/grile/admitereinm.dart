@@ -26,7 +26,7 @@ class _AdmitereINMPageState extends State<AdmitereINMPage> {
 
   final List<Widget> _pages = [
     const PlanuriPage(),
-    const TemePage(),
+    const TemePage(exam: 'INM'),
     const TesteSupPage(),
     const TesteCombinate(),
     const SimulariPage(),
