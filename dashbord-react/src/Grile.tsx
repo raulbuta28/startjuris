@@ -102,11 +102,8 @@ export default function Grile() {
 
   useEffect(() => {
     if (!testsLoaded) return;
-    setTests((prev) => {
-      const names = savedTests.map((t) => t.name);
-      const unique = Array.from(new Set([...prev, ...names]));
-      return unique.length === prev.length ? prev : unique;
-    });
+    const names = Array.from(new Set(savedTests.map((t) => t.name)));
+    setTests(names);
   }, [savedTests, testsLoaded]);
 
   const stripAnswerPrefix = (t: string) => {
@@ -859,7 +856,15 @@ export default function Grile() {
               )}
               {editingTest && (
                 <>
-                  <h3 className="text-lg font-semibold mb-4">{editingTest.name}</h3>
+                  <input
+                    className="border p-2 rounded w-full mb-4"
+                    value={editingTest.name}
+                    onChange={(e) =>
+                      setEditingTest((prev) =>
+                        prev ? { ...prev, name: e.target.value } : prev
+                      )
+                    }
+                  />
                   <div className="mb-4 text-right">
                     <Button size="sm" variant="secondary" onClick={() => addQuestion(true)}>
                       Adaugă grilă
