@@ -7,7 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../testegrile/test_page_new.dart';
-import 'models.dart';   // Answer, Question
+import 'models.dart'; // Answer, Question
+import '../../../services/tests_service.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
 // CONSTANTE & STILURI
@@ -93,151 +94,9 @@ const _placeholderQuestions = [
 ];
 
 // ────────────────────────────────────────────────────────────────────────────
-// 3. LISTA TEME
+// 3. LISTA TEME – Populată din API
 // ────────────────────────────────────────────────────────────────────────────
-final List<Map<String, dynamic>> _teme = [
-  // Drept civil
-  {
-    'header': 'Drept civil',
-    'subheaders': [
-      {
-        'title': 'Partea generală',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Aplicarea legii civile în timp', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Actul juridic civil', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Ocrotirea persoanei fizice', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Persoana fizică & Persoana juridică', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Drepturi reale',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Proprietatea privată', questions: _sampleQuestions),
-          TemaItem(title: 'Tema 2 - Dezmembrămintele dreptului de proprietatea privată', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Posesia', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Accesiunea imobiliară artificială', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Cartea funciară', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Acțiunea în revendicare', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 7 - Uzucapiunea', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 8 - Servituțile', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 9 - Superficia', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 10 - Ipoteca', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Succesiuni',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Despre moșteniri în general', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Teoria generală a obligațiilor',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Particularități ale contractului', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Faptul juridic civil', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Răspunderea civilă delictuală', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Executarea obligațiilor', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Transmisiunea și transformarea obligațiilor', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Stingerea obligațiilor', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Contracte speciale',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Contractul de vânzare', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Contractul de donație', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Contractul de locațiune', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Contractul de mandat', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Contractul de împrumut', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Contractul de întreținere', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 7 - Tranzacția', questions: _placeholderQuestions),
-        ],
-      },
-    ],
-  },
-  // Drept procesual civil
-  {
-    'header': 'Drept procesual civil',
-    'subheaders': [
-      {
-        'title': null,
-        'themes': [
-          TemaItem(title: 'Tema 1 - Principiile fundamentale ale procesului civil', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Acțiunea civilă', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Participanții la procesul civil', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Competența instanțelor judecătorești', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Actele de procedură', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Termenele procedurale', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 7 - Procedura în fața primei instanțe', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 8 - Căile de atac', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 9 - Procedura necontencioasă judiciară', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 10 - Executarea silită', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 11 - Proceduri speciale', questions: _placeholderQuestions),
-        ],
-      },
-    ],
-  },
-  // Drept penal
-  {
-    'header': 'Drept penal',
-    'subheaders': [
-      {
-        'title': 'Partea generală',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Aplicarea legii penale în timp', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Infracțiunea', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Pedepsele', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Măsurile de siguranță', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Minoritatea', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Răspunderea penală a persoanei juridice', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 7 - Cauzele care înlătură răspunderea penală', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 8 - Cauzele care înlătură sau modifică executarea pedepsei', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 9 - Cauzele care înlătură consecințele condamnării', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Partea specială',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Infracțiuni contra persoanei', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Infracțiuni contra patrimoniului', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Infracțiuni privind autoritatea și frontiera de stat', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Infracțiuni contra înfăptuirii justiției', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Infracțiuni de corupție și de serviciu', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Infracțiuni de fals', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 7 - Infracțiuni contra siguranței publice', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 8 - Infracțiuni contra familiei', questions: _placeholderQuestions),
-        ],
-      },
-    ],
-  },
-  // Drept procesual penal
-  {
-    'header': 'Drept procesual penal',
-    'subheaders': [
-      {
-        'title': 'Partea generală',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Principiile și limitele aplicării legii procesuale penale', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Acțiunea penală și acțiunea civilă în procesul penal', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Participanții în procesul penal', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Probele, mijloacele de probă și procedeele', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Măsurile preventive și alte măsuri procesuale', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 6 - Acte procesuale și procedurale comune', questions: _placeholderQuestions),
-        ],
-      },
-      {
-        'title': 'Partea specială',
-        'themes': [
-          TemaItem(title: 'Tema 1 - Urmărirea penală', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 2 - Camera preliminară', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 3 - Judecata', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 4 - Proceduri speciale', questions: _placeholderQuestions),
-          TemaItem(title: 'Tema 5 - Executarea hotărârilor penale', questions: _placeholderQuestions),
-        ],
-      },
-    ],
-  },
-];
+List<Map<String, dynamic>> _teme = [];
 
 // ────────────────────────────────────────────────────────────────────────────
 // 4. WIDGET TAB PERSONALIZAT
@@ -273,30 +132,56 @@ class TemePage extends StatefulWidget {
 }
 
 class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
   int _selectedIndex = 0;
   final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _teme.length, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        setState(() => _selectedIndex = _tabController.index);
-      }
+    _loadTests();
+  }
+
+  Future<void> _loadTests() async {
+    final fetched = await TestsService.fetchTests();
+    final Map<String, List<TemaItem>> bySubject = {};
+    for (final t in fetched) {
+      final item = TemaItem(title: t.name, questions: t.questions);
+      bySubject.putIfAbsent(t.subject, () => []).add(item);
+    }
+    setState(() {
+      _teme = bySubject.entries
+          .map((e) => {
+                'header': e.key,
+                'subheaders': [
+                  {'title': null, 'themes': e.value}
+                ],
+              })
+          .toList();
+      _tabController = TabController(length: _teme.length, vsync: this);
+      _tabController!.addListener(() {
+        if (_tabController!.indexIsChanging) {
+          setState(() => _selectedIndex = _tabController!.index);
+        }
+      });
     });
   }
 
+
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_tabController == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
