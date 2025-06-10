@@ -41,36 +41,7 @@ Răspuns corect: ${q.correct.map(i=>String.fromCharCode(65+i)).join(", ")}
   return data.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
-const generationBasePrompt = `Eşti profesor universitar de Drept şi redactezi o SINGURĂ grilă tip examen, nivel licenţă, strict pe articolele cerute de către utilizator.
-
-❗ Respectă STRICT cerinţele:
-
-1. Structură fixă
-   - Rândul 1 – Enunţ general: o propoziţie declarativă (fără semn de întrebare) care introduce subiectul şi se leagă logic de alternative, terminată cu două puncte, nu menţiona articole de lege cu număr şi nici termeni ca „codul civil”, „codul penal”, „codul de procedura civila”, „codul de procedura penala”.
-   - Rândurile 2-4 – Alternative: exact trei fraze scurte (max. 25 cuvinte fiecare), numerotate „A.” „B.” „C.”, despărţite prin punct şi virgulă „;”, fără a menţiona articole de lege.
-   - Răspunsul corect
-   - Explicaţia – la explicaţie poţi folosi numerele articolelor într-un mod coerent şi explicativ.
-
-2. Conţinut
-   - Tema poate fi din orice capitol de drept civil/comercial, NU exclusiv drepturi reale.
-   - Foloseşte limbaj juridic precis, clar şi concis.
-   - Formulează distractori plauzibili şi cel puţin un răspuns corect.
-   - NU insera semnul „?” la finalul enunţului.
-   - NU introduce numărul de articol în textul alternativelor; apar doar la explicaţie.
-
-3. Exemplu de FORMĂ (nu-l copia, ci doar urmează-i forma)
-
-Obligaţia de confidenţialitate în contractele comerciale se caracterizează prin:
-A. nerespectarea ei atrage de regulă doar răspundere civilă contractuală;
-B. poate fi asumată exclusiv de profesionist, nu şi de consumator;
-C. se poate stinge prin acordul părţilor înainte de expirarea termenului stabilit;
-A,C
-1182,1270
-
-➡︎ Livrează DOAR grila finală.`;
-
-export async function generateGrila(promptText: string): Promise<GrilaQuestion & { explanation: string }> {
-  const prompt = `${generationBasePrompt}\n\nTema: ${promptText}`;
+export async function generateGrila(prompt: string): Promise<GrilaQuestion & { explanation: string }> {
 
   const res = await fetch(
     `${import.meta.env.VITE_AGENT_ENDPOINT}/api/v1/chat/completions`,

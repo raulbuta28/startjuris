@@ -22,6 +22,7 @@ const tabs: Tab[] = [
   { id: "combinate", label: "Teste combinate" },
   { id: "simulari", label: "Simulări" },
   { id: "ani", label: "Grile date în anii anteriori" },
+  { id: "generator", label: "Generator" },
 ];
 
 const subjects = [
@@ -50,6 +51,7 @@ export default function Grile() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [editingAnswers, setEditingAnswers] = useState<Record<string, string>>({});
   const [editingQuestions, setEditingQuestions] = useState<Record<number, string>>({});
+  const [editingExplanations, setEditingExplanations] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
   const [selectedSubject, setSelectedSubject] = useState("");
   const [savedTests, setSavedTests] = useState<Test[]>([]);
@@ -59,6 +61,14 @@ export default function Grile() {
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
   const [generatePrompt, setGeneratePrompt] = useState('');
   const [loadingGenerate, setLoadingGenerate] = useState(false);
+  const [generateTestId, setGenerateTestId] = useState('');
+
+  // Generator manual states
+  const [manualQuestion, setManualQuestion] = useState('');
+  const [manualAnswers, setManualAnswers] = useState<string[]>(['', '', '']);
+  const [manualCorrect, setManualCorrect] = useState('');
+  const [manualExplanation, setManualExplanation] = useState('');
+  const [manualTestId, setManualTestId] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
@@ -110,6 +120,14 @@ export default function Grile() {
     const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
     return m ? m[1] : t.trim();
   };
+
+  const lettersToIndexes = (letters: string): number[] =>
+    letters
+      .toUpperCase()
+      .replace(/[^A-Z]/g, ' ')
+      .split(/\s+/)
+      .filter((l) => l)
+      .map((l) => l.charCodeAt(0) - 65);
 
   const updateQuestionsState = (
     updater: (prev: Question[]) => Question[],
@@ -278,7 +296,7 @@ export default function Grile() {
   };
 
   const generateNewQuestion = async () => {
-    if (!selectedTestId || !generatePrompt.trim()) return;
+    if (!generateTestId || !generatePrompt.trim()) return;
     setLoadingGenerate(true);
     try {
       const q = await generateGrila(generatePrompt.trim());
@@ -291,16 +309,37 @@ export default function Grile() {
       };
       setSavedTests((prev) =>
         prev.map((t) =>
-          t.id === selectedTestId ? { ...t, questions: [...t.questions, newQ] } : t
+          t.id === generateTestId ? { ...t, questions: [...t.questions, newQ] } : t
         )
       );
       setGeneratePrompt('');
+      setGenerateTestId('');
     } catch (err) {
       console.error(err);
       alert('Eroare la generarea grilei');
     } finally {
       setLoadingGenerate(false);
     }
+  };
+
+  const addManualQuestion = () => {
+    if (!manualTestId || !manualQuestion.trim() || manualAnswers.every((a) => !a.trim())) return;
+    const correct = lettersToIndexes(manualCorrect);
+    const newQ: Question = {
+      text: manualQuestion.trim(),
+      answers: manualAnswers.map((a) => a.trim()).filter((a) => a),
+      correct,
+      note: '',
+      explanation: manualExplanation.trim(),
+    };
+    setSavedTests((prev) =>
+      prev.map((t) => (t.id === manualTestId ? { ...t, questions: [...t.questions, newQ] } : t))
+    );
+    setManualQuestion('');
+    setManualAnswers(['', '', '']);
+    setManualCorrect('');
+    setManualExplanation('');
+    setManualTestId('');
   };
 
   const publishTest = () => {
@@ -663,6 +702,24 @@ export default function Grile() {
                         )}
                       </Button>
                     </div>
+                    <textarea
+                      className="w-full border rounded p-2"
+                      placeholder="Explicație"
+                      value={editingExplanations[qi] ?? q.explanation ?? ''}
+                      onChange={(e) =>
+                        setEditingExplanations((s) => ({ ...s, [qi]: e.target.value }))
+                      }
+                      onBlur={() => {
+                        const val = editingExplanations[qi];
+                        if (val !== undefined) {
+                          setQuestions((prev) => {
+                            const copy = [...prev];
+                            copy[qi].explanation = val;
+                            return copy;
+                          });
+                        }
+                      }}
+                    />
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4 leading-tight">
                         {String.fromCharCode(65 + ai)}. {a}
@@ -811,17 +868,6 @@ export default function Grile() {
                         )}
                       </div>
                     ))}
-                  <div className="mt-4 space-y-2">
-                    <textarea
-                      className="w-full border rounded p-2"
-                      placeholder="Tema pentru grilă"
-                      value={generatePrompt}
-                      onChange={(e) => setGeneratePrompt(e.target.value)}
-                    />
-                    <Button onClick={generateNewQuestion} disabled={loadingGenerate}>
-                      {loadingGenerate ? 'Se generează...' : 'Generează o grilă'}
-                    </Button>
-                  </div>
                 </>
               )}
               {editingTest && (
@@ -1050,9 +1096,20 @@ export default function Grile() {
                           });
                         }}
                       />
-                      {q.explanation && (
-                        <p className="text-sm mt-1">Explicație: {q.explanation}</p>
-                      )}
+                      <textarea
+                        className="w-full border rounded p-2 mt-2"
+                        placeholder="Explicație"
+                        value={q.explanation || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditingTest((prev) => {
+                            if (!prev) return prev;
+                            const copy = { ...prev, questions: [...prev.questions] };
+                            copy.questions[qi].explanation = val;
+                            return copy;
+                          });
+                        }}
+                      />
                     </div>
                   ))}
                   <div className="text-right">
@@ -1071,6 +1128,84 @@ export default function Grile() {
         return <div></div>;
       case "ani":
         return <div></div>;
+      case "generator":
+        return (
+          <div className="flex space-x-4">
+            <div className="w-1/2 space-y-2 border-r pr-4">
+              <h3 className="text-lg font-semibold">Adaugă manual</h3>
+              <select
+                className="border p-2 rounded w-full"
+                value={manualTestId}
+                onChange={(e) => setManualTestId(e.target.value)}
+              >
+                <option value="">Selectează testul</option>
+                {savedTests.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} - {t.subject}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="border p-2 rounded w-full"
+                placeholder="Întrebare"
+                value={manualQuestion}
+                onChange={(e) => setManualQuestion(e.target.value)}
+              />
+              {manualAnswers.map((ans, idx) => (
+                <input
+                  key={idx}
+                  className="border p-2 rounded w-full"
+                  placeholder={`Răspuns ${String.fromCharCode(65 + idx)}`}
+                  value={ans}
+                  onChange={(e) =>
+                    setManualAnswers((a) => {
+                      const copy = [...a];
+                      copy[idx] = e.target.value;
+                      return copy;
+                    })
+                  }
+                />
+              ))}
+              <input
+                className="border p-2 rounded w-full"
+                placeholder="Răspuns corect (ex: A,B)"
+                value={manualCorrect}
+                onChange={(e) => setManualCorrect(e.target.value)}
+              />
+              <textarea
+                className="border p-2 rounded w-full"
+                placeholder="Explicație"
+                value={manualExplanation}
+                onChange={(e) => setManualExplanation(e.target.value)}
+              />
+              <Button onClick={addManualQuestion}>Adaugă grilă</Button>
+            </div>
+            <div className="w-1/2 space-y-2 pl-4">
+              <h3 className="text-lg font-semibold">Generează cu AI</h3>
+              <select
+                className="border p-2 rounded w-full"
+                value={generateTestId}
+                onChange={(e) => setGenerateTestId(e.target.value)}
+              >
+                <option value="">Selectează testul</option>
+                {savedTests.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} - {t.subject}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                className="border p-2 rounded w-full h-32"
+                placeholder="Prompt pentru AI"
+                value={generatePrompt}
+                onChange={(e) => setGeneratePrompt(e.target.value)}
+              />
+              <Button onClick={generateNewQuestion} disabled={loadingGenerate}>
+                {loadingGenerate ? 'Se generează...' : 'Generează grila'}
+              </Button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
