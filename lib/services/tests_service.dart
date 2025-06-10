@@ -46,6 +46,9 @@ class FetchedTest {
         correctAnswers: correctLetters,
         explanation: q['explanation'] ?? '',
         note: q['note']?.toString() ?? '',
+        categories: (q['categories'] as List? ?? ['INM', 'Barou', 'INR'])
+            .map((e) => e.toString())
+            .toList(),
       );
     }).toList();
 

@@ -15,6 +15,7 @@ class Question {
   final List<String> correctAnswers;
   final String explanation;
   final String note;
+  final List<String> categories;
 
   const Question({
     required this.id,
@@ -23,6 +24,7 @@ class Question {
     required this.correctAnswers,
     required this.explanation,
     this.note = '',
+    this.categories = const ['INM', 'Barou', 'INR'],
   });
 }
 

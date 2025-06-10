@@ -38,6 +38,7 @@ type Question = {
   correct: number[];
   note: string;
   explanation?: string;
+  categories?: string[];
 };
 
 export default function Grile() {
@@ -54,7 +55,6 @@ export default function Grile() {
   const [editingExplanations, setEditingExplanations] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
   const [selectedSubject, setSelectedSubject] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['INM', 'Barou', 'INR']);
   const [savedTests, setSavedTests] = useState<Test[]>([]);
   const [testsLoaded, setTestsLoaded] = useState(false);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
@@ -68,12 +68,22 @@ export default function Grile() {
   const [manualExplanation, setManualExplanation] = useState('');
   const [manualTestId, setManualTestId] = useState('');
 
-  const toggleCategory = (cat: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(cat)
-        ? prev.filter((c) => c !== cat)
-        : [...prev, cat]
-    );
+
+  const toggleQuestionCategory = (
+    qi: number,
+    cat: string,
+    isEditing: boolean = false
+  ) => {
+    updateQuestionsState((prev) => {
+      const copy = [...prev];
+      const q = { ...copy[qi] };
+      const current = q.categories ?? [...categoryOptions];
+      q.categories = current.includes(cat)
+        ? current.filter((c) => c !== cat)
+        : [...current, cat];
+      copy[qi] = q;
+      return copy;
+    }, isEditing);
   };
 
   useEffect(() => {
@@ -85,6 +95,10 @@ export default function Grile() {
           ...t,
           categories: t.categories ?? ['INM', 'Barou', 'INR'],
           order: t.order ?? i,
+          questions: (t.questions ?? []).map((q: any) => ({
+            ...q,
+            categories: q.categories ?? ['INM', 'Barou', 'INR'],
+          })),
         }));
         setSavedTests(withDefaults);
         setTests(Array.from(new Set(withDefaults.map((t: Test) => t.name))));
@@ -99,6 +113,10 @@ export default function Grile() {
               ...t,
               categories: t.categories ?? ['INM', 'Barou', 'INR'],
               order: t.order ?? i,
+              questions: (t.questions ?? []).map((q: any) => ({
+                ...q,
+                categories: q.categories ?? ['INM', 'Barou', 'INR'],
+              })),
             }));
             setSavedTests(withDefaults);
             setTests(Array.from(new Set(withDefaults.map((t: Test) => t.name))));
@@ -192,6 +210,8 @@ export default function Grile() {
           answers: [],
           correct: [],
           note: "",
+          explanation: "",
+          categories: [...categoryOptions],
         };
         continue;
       }
@@ -199,7 +219,14 @@ export default function Grile() {
       const aMatch = line.match(aReg);
       if (aMatch) {
         if (!current) {
-          current = { text: "", answers: [], correct: [], note: "" };
+          current = {
+            text: "",
+            answers: [],
+            correct: [],
+            note: "",
+            explanation: "",
+            categories: [...categoryOptions],
+          };
         }
         current.answers.push(aMatch[2] || aMatch[1]);
         continue;
@@ -273,7 +300,14 @@ export default function Grile() {
   };
 
   const addQuestion = (isEditing = false) => {
-    const newQ: Question = { text: "", answers: [], correct: [], note: "", explanation: "" };
+    const newQ: Question = {
+      text: "",
+      answers: [],
+      correct: [],
+      note: "",
+      explanation: "",
+      categories: [...categoryOptions],
+    };
     updateQuestionsState((prev) => [...prev, newQ], isEditing);
     setEditingQuestions((s) => ({
       ...s,
@@ -318,6 +352,7 @@ export default function Grile() {
       correct,
       note: '',
       explanation: manualExplanation.trim(),
+      categories: [...categoryOptions],
     };
     setSavedTests((prev) =>
       prev.map((t) => (t.id === manualTestId ? { ...t, questions: [...t.questions, newQ] } : t))
@@ -337,7 +372,11 @@ export default function Grile() {
       name: selectedTest,
       subject: selectedSubject,
       questions: questions.map((q) => ({ ...q })),
-      categories: selectedCategories,
+      categories: Array.from(
+        new Set(
+          questions.flatMap((q) => q.categories ?? [...categoryOptions])
+        )
+      ),
       order:
         Math.max(
           0,
@@ -359,8 +398,19 @@ export default function Grile() {
   const updateTest = () => {
     if (!editingTest) return;
 
+    const withCategories = {
+      ...editingTest,
+      categories: Array.from(
+        new Set(
+          editingTest.questions.flatMap(
+            (q) => q.categories ?? [...categoryOptions]
+          )
+        )
+      ),
+    };
+
     setSavedTests((prev) =>
-      prev.map((t) => (t.id === editingTest.id ? editingTest : t))
+      prev.map((t) => (t.id === editingTest.id ? withCategories : t))
     );
     setEditingTest(null);
   };
@@ -794,20 +844,20 @@ export default function Grile() {
                           ))}
                       </div>
                     )}
+                    <div className="flex items-center space-x-2">
+                      {categoryOptions.map((cat) => (
+                        <label key={cat} className="flex items-center space-x-1">
+                          <input
+                            type="checkbox"
+                            checked={q.categories?.includes(cat)}
+                            onChange={() => toggleQuestionCategory(qi, cat)}
+                          />
+                          <span>{cat}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 ))}
-                <div className="flex items-center space-x-2">
-                  {categoryOptions.map((cat) => (
-                    <label key={cat} className="flex items-center space-x-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(cat)}
-                        onChange={() => toggleCategory(cat)}
-                      />
-                      <span>{cat}</span>
-                    </label>
-                  ))}
-                </div>
                 <div className="flex items-center space-x-2">
                   <select
                     className="border p-2 rounded flex-1"
@@ -945,27 +995,6 @@ export default function Grile() {
                       )
                     }
                   />
-                  <div className="mb-2 space-x-2">
-                    {categoryOptions.map((cat) => (
-                      <label key={cat} className="inline-flex items-center space-x-1 mr-2">
-                        <input
-                          type="checkbox"
-                          checked={editingTest.categories?.includes(cat)}
-                          onChange={() =>
-                            setEditingTest((prev) => {
-                              if (!prev) return prev;
-                              const current = prev.categories ?? ['INM', 'Barou', 'INR'];
-                              const categories = current.includes(cat)
-                                ? current.filter((c) => c !== cat)
-                                : [...current, cat];
-                              return { ...prev, categories };
-                            })
-                          }
-                        />
-                        <span>{cat}</span>
-                      </label>
-                    ))}
-                  </div>
                   <div className="mb-4 text-right">
                     <Button size="sm" variant="secondary" onClick={() => addQuestion(true)}>
                       Adaugă grilă
@@ -1203,6 +1232,18 @@ export default function Grile() {
                           });
                         }}
                       />
+                      <div className="flex items-center space-x-2 mt-1">
+                        {categoryOptions.map((cat) => (
+                          <label key={cat} className="flex items-center space-x-1">
+                            <input
+                              type="checkbox"
+                              checked={q.categories?.includes(cat)}
+                              onChange={() => toggleQuestionCategory(qi, cat, true)}
+                            />
+                            <span>{cat}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   ))}
                   <div className="text-right">
