@@ -118,7 +118,11 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     await prefs.setBool('test_${key}_completed', false);
     setState(() {
       _hasSavedProgress = true;
+      _showTools = false;
     });
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _loadSavedProgress() async {
