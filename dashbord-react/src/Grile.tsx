@@ -737,7 +737,17 @@ export default function Grile() {
                       <p className="text-sm text-gray-600">Nota: {q.note}</p>
                     )}
                     {q.explanation && (
-                      <p className="text-sm">Explicație: {q.explanation}</p>
+                      <div className="text-sm space-y-1">
+                        <p className="font-medium">Explicație:</p>
+                        {q.explanation
+                          .split(/\n+/)
+                          .filter((p) => p.trim())
+                          .map((p, i) => (
+                            <p key={i} className="indent-4">
+                              {p}
+                            </p>
+                          ))}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -835,7 +845,17 @@ export default function Grile() {
                           <p className="text-sm text-gray-600">Nota: {q.note}</p>
                         )}
                         {q.explanation && (
-                          <p className="text-sm">Explicație: {q.explanation}</p>
+                          <div className="text-sm space-y-1">
+                            <p className="font-medium">Explicație:</p>
+                            {q.explanation
+                              .split(/\n+/)
+                              .filter((p) => p.trim())
+                              .map((p, i) => (
+                                <p key={i} className="indent-4">
+                                  {p}
+                                </p>
+                              ))}
+                          </div>
                         )}
                       </div>
                     ))}
