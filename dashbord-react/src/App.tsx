@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
-import CodeEditor from './CodeEditor';
 import CodurileLaZi from './CodurileLaZi';
 import CodeTextTabs from './CodeTextTabs';
 import Grile from './Grile';
-import GrileSpreadsheet from './GrileSpreadsheet';
 import TesteSuplimentare from './TesteSuplimentare';
 import TesteCombinate from './TesteCombinate';
 import Simulari from './Simulari';
@@ -72,7 +70,6 @@ function Login({ onLogin }: LoginProps) {
 
 const sections = [
   { key: 'materie', label: 'Materie', icon: 'menu_book' },
-  { key: 'coduri_lazi', label: 'Codurile actualizate', icon: 'article' },
   { key: 'codurile_la_zi', label: 'Codurile la zi', icon: 'library_books' },
   { key: 'codurile_2_0', label: 'Codurile 2.0', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
@@ -81,7 +78,6 @@ const sections = [
   { key: 'combinate', label: 'Teste combinate', icon: 'playlist_add' },
   { key: 'simulari', label: 'Simulari', icon: 'quiz' },
   { key: 'banca', label: 'Banca de grile', icon: 'library_books' },
-  { key: 'grile_2_0', label: 'Grile 2.0', icon: 'grid_on' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
 ];
 
@@ -350,17 +346,11 @@ function Dashboard({ onLogout }: DashboardProps) {
     if (section === 'noutati') {
       return <NewsList items={news} onUpdate={updateNews} onEdit={setEditingNews} />;
     }
-    if (section === 'coduri_lazi') {
-      return <CodeEditor />;
-    }
     if (section === 'codurile_la_zi') {
       return <CodurileLaZi />;
     }
     if (section === 'codurile_2_0') {
       return <CodeTextTabs />;
-    }
-    if (section === 'grile_2_0') {
-      return <GrileSpreadsheet />;
     }
     if (section === 'suplimentare') {
       return <TesteSuplimentare />;

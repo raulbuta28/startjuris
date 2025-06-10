@@ -68,13 +68,48 @@ export default function BancaDeGrile() {
         onChange={(e) => setQuery(e.target.value)}
       />
       {Object.entries(grouped).map(([name, gtests]) => (
-        <div key={name} className="mt-4">
+        <div key={name} className="mt-4 space-y-2">
           <h4 className="font-semibold">{name}</h4>
-          <ul className="pl-4 list-disc">
-            {gtests.map((t) => (
-              <li key={t.id}>{t.questions.length} grile</li>
-            ))}
-          </ul>
+          {gtests.map((t) => (
+            <div key={t.id} className="pl-4 space-y-2">
+              {t.questions.map((q, qi) => (
+                <div key={qi} className="border-t pt-2 space-y-1">
+                  <p className="font-bold leading-tight">
+                    {qi + 1}. {q.text}
+                  </p>
+                  {q.answers.map((a, ai) => (
+                    <p key={ai} className="pl-4 leading-tight">
+                      {String.fromCharCode(65 + ai)}. {a}
+                    </p>
+                  ))}
+                  <p className="text-sm italic">
+                    Răspuns corect:{" "}
+                    {q.correct
+                      .map((c) => String.fromCharCode(65 + c))
+                      .join(", ")}
+                    {q.note && (
+                      <span className="ml-2 text-xs text-gray-600">
+                        Nota: {q.note}
+                      </span>
+                    )}
+                  </p>
+                  {q.explanation && (
+                    <div className="text-sm space-y-1">
+                      <p className="font-medium">Explicație:</p>
+                      {q.explanation
+                        .split(/\n+/)
+                        .filter((p) => p.trim())
+                        .map((p, i) => (
+                          <p key={i} className="indent-4">
+                            {p}
+                          </p>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       ))}
     </div>
