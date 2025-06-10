@@ -26,6 +26,8 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
   late AnimationController _animationController;
   late List<bool> _answeredQuestions;
   late List<List<String>> _selectedAnswers;
+  late List<GlobalKey> _questionKeys;
+  int? _startIndex;
   bool _showExplanations = false;
   bool _isFinishing = false;
   int _correctAnswers = 0;
@@ -102,8 +104,8 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     await prefs.setBool('test_${key}_completed', true);
     await prefs.setDouble('test_${key}_score', _score);
     await prefs.setInt('test_${key}_completedAt', DateTime.now().millisecondsSinceEpoch);
-    await prefs.remove('test_${key}_answers');
-    await prefs.remove('test_${key}_index');
+    await prefs.setString('test_${key}_answers', jsonEncode(_selectedAnswers));
+    await prefs.setInt('test_${key}_index', widget.questions.length);
   }
 
   Future<void> _saveProgress() async {
@@ -124,7 +126,9 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     final key = widget.testTitle.replaceAll(' ', '_');
     final saved = prefs.getString('test_${key}_answers');
     final completed = prefs.getBool('test_${key}_completed') ?? false;
-    _hasSavedProgress = saved != null || completed;
+    final score = prefs.getDouble('test_${key}_score') ?? 0.0;
+    final index = prefs.getInt('test_${key}_index');
+
     if (saved != null) {
       final decoded = jsonDecode(saved) as List<dynamic>;
       _selectedAnswers = decoded
@@ -134,6 +138,46 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
           _selectedAnswers.map((e) => e.isNotEmpty).toList();
       _progress =
           _selectedAnswers.where((a) => a.isNotEmpty).length / widget.questions.length;
+    }
+
+    if (completed) {
+      _showExplanations = true;
+      _score = score;
+      _progress = 1.0;
+      if (_selectedAnswers.isEmpty) {
+        _selectedAnswers = List.generate(widget.questions.length, (_) => []);
+      }
+      _answeredQuestions =
+          _selectedAnswers.map((e) => e.isNotEmpty).toList();
+      int correct = 0;
+      int wrong = 0;
+      for (int i = 0; i < widget.questions.length; i++) {
+        final q = widget.questions[i];
+        final sel = _selectedAnswers[i];
+        final isCorrect = sel.length == q.correctAnswers.length &&
+            sel.every((a) => q.correctAnswers.contains(a));
+        if (isCorrect) {
+          correct++;
+        } else {
+          wrong++;
+        }
+      }
+      _correctAnswers = correct;
+      _wrongAnswers = wrong;
+    } else if (index != null) {
+      _startIndex = index;
+    }
+
+    setState(() {
+      _hasSavedProgress = saved != null || completed;
+    });
+    if (_startIndex != null && _startIndex! < _questionKeys.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _questionKeys[_startIndex!].currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+        }
+      });
     }
   }
 
@@ -164,6 +208,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     );
     _answeredQuestions = List.filled(widget.questions.length, false);
     _selectedAnswers = List.generate(widget.questions.length, (_) => []);
+    _questionKeys = List.generate(widget.questions.length, (_) => GlobalKey());
     _progress = 0.0;
     _loadSavedProgress();
   }
@@ -546,6 +591,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     final selectedAnswers = _selectedAnswers[index];
 
     return Container(
+      key: _questionKeys[index],
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
