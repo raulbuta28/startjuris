@@ -272,12 +272,15 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
   Widget _buildThemeSection(Map<String, dynamic> tema) {
     final List<Map<String, dynamic>> themes = [];
     final subheaders = tema['subheaders'] as List<Map<String, dynamic>>;
-    
+    int counter = 0;
+
     for (var subheader in subheaders) {
       final themesList = subheader['themes'] as List<TemaItem>;
       for (var theme in themesList) {
         final prog = _progressData[theme.title] ?? {};
+        counter++;
         themes.add({
+          'index': counter,
           'title': theme.title,
           'questions': theme.questions,
           'progress': prog['progress'] ?? 0,
@@ -404,13 +407,14 @@ class _ThemeCardState extends State<_ThemeCard> with SingleTickerProviderStateMi
   }
 
   String _getThemeNumber() {
-    final parts = widget.theme['title'] as String;
-    return parts.split(' - ')[0].replaceAll('Tema ', '');
+    final idx = widget.theme['index'] as int? ?? 0;
+    return idx.toString();
   }
 
   String _getThemeTitle() {
     final parts = widget.theme['title'] as String;
-    return parts.split(' - ').length > 1 ? parts.split(' - ')[1] : parts.split(' - ')[0];
+    final reg = RegExp(r'^Tema\s+\d+\s*-\s*');
+    return parts.replaceFirst(reg, '');
   }
 
   @override
