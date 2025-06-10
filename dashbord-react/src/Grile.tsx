@@ -16,13 +16,13 @@ interface Test {
 }
 
 const tabs: Tab[] = [
+  { id: "generator", label: "Generator" },
   { id: "creare", label: "Creare grile" },
   { id: "teme", label: "Teme" },
   { id: "suplimentare", label: "Teste suplimentare" },
   { id: "combinate", label: "Teste combinate" },
   { id: "simulari", label: "Simulări" },
   { id: "ani", label: "Grile date în anii anteriori" },
-  { id: "generator", label: "Generator" },
 ];
 
 const subjects = [
@@ -1219,6 +1219,7 @@ export default function Grile() {
             key={t.id}
             variant={active === t.id ? "default" : "secondary"}
             onClick={() => setActive(t.id)}
+            className="border"
           >
             {t.label}
           </Button>
