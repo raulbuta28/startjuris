@@ -20,3 +20,5 @@ pubspec.lock
 dashbord-react/node_modules/
 dashbord-react/dist/
 dashbord-react/package-lock.json
+data/*
+!data/.gitkeep
