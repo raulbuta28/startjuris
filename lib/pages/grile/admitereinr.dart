@@ -24,7 +24,7 @@ class _AdmitereINRPageState extends State<AdmitereINRPage> {
 
   final List<Widget> _pages = [
     const PlanuriPage(),
-    const TemePage(),
+    const TemePage(exam: 'INR'),
     const TesteSupPage(),
     const TesteCombinate(),
     const SimulariPage(),

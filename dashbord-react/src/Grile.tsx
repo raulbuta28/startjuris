@@ -13,6 +13,8 @@ interface Test {
   name: string;
   subject: string;
   questions: Question[];
+  categories?: string[];
+  order?: number;
 }
 
 const tabs: Tab[] = [
@@ -27,6 +29,8 @@ const subjects = [
   "Drept penal",
   "Drept procesual penal",
 ];
+
+const categoryOptions = ['INM', 'Barou', 'INR'];
 
 type Question = {
   text: string;
@@ -50,6 +54,7 @@ export default function Grile() {
   const [editingExplanations, setEditingExplanations] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['INM', 'Barou', 'INR']);
   const [savedTests, setSavedTests] = useState<Test[]>([]);
   const [testsLoaded, setTestsLoaded] = useState(false);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
@@ -63,13 +68,26 @@ export default function Grile() {
   const [manualExplanation, setManualExplanation] = useState('');
   const [manualTestId, setManualTestId] = useState('');
 
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat)
+        ? prev.filter((c) => c !== cat)
+        : [...prev, cat]
+    );
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
     fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
-        setSavedTests(data);
-        setTests(Array.from(new Set(data.map((t: Test) => t.name))));
+        const withDefaults = data.map((t: any, i: number) => ({
+          ...t,
+          categories: t.categories ?? ['INM', 'Barou', 'INR'],
+          order: t.order ?? i,
+        }));
+        setSavedTests(withDefaults);
+        setTests(Array.from(new Set(withDefaults.map((t: Test) => t.name))));
         setTestsLoaded(true);
       })
       .catch(() => {
@@ -77,8 +95,13 @@ export default function Grile() {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            setSavedTests(parsed);
-            setTests(Array.from(new Set(parsed.map((t: Test) => t.name))));
+            const withDefaults = parsed.map((t: any, i: number) => ({
+              ...t,
+              categories: t.categories ?? ['INM', 'Barou', 'INR'],
+              order: t.order ?? i,
+            }));
+            setSavedTests(withDefaults);
+            setTests(Array.from(new Set(withDefaults.map((t: Test) => t.name))));
           } catch {
             /* ignore */
           }
@@ -314,6 +337,14 @@ export default function Grile() {
       name: selectedTest,
       subject: selectedSubject,
       questions: questions.map((q) => ({ ...q })),
+      categories: selectedCategories,
+      order:
+        Math.max(
+          0,
+          ...savedTests
+            .filter((t) => t.subject === selectedSubject)
+            .map((t) => t.order ?? 0)
+        ) + 1,
     };
 
     setSavedTests((prev) => [...prev, test]);
@@ -349,6 +380,27 @@ export default function Grile() {
       },
       body: JSON.stringify(updated),
     }).catch(() => {});
+  };
+
+  const moveTest = (id: string, dir: number) => {
+    setSavedTests((prev) => {
+      const idx = prev.findIndex((t) => t.id === id);
+      if (idx === -1) return prev;
+      const test = prev[idx];
+      const sameSubject = prev
+        .filter((t) => t.subject === test.subject)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const pos = sameSubject.findIndex((t) => t.id === id);
+      const target = pos + dir;
+      if (target < 0 || target >= sameSubject.length) return prev;
+      const other = sameSubject[target];
+      const updatedPrev = prev.map((t) => {
+        if (t.id === test.id) return { ...t, order: other.order };
+        if (t.id === other.id) return { ...t, order: test.order };
+        return t;
+      });
+      return updatedPrev;
+    });
   };
 
   const renderTab = () => {
@@ -745,6 +797,18 @@ export default function Grile() {
                   </div>
                 ))}
                 <div className="flex items-center space-x-2">
+                  {categoryOptions.map((cat) => (
+                    <label key={cat} className="flex items-center space-x-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(cat)}
+                        onChange={() => toggleCategory(cat)}
+                      />
+                      <span>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center space-x-2">
                   <select
                     className="border p-2 rounded flex-1"
                     value={selectedSubject}
@@ -779,14 +843,27 @@ export default function Grile() {
                   <ul className="pl-4">
                     {savedTests
                       .filter((t) => t.subject === subject)
-                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                       .map((test) => (
-                        <li
-                          key={test.id}
-                          className="cursor-pointer hover:text-blue-500"
-                          onClick={() => setSelectedTestId(test.id)}
-                        >
-                          {test.name}
+                        <li key={test.id} className="flex items-center space-x-1">
+                          <span
+                            className="flex-1 cursor-pointer hover:text-blue-500"
+                            onClick={() => setSelectedTestId(test.id)}
+                          >
+                            {test.name}
+                          </span>
+                          <button
+                            onClick={() => moveTest(test.id, -1)}
+                            className="text-xs px-1"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => moveTest(test.id, 1)}
+                            className="text-xs px-1"
+                          >
+                            ↓
+                          </button>
                         </li>
                       ))}
                   </ul>
@@ -809,8 +886,11 @@ export default function Grile() {
                       </Button>
                       <Button
                         onClick={() =>
-                          setEditingTest(savedTests.find((t) => t.id === selectedTestId) || null)
-                        }
+                          setEditingTest(() => {
+                            const t = savedTests.find((x) => x.id === selectedTestId);
+                            return t ? { ...t, categories: t.categories ?? ['INM', 'Barou', 'INR'] } : null;
+                          })
+                      }
                       >
                         Editează
                       </Button>
@@ -865,6 +945,27 @@ export default function Grile() {
                       )
                     }
                   />
+                  <div className="mb-2 space-x-2">
+                    {categoryOptions.map((cat) => (
+                      <label key={cat} className="inline-flex items-center space-x-1 mr-2">
+                        <input
+                          type="checkbox"
+                          checked={editingTest.categories?.includes(cat)}
+                          onChange={() =>
+                            setEditingTest((prev) => {
+                              if (!prev) return prev;
+                              const current = prev.categories ?? ['INM', 'Barou', 'INR'];
+                              const categories = current.includes(cat)
+                                ? current.filter((c) => c !== cat)
+                                : [...current, cat];
+                              return { ...prev, categories };
+                            })
+                          }
+                        />
+                        <span>{cat}</span>
+                      </label>
+                    ))}
+                  </div>
                   <div className="mb-4 text-right">
                     <Button size="sm" variant="secondary" onClick={() => addQuestion(true)}>
                       Adaugă grilă
