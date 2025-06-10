@@ -57,6 +57,16 @@ func detectRepoRoot() string {
 }
 
 var rootDir = detectRepoRoot()
+var dataDir = func() string {
+	if d := os.Getenv("DATA_DIR"); d != "" {
+		return d
+	}
+	return filepath.Join(rootDir, "data")
+}()
+
+func ensureDataDir() {
+	os.MkdirAll(dataDir, 0755)
+}
 
 type User struct {
 	ID        string   `json:"id"`
@@ -73,7 +83,7 @@ type User struct {
 var users = make(map[string]User)
 var tokens = make(map[string]string) // token -> username
 
-var tokensFile = filepath.Join(rootDir, "backend", "tokens.json")
+var tokensFile = filepath.Join(dataDir, "tokens.json")
 
 func loadTokens() {
 	data, err := os.ReadFile(tokensFile)
@@ -88,6 +98,7 @@ func saveTokens() {
 	if err != nil {
 		return
 	}
+	os.MkdirAll(dataDir, 0755)
 	_ = os.WriteFile(tokensFile, data, 0644)
 }
 
@@ -101,7 +112,7 @@ type ArticlePrefs struct {
 }
 
 var userArticlePrefs = make(map[string]*ArticlePrefs)
-var userArticlePrefsFile = filepath.Join(rootDir, "backend", "user_articles.json")
+var userArticlePrefsFile = filepath.Join(dataDir, "user_articles.json")
 
 func loadArticlePrefs() {
 	data, err := os.ReadFile(userArticlePrefsFile)
@@ -116,10 +127,11 @@ func saveArticlePrefs() {
 	if err != nil {
 		return
 	}
+	os.MkdirAll(dataDir, 0755)
 	_ = os.WriteFile(userArticlePrefsFile, data, 0644)
 }
 
-var userFile = filepath.Join(rootDir, "backend", "users.json")
+var userFile = filepath.Join(dataDir, "users.json")
 
 func loadUsers() {
 	data, err := os.ReadFile(userFile)
@@ -134,6 +146,7 @@ func saveUsers() {
 	if err != nil {
 		return
 	}
+	os.MkdirAll(dataDir, 0755)
 	_ = os.WriteFile(userFile, data, 0644)
 }
 
@@ -515,7 +528,11 @@ func saveBooks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "books.json"), data, 0644); err != nil {
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "books.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -523,7 +540,7 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "books.json"))
+	data, err := ioutil.ReadFile(filepath.Join(dataDir, "books.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -547,7 +564,11 @@ func saveNews(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile(filepath.Join(rootDir, "dashbord-react", "news.json"), data, 0644); err != nil {
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "news.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -555,7 +576,7 @@ func saveNews(c *gin.Context) {
 }
 
 func listNews(c *gin.Context) {
-	data, err := ioutil.ReadFile(filepath.Join(rootDir, "dashbord-react", "news.json"))
+	data, err := ioutil.ReadFile(filepath.Join(dataDir, "news.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -579,7 +600,11 @@ func saveTests(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := os.WriteFile(filepath.Join(rootDir, "backend", "tests.json"), data, 0644); err != nil {
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "tests.json"), data, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -587,7 +612,7 @@ func saveTests(c *gin.Context) {
 }
 
 func listTests(c *gin.Context) {
-	path := filepath.Join(rootDir, "backend", "tests.json")
+	path := filepath.Join(dataDir, "tests.json")
 	data, err := ioutil.ReadFile(path)
 	if os.IsNotExist(err) {
 		data = []byte("[]")
@@ -1350,6 +1375,7 @@ func getFollowingHandler(c *gin.Context) {
 
 func main() {
 	fmt.Println("Using repository root:", rootDir)
+	ensureDataDir()
 	loadUsers()
 	loadTokens()
 	loadCodes()

@@ -19,10 +19,6 @@ const tabs: Tab[] = [
   { id: "generator", label: "Generator" },
   { id: "creare", label: "Creare grile" },
   { id: "teme", label: "Teme" },
-  { id: "suplimentare", label: "Teste suplimentare" },
-  { id: "combinate", label: "Teste combinate" },
-  { id: "simulari", label: "Simulări" },
-  { id: "ani", label: "Grile date în anii anteriori" },
 ];
 
 const subjects = [
@@ -1111,14 +1107,6 @@ export default function Grile() {
             </div>
           </div>
         );
-      case "suplimentare":
-        return <div></div>;
-      case "combinate":
-        return <div></div>;
-      case "simulari":
-        return <div></div>;
-      case "ani":
-        return <div></div>;
       case "generator":
         return (
           <div className="flex space-x-4">

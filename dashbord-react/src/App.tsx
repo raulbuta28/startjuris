@@ -6,6 +6,10 @@ import CodurileLaZi from './CodurileLaZi';
 import CodeTextTabs from './CodeTextTabs';
 import Grile from './Grile';
 import GrileSpreadsheet from './GrileSpreadsheet';
+import TesteSuplimentare from './TesteSuplimentare';
+import TesteCombinate from './TesteCombinate';
+import Simulari from './Simulari';
+import BancaDeGrile from './BancaDeGrile';
 
 interface LoginProps {
   onLogin: () => void;
@@ -73,6 +77,10 @@ const sections = [
   { key: 'codurile_2_0', label: 'Codurile 2.0', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
+  { key: 'suplimentare', label: 'Teste suplimentare', icon: 'note_add' },
+  { key: 'combinate', label: 'Teste combinate', icon: 'playlist_add' },
+  { key: 'simulari', label: 'Simulari', icon: 'quiz' },
+  { key: 'banca', label: 'Banca de grile', icon: 'library_books' },
   { key: 'grile_2_0', label: 'Grile 2.0', icon: 'grid_on' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
 ];
@@ -353,6 +361,18 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'grile_2_0') {
       return <GrileSpreadsheet />;
+    }
+    if (section === 'suplimentare') {
+      return <TesteSuplimentare />;
+    }
+    if (section === 'combinate') {
+      return <TesteCombinate />;
+    }
+    if (section === 'simulari') {
+      return <Simulari />;
+    }
+    if (section === 'banca') {
+      return <BancaDeGrile />;
     }
     if (section === 'grile') {
       return <Grile />;
