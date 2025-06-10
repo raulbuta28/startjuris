@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { explainQuestion, generateGrilaStrict } from "@/lib/agent";
+import { explainQuestion } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -59,9 +59,6 @@ export default function Grile() {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
-  const [generatePrompt, setGeneratePrompt] = useState('');
-  const [loadingGenerate, setLoadingGenerate] = useState(false);
-  const [generateTestId, setGenerateTestId] = useState('');
 
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
@@ -295,32 +292,6 @@ export default function Grile() {
     }
   };
 
-  const generateNewQuestion = async () => {
-    if (!generateTestId || !generatePrompt.trim()) return;
-    setLoadingGenerate(true);
-    try {
-      const q = await generateGrilaStrict(generatePrompt.trim());
-      const newQ: Question = {
-        text: q.text,
-        answers: q.answers,
-        correct: q.correct,
-        note: '',
-        explanation: q.explanation,
-      };
-      setSavedTests((prev) =>
-        prev.map((t) =>
-          t.id === generateTestId ? { ...t, questions: [...t.questions, newQ] } : t
-        )
-      );
-      setGeneratePrompt('');
-      setGenerateTestId('');
-    } catch (err) {
-      console.error(err);
-      alert('Eroare la generarea grilei');
-    } finally {
-      setLoadingGenerate(false);
-    }
-  };
 
   const addManualQuestion = () => {
     if (!manualTestId || !manualQuestion.trim() || manualAnswers.every((a) => !a.trim())) return;
@@ -1179,30 +1150,6 @@ export default function Grile() {
                 onChange={(e) => setManualExplanation(e.target.value)}
               />
               <Button onClick={addManualQuestion}>Adaugă grilă</Button>
-            </div>
-            <div className="w-1/2 space-y-2 pl-4">
-              <h3 className="text-lg font-semibold">Generează cu AI</h3>
-              <select
-                className="border p-2 rounded w-full"
-                value={generateTestId}
-                onChange={(e) => setGenerateTestId(e.target.value)}
-              >
-                <option value="">Selectează testul</option>
-                {savedTests.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} - {t.subject}
-                  </option>
-                ))}
-              </select>
-              <textarea
-                className="border p-2 rounded w-full h-32"
-                placeholder="Prompt pentru AI"
-                value={generatePrompt}
-                onChange={(e) => setGeneratePrompt(e.target.value)}
-              />
-              <Button onClick={generateNewQuestion} disabled={loadingGenerate}>
-                {loadingGenerate ? 'Se generează...' : 'Generează grila'}
-              </Button>
             </div>
           </div>
         );
