@@ -41,6 +41,7 @@ class FetchedTest {
         answers: answers,
         correctAnswers: correctLetters,
         explanation: q['explanation'] ?? '',
+        note: q['note']?.toString() ?? '',
       );
     }).toList();
 

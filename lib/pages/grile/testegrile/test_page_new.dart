@@ -29,6 +29,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
   int _correctAnswers = 0;
   int _wrongAnswers = 0;
   double _score = 0.0;
+  double _progress = 0.0;
   bool _isBreathingActive = false;
   int _breathCount = 0;
   bool _showTools = false;
@@ -79,6 +80,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
       _wrongAnswers = wrong;
       _score = (correct / widget.questions.length) * 10; // Calculăm nota din 10
       _showExplanations = true;
+      _progress = 1.0;
     });
 
     _scrollController.animateTo(
@@ -98,6 +100,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     );
     _answeredQuestions = List.filled(widget.questions.length, false);
     _selectedAnswers = List.generate(widget.questions.length, (_) => []);
+    _progress = 0.0;
   }
 
   @override
@@ -118,8 +121,6 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
   }
 
   void _handleAnswer(int questionIndex, String letter) {
-    if (_answeredQuestions[questionIndex]) return;
-
     HapticFeedback.selectionClick();
     setState(() {
       if (_selectedAnswers[questionIndex].contains(letter)) {
@@ -127,6 +128,12 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
       } else {
         _selectedAnswers[questionIndex].add(letter);
       }
+      _answeredQuestions[questionIndex] =
+          _selectedAnswers[questionIndex].isNotEmpty;
+      _progress = _selectedAnswers
+              .where((answers) => answers.isNotEmpty)
+              .length /
+          widget.questions.length;
     });
   }
 
@@ -224,7 +231,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${_score.toStringAsFixed(1)}%',
+                  '${(_progress * 100).toStringAsFixed(0)}%',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -598,6 +605,25 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                     );
                   }).toList(),
                 ),
+                if (question.note.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 14, color: secondaryTextColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Nota: ${question.note}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (_showExplanations)
                   Container(
                     margin: const EdgeInsets.only(top: 16),
@@ -641,10 +667,12 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                         const SizedBox(height: 16),
                         Text(
                           question.explanation,
+                          textAlign: TextAlign.justify,
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             height: 1.6,
                             color: textColor,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
