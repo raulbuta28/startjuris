@@ -159,10 +159,26 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
     final filtered = fetched.where((t) => t.categories.contains(widget.exam)).toList();
     final Map<String, List<TemaItem>> bySubject = {};
     for (final t in filtered) {
-      final qFiltered =
-          t.questions.where((q) => q.categories.contains(widget.exam)).toList();
+      final qFiltered = t.questions
+          .where((q) => q.categories.contains(widget.exam))
+          .toList();
       if (qFiltered.isEmpty) continue;
-      final item = TemaItem(title: t.name, questions: qFiltered, order: t.order);
+
+      final renumbered = qFiltered.asMap().entries.map<Question>((e) {
+        final q = e.value;
+        return Question(
+          id: e.key + 1,
+          text: q.text,
+          answers: q.answers,
+          correctAnswers: q.correctAnswers,
+          explanation: q.explanation,
+          note: q.note,
+          categories: q.categories,
+        );
+      }).toList();
+
+      final item =
+          TemaItem(title: t.name, questions: renumbered, order: t.order);
       bySubject.putIfAbsent(t.subject, () => []).add(item);
     }
     for (final list in bySubject.values) {
