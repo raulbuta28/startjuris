@@ -90,6 +90,7 @@ const _placeholderQuestions = [
     ],
     correctAnswers: ['A'],
     explanation: 'Explicație generică pentru tema respectivă.',
+    note: "",
   ),
 ];
 

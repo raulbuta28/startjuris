@@ -14,6 +14,7 @@ class Question {
   final List<Answer> answers;
   final List<String> correctAnswers;
   final String explanation;
+  final String note;
 
   const Question({
     required this.id,
@@ -21,6 +22,7 @@ class Question {
     required this.answers,
     required this.correctAnswers,
     required this.explanation,
+    this.note = '',
   });
 }
 
@@ -36,6 +38,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A'],
     explanation: 'Proprietatea privată reprezintă dreptul subiectiv al titularului de a deține, folosi și dispune de bun în mod exclusiv și absolut, în limitele legii.',
+    note: "",
   ),
   Question(
     id: 2,
@@ -48,6 +51,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A', 'C', 'D'],
     explanation: 'Dreptul de proprietate are ca principale caracteristici: perpetuitatea (durează cât există bunul), exclusivitatea (proprietarul poate exercita singur atributele dreptului său) și absolutitatea (este opozabil tuturor).',
+    note: "",
   ),
   Question(
     id: 3,
@@ -60,6 +64,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A', 'B', 'C', 'D'],
     explanation: 'Dezmembrămintele dreptului de proprietate sunt drepturi reale principale derivate din dreptul de proprietate și includ: uzufructul, servitutea, superficia și abitația.',
+    note: "",
   ),
   Question(
     id: 4,
@@ -72,6 +77,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A'],
     explanation: 'Conform art. 707 Cod Civil, dreptul de uzufruct constituit în favoarea unei persoane juridice poate fi stabilit cel mult pe durata de 30 de ani.',
+    note: "",
   ),
   Question(
     id: 5,
@@ -84,6 +90,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A', 'B', 'C'],
     explanation: 'Modurile originare de dobândire a proprietății sunt cele prin care se dobândește un drept nou, neafectat de viciile dreptului anterior. Acestea includ accesiunea, uzucapiunea și ocupațiunea. Moștenirea este un mod derivat de dobândire.',
+    note: "",
   ),
   Question(
     id: 6,
@@ -96,6 +103,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A', 'B'],
     explanation: 'Accesiunea imobiliară artificială operează în două situații principale: când se construiește cu materiale proprii pe terenul altuia și când se construiește cu materialele altuia pe terenul propriu.',
+    note: "",
   ),
   Question(
     id: 7,
@@ -108,6 +116,7 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A'],
     explanation: 'Efectul principal al uzucapiunii este dobândirea dreptului de proprietate prin posesia îndelungată a bunului, în condițiile prevăzute de lege.',
+    note: "",
   ),
   Question(
     id: 8,
@@ -120,5 +129,6 @@ const sampleQuestions = [
     ],
     correctAnswers: ['A', 'B'],
     explanation: 'Uzucapiunea extratabulară necesită o posesie utilă și de bună-credință pentru o perioadă de 10 ani. Nu este necesară înscrierea în cartea funciară sau existența unui just titlu.',
+    note: "",
   ),
 ];
