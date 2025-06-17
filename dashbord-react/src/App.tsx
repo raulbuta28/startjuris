@@ -4,6 +4,7 @@ import NewsEditor, { NewsItem } from './NewsEditor';
 import CodurileLaZi from './CodurileLaZi';
 import CodeTextTabs from './CodeTextTabs';
 import Grile from './Grile';
+import GrileAniAnteriori from './GrileAniAnteriori';
 import TesteSuplimentare from './TesteSuplimentare';
 import TesteCombinate from './TesteCombinate';
 import Simulari from './Simulari';
@@ -74,6 +75,7 @@ const sections = [
   { key: 'codurile_2_0', label: 'Codurile 2.0', icon: 'library_books' },
   { key: 'noutati', label: 'Noutati', icon: 'feed' },
   { key: 'grile', label: 'Grile', icon: 'view_list' },
+  { key: 'grile_anterioare', label: 'Grile anii anteriori', icon: 'history_edu' },
   { key: 'suplimentare', label: 'Teste suplimentare', icon: 'note_add' },
   { key: 'combinate', label: 'Teste combinate', icon: 'playlist_add' },
   { key: 'simulari', label: 'Simulari', icon: 'quiz' },
@@ -363,6 +365,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'banca') {
       return <BancaDeGrile />;
+    }
+    if (section === 'grile_anterioare') {
+      return <GrileAniAnteriori />;
     }
     if (section === 'grile') {
       return <Grile />;
