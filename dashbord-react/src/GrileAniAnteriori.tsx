@@ -407,6 +407,48 @@ export default function GrileAniAnteriori() {
     setActive("teme");
   };
 
+  const publishTestsByNote = () => {
+    if (!selectedSubject || questions.length === 0) return;
+
+    const groups: Record<string, Question[]> = {};
+    const noteOrder: string[] = [];
+    questions.forEach((q) => {
+      const note = q.note.trim() || 'Fara nota';
+      if (!groups[note]) {
+        groups[note] = [];
+        noteOrder.push(note);
+      }
+      groups[note].push({ ...q });
+    });
+
+    let baseOrder = Math.max(
+      0,
+      ...savedTests
+        .filter((t) => t.subject === selectedSubject)
+        .map((t) => t.order ?? 0)
+    );
+
+    const newTests: Test[] = noteOrder.map((note) => ({
+      id: `${Date.now()}-${Math.random()}`,
+      name: note,
+      subject: selectedSubject,
+      questions: groups[note],
+      categories: Array.from(new Set(testCategories)),
+      order: ++baseOrder,
+    }));
+
+    setSavedTests((prev) => [...prev, ...newTests]);
+    setTests((prev) =>
+      Array.from(new Set([...prev, ...newTests.map((t) => t.name)]))
+    );
+    setSelectedSubject('');
+    setSelectedTest('');
+    setTestCategories([...categoryOptions]);
+    setQuestions([]);
+    setStep(1);
+    setActive('teme');
+  };
+
   const updateTest = () => {
     if (!editingTest) return;
 
@@ -907,6 +949,12 @@ export default function GrileAniAnteriori() {
                     disabled={!selectedSubject || !selectedTest}
                   >
                     Publică
+                  </Button>
+                  <Button
+                    onClick={publishTestsByNote}
+                    disabled={!selectedSubject || questions.length === 0}
+                  >
+                    Publică pe notă
                   </Button>
                 </div>
               </div>
