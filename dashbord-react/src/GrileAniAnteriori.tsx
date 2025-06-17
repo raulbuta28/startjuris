@@ -11,7 +11,7 @@ interface Tab {
 interface Test {
   id: string;
   name: string;
-  subject: string;
+  subject?: string;
   questions: Question[];
   categories?: string[];
   order?: number;
@@ -23,12 +23,6 @@ const tabs: Tab[] = [
   { id: "teme", label: "Grile ani anteriori" },
 ];
 
-const subjects = [
-  "Drept civil",
-  "Drept procesual civil",
-  "Drept penal",
-  "Drept procesual penal",
-];
 
 const categoryOptions = ['INM', 'Barou', 'INR'];
 
@@ -55,7 +49,6 @@ export default function GrileAniAnteriori() {
   const [editingQuestions, setEditingQuestions] = useState<Record<number, string>>({});
   const [editingExplanations, setEditingExplanations] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
-  const [selectedSubject, setSelectedSubject] = useState("");
   const [savedTests, setSavedTests] = useState<Test[]>([]);
   const [testsLoaded, setTestsLoaded] = useState(false);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
@@ -380,26 +373,19 @@ export default function GrileAniAnteriori() {
   };
 
   const publishTest = () => {
-    if (!selectedSubject || !selectedTest) return;
+    if (!selectedTest) return;
 
     const test: Test = {
       id: Date.now().toString(),
       name: selectedTest,
-      subject: selectedSubject,
       questions: questions.map((q) => ({ ...q })),
       categories: Array.from(new Set(testCategories)),
       order:
-        Math.max(
-          0,
-          ...savedTests
-            .filter((t) => t.subject === selectedSubject)
-            .map((t) => t.order ?? 0)
-        ) + 1,
+        Math.max(0, ...savedTests.map((t) => t.order ?? 0)) + 1,
     };
 
     setSavedTests((prev) => [...prev, test]);
     setTests((prev) => Array.from(new Set([...prev, selectedTest])));
-    setSelectedSubject("");
     setSelectedTest("");
     setTestCategories([...categoryOptions]);
     setQuestions([]);
@@ -408,7 +394,7 @@ export default function GrileAniAnteriori() {
   };
 
   const publishTestsByNote = () => {
-    if (!selectedSubject || questions.length === 0) return;
+    if (questions.length === 0) return;
 
     const groups: Record<string, Question[]> = {};
     const noteOrder: string[] = [];
@@ -421,17 +407,11 @@ export default function GrileAniAnteriori() {
       groups[note].push({ ...q });
     });
 
-    let baseOrder = Math.max(
-      0,
-      ...savedTests
-        .filter((t) => t.subject === selectedSubject)
-        .map((t) => t.order ?? 0)
-    );
+    let baseOrder = Math.max(0, ...savedTests.map((t) => t.order ?? 0));
 
     const newTests: Test[] = noteOrder.map((note) => ({
       id: `${Date.now()}-${Math.random()}`,
       name: note,
-      subject: selectedSubject,
       questions: groups[note],
       categories: Array.from(new Set(testCategories)),
       order: ++baseOrder,
@@ -441,7 +421,6 @@ export default function GrileAniAnteriori() {
     setTests((prev) =>
       Array.from(new Set([...prev, ...newTests.map((t) => t.name)]))
     );
-    setSelectedSubject('');
     setSelectedTest('');
     setTestCategories([...categoryOptions]);
     setQuestions([]);
@@ -485,9 +464,7 @@ export default function GrileAniAnteriori() {
       const idx = prev.findIndex((t) => t.id === id);
       if (idx === -1) return prev;
       const test = prev[idx];
-      const sameSubject = prev
-        .filter((t) => t.subject === test.subject)
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const sameSubject = prev.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       const pos = sameSubject.findIndex((t) => t.id === id);
       const target = pos + dir;
       if (target < 0 || target >= sameSubject.length) return prev;
@@ -932,27 +909,12 @@ export default function GrileAniAnteriori() {
                   ))}
                 </div>
                 <div className="flex items-center space-x-2 mt-2">
-                  <select
-                    className="border p-2 rounded flex-1"
-                    value={selectedSubject}
-                    onChange={(e) => setSelectedSubject(e.target.value)}
-                  >
-                    <option value="">Selectează materia</option>
-                    {subjects.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    onClick={publishTest}
-                    disabled={!selectedSubject || !selectedTest}
-                  >
+                  <Button onClick={publishTest} disabled={!selectedTest}>
                     Publică
                   </Button>
                   <Button
                     onClick={publishTestsByNote}
-                    disabled={!selectedSubject || questions.length === 0}
+                    disabled={questions.length === 0}
                   >
                     Publică pe notă
                   </Button>
@@ -965,39 +927,33 @@ export default function GrileAniAnteriori() {
         return (
           <div className="flex space-x-4">
             <div className="w-1/4 border-r pr-4">
-              <h3 className="text-lg font-semibold mb-4">Materii</h3>
-              {subjects.map((subject) => (
-                <div key={subject} className="mb-4">
-                  <h4 className="font-medium">{subject}</h4>
-                  <ul className="pl-4">
-                    {savedTests
-                      .filter((t) => t.subject === subject)
-                      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                      .map((test) => (
-                        <li key={test.id} className="flex items-center space-x-1">
-                          <span
-                            className="flex-1 cursor-pointer hover:text-blue-500"
-                            onClick={() => setSelectedTestId(test.id)}
-                          >
-                            {test.name}
-                          </span>
-                          <button
-                            onClick={() => moveTest(test.id, -1)}
-                            className="text-xs px-1"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() => moveTest(test.id, 1)}
-                            className="text-xs px-1"
-                          >
-                            ↓
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))}
+              <h3 className="text-lg font-semibold mb-4">Teste</h3>
+              <ul className="pl-4 space-y-1">
+                {savedTests
+                  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                  .map((test) => (
+                    <li key={test.id} className="flex items-center space-x-1">
+                      <span
+                        className="flex-1 cursor-pointer hover:text-blue-500 text-sm whitespace-nowrap"
+                        onClick={() => setSelectedTestId(test.id)}
+                      >
+                        {test.name}
+                      </span>
+                      <button
+                        onClick={() => moveTest(test.id, -1)}
+                        className="text-xs px-1"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveTest(test.id, 1)}
+                        className="text-xs px-1"
+                      >
+                        ↓
+                      </button>
+                    </li>
+                  ))}
+              </ul>
             </div>
             <div className="w-3/4">
               {selectedTestId && !editingTest && (
@@ -1385,7 +1341,7 @@ export default function GrileAniAnteriori() {
                 <option value="">Selectează testul</option>
                 {savedTests.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} - {t.subject}
+                    {t.name}
                   </option>
                 ))}
               </select>
