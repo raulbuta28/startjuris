@@ -628,6 +628,45 @@ func listTests(c *gin.Context) {
 	c.JSON(http.StatusOK, tests)
 }
 
+func savePrevTests(c *gin.Context) {
+        var tests []map[string]interface{}
+        if err := c.BindJSON(&tests); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+                return
+        }
+        data, err := json.MarshalIndent(tests, "", "  ")
+        if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
+        if err := os.MkdirAll(dataDir, 0755); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
+        if err := os.WriteFile(filepath.Join(dataDir, "prev_tests.json"), data, 0644); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
+        c.Status(http.StatusOK)
+}
+
+func listPrevTests(c *gin.Context) {
+        path := filepath.Join(dataDir, "prev_tests.json")
+        data, err := ioutil.ReadFile(path)
+        if os.IsNotExist(err) {
+                data = []byte("[]")
+        } else if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
+        var tests []map[string]interface{}
+        if err := json.Unmarshal(data, &tests); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
+        c.JSON(http.StatusOK, tests)
+}
+
 func uploadNewsImage(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
@@ -1450,10 +1489,12 @@ func main() {
 		api.POST("/save-news", saveNews)
 		api.POST("/news/upload-image", uploadNewsImage)
 
-		api.GET("/tests", listTests)
-		api.POST("/save-tests", saveTests)
+                api.GET("/tests", listTests)
+                api.POST("/save-tests", saveTests)
+                api.GET("/prev-tests", listPrevTests)
+                api.POST("/save-prev-tests", savePrevTests)
 
-		api.POST("/save-code/:id", saveCode)
+                api.POST("/save-code/:id", saveCode)
 	}
 
 	// serve React control panel
