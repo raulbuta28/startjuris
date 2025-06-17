@@ -925,10 +925,11 @@ export default function GrileAniAnteriori() {
         );
       case "teme":
         return (
-          <div className="flex space-x-4">
-            <div className="w-1/4 border-r pr-4">
-              <h3 className="text-lg font-semibold mb-4">Teste</h3>
-              <ul className="pl-4 space-y-1">
+          <div className="space-y-4">
+            {!selectedTestId && !editingTest && (
+              <>
+                <h3 className="text-lg font-semibold mb-4">Teste</h3>
+                <ul className="pl-4 space-y-1">
                 {savedTests
                   .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                   .map((test) => (
@@ -953,10 +954,22 @@ export default function GrileAniAnteriori() {
                       </button>
                     </li>
                   ))}
-              </ul>
-            </div>
-            <div className="w-3/4">
-              {selectedTestId && !editingTest && (
+                </ul>
+              </>
+            )}
+            {(selectedTestId || editingTest) && (
+              <>
+                <Button
+                  variant="secondary"
+                  className="mb-4"
+                  onClick={() => {
+                    setSelectedTestId(null);
+                    setEditingTest(null);
+                  }}
+                >
+                  Înapoi la teste
+                </Button>
+                {selectedTestId && !editingTest && (
                 <>
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -1325,7 +1338,8 @@ export default function GrileAniAnteriori() {
                   </div>
                 </>
               )}
-            </div>
+            </>
+          )}
           </div>
         );
       case "generator":
