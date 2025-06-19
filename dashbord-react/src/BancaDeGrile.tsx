@@ -7,6 +7,7 @@ interface Question {
   correct: number[];
   note: string;
   explanation?: string;
+  inTheme?: boolean;
 }
 
 interface Test {

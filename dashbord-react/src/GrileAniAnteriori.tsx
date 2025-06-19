@@ -33,6 +33,7 @@ type Question = {
   note: string;
   explanation?: string;
   categories?: string[];
+  inTheme?: boolean;
 };
 
 export default function GrileAniAnteriori() {
@@ -59,6 +60,16 @@ export default function GrileAniAnteriori() {
   const [allThemes, setAllThemes] = useState<Test[]>([]);
   const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null);
   const [selectedThemeId, setSelectedThemeId] = useState('');
+
+  const intervalOptions = [
+    { label: '1-20', start: 1, end: 20 },
+    { label: '20-40', start: 20, end: 40 },
+    { label: '40-50', start: 40, end: 50 },
+    { label: '50-70', start: 50, end: 70 },
+    { label: '70-100', start: 70, end: 100 },
+  ];
+  const [excludedIntervals, setExcludedIntervals] = useState<string[]>([]);
+  const [loadingAllExp, setLoadingAllExp] = useState(false);
 
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
@@ -243,6 +254,7 @@ export default function GrileAniAnteriori() {
           note: "",
           explanation: "",
           categories: [...categoryOptions],
+          inTheme: false,
         };
         continue;
       }
@@ -257,6 +269,7 @@ export default function GrileAniAnteriori() {
             note: "",
             explanation: "",
             categories: [...categoryOptions],
+            inTheme: false,
           };
         }
         current.answers.push(aMatch[2] || aMatch[1]);
@@ -351,6 +364,7 @@ export default function GrileAniAnteriori() {
       note: "",
       explanation: "",
       categories: [...categoryOptions],
+      inTheme: false,
     };
     updateQuestionsState((prev) => [...prev, newQ], isEditing);
     setEditingQuestions((s) => ({
@@ -386,6 +400,49 @@ export default function GrileAniAnteriori() {
     }
   };
 
+  const shouldGenerateExp = (index: number) => {
+    const nr = index + 1;
+    return !intervalOptions.some(
+      (i) =>
+        excludedIntervals.includes(i.label) &&
+        nr >= i.start &&
+        nr <= i.end
+    );
+  };
+
+  const generateAllExplanations = async () => {
+    if (!selectedTestId || loadingAllExp) return;
+    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+    if (testIndex === -1) return;
+    const qList = savedTests[testIndex].questions;
+    const indexes = qList
+      .map((_, i) => i)
+      .filter((i) => shouldGenerateExp(i) && !qList[i].explanation);
+    setLoadingAllExp(true);
+    try {
+      for (let i = 0; i < indexes.length; i += 3) {
+        const batch = indexes.slice(i, i + 3);
+        const exps = await Promise.all(
+          batch.map((qi) => explainQuestion(qList[qi]))
+        );
+        setSavedTests((prev) => {
+          const copy = [...prev];
+          const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
+          batch.forEach((qi, idx) => {
+            t.questions[qi] = { ...t.questions[qi], explanation: exps[idx] };
+          });
+          copy[testIndex] = t;
+          return copy;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Eroare la generarea explicațiilor');
+    } finally {
+      setLoadingAllExp(false);
+    }
+  };
+
 
   const addManualQuestion = () => {
     if (!manualTestId || !manualQuestion.trim() || manualAnswers.every((a) => !a.trim())) return;
@@ -397,6 +454,7 @@ export default function GrileAniAnteriori() {
       note: '',
       explanation: manualExplanation.trim(),
       categories: [...categoryOptions],
+      inTheme: false,
     };
     setSavedTests((prev) =>
       prev.map((t) => (t.id === manualTestId ? { ...t, questions: [...t.questions, newQ] } : t))
@@ -408,12 +466,27 @@ export default function GrileAniAnteriori() {
     setManualTestId('');
   };
 
-  const addQuestionToTheme = (question: Question, themeId: string) => {
+  const addQuestionToTheme = (
+    question: Question,
+    themeId: string,
+    sourceTestId?: string,
+    qIndex?: number
+  ) => {
     setAllThemes((prev) =>
       prev.map((t) =>
         t.id === themeId ? { ...t, questions: [...t.questions, question] } : t
       )
     );
+    if (sourceTestId && qIndex !== undefined) {
+      setSavedTests((prev) =>
+        prev.map((t) => {
+          if (t.id !== sourceTestId) return t;
+          const qs = [...t.questions];
+          qs[qIndex] = { ...qs[qIndex], inTheme: true };
+          return { ...t, questions: qs };
+        })
+      );
+    }
   };
 
   const publishTest = () => {
@@ -422,7 +495,7 @@ export default function GrileAniAnteriori() {
     const test: Test = {
       id: Date.now().toString(),
       name: selectedTest,
-      questions: questions.map((q) => ({ ...q })),
+      questions: questions.map((q) => ({ ...q, inTheme: q.inTheme ?? false })),
       categories: Array.from(new Set(testCategories)),
       order:
         Math.max(0, ...savedTests.map((t) => t.order ?? 0)) + 1,
@@ -448,7 +521,7 @@ export default function GrileAniAnteriori() {
         groups[note] = [];
         noteOrder.push(note);
       }
-      groups[note].push({ ...q });
+      groups[note].push({ ...q, inTheme: q.inTheme ?? false });
     });
 
     let baseOrder = Math.max(0, ...savedTests.map((t) => t.order ?? 0));
@@ -1036,6 +1109,27 @@ export default function GrileAniAnteriori() {
                           </label>
                         ))}
                       </div>
+                      <div className="flex items-center space-x-2 mt-2 flex-wrap">
+                        <Button onClick={generateAllExplanations} disabled={loadingAllExp}>
+                          {loadingAllExp ? 'Se generează...' : 'Activează explicațiile'}
+                        </Button>
+                        {intervalOptions.map((opt) => (
+                          <label key={opt.label} className="flex items-center space-x-1 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={excludedIntervals.includes(opt.label)}
+                              onChange={() =>
+                                setExcludedIntervals((prev) =>
+                                  prev.includes(opt.label)
+                                    ? prev.filter((i) => i !== opt.label)
+                                    : [...prev, opt.label]
+                                )
+                              }
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-x-2">
                       <Button
@@ -1059,7 +1153,13 @@ export default function GrileAniAnteriori() {
                   {savedTests
                     .find((t) => t.id === selectedTestId)
                     ?.questions.map((q, qi) => (
-                      <div key={qi} className="border-t pt-4 space-y-1">
+                      <div
+                        key={qi}
+                        className={cn(
+                          'border-t pt-4 space-y-1',
+                          q.inTheme && 'bg-green-100'
+                        )}
+                      >
                         <p className="font-bold leading-tight">
                           {qi + 1}. {q.text}
                         </p>
@@ -1109,7 +1209,7 @@ export default function GrileAniAnteriori() {
                               size="sm"
                               onClick={() => {
                                 if (!selectedThemeId) return;
-                                addQuestionToTheme(q, selectedThemeId);
+                                addQuestionToTheme(q, selectedThemeId, selectedTestId!, qi);
                                 setAddMenuIndex(null);
                                 setSelectedThemeId('');
                               }}
@@ -1169,7 +1269,13 @@ export default function GrileAniAnteriori() {
                     </Button>
                   </div>
                   {editingTest.questions.map((q, qi) => (
-                    <div key={qi} className="border-t pt-4 space-y-1">
+                    <div
+                      key={qi}
+                      className={cn(
+                        'border-t pt-4 space-y-1',
+                        q.inTheme && 'bg-green-100'
+                      )}
+                    >
                       {editingQuestions[qi] !== undefined ? (
                         <div className="flex items-center space-x-2">
                           <input
