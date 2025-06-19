@@ -414,22 +414,27 @@ export default function GrileAniAnteriori() {
     if (!selectedTestId || loadingAllExp) return;
     const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
     if (testIndex === -1) return;
-    const qList = savedTests[testIndex].questions;
+    const qList = [...savedTests[testIndex].questions];
     const indexes = qList
       .map((_, i) => i)
-      .filter((i) => shouldGenerateExp(i) && !qList[i].explanation);
+      .filter((i) => shouldGenerateExp(i) && !qList[i].explanation?.trim());
     setLoadingAllExp(true);
     try {
       for (let i = 0; i < indexes.length; i += 3) {
         const batch = indexes.slice(i, i + 3);
-        const exps = await Promise.all(
+        const results = await Promise.allSettled(
           batch.map((qi) => explainQuestion(qList[qi]))
         );
         setSavedTests((prev) => {
           const copy = [...prev];
           const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
           batch.forEach((qi, idx) => {
-            t.questions[qi] = { ...t.questions[qi], explanation: exps[idx] };
+            const r = results[idx];
+            if (r.status === 'fulfilled') {
+              const exp = r.value;
+              t.questions[qi] = { ...t.questions[qi], explanation: exp };
+              qList[qi] = t.questions[qi];
+            }
           });
           copy[testIndex] = t;
           return copy;
