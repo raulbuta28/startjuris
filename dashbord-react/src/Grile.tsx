@@ -62,6 +62,10 @@ export default function Grile() {
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
 
+  // Add test form state
+  const [addingTestSubject, setAddingTestSubject] = useState<string | null>(null);
+  const [newTestName, setNewTestName] = useState('');
+
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
   const [manualAnswers, setManualAnswers] = useState<string[]>(['', '', '']);
@@ -913,7 +917,55 @@ export default function Grile() {
               <h3 className="text-lg font-semibold mb-4">Materii</h3>
               {subjects.map((subject) => (
                 <div key={subject} className="mb-4">
-                  <h4 className="font-medium">{subject}</h4>
+                  <div className="flex items-center mb-1">
+                    <h4 className="font-medium flex-1">{subject}</h4>
+                    <button
+                      className="text-sm px-1"
+                      onClick={() => {
+                        setAddingTestSubject(subject);
+                        setNewTestName('');
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {addingTestSubject === subject && (
+                    <div className="flex items-center space-x-2 mb-1">
+                      <input
+                        className="border p-1 rounded flex-1"
+                        placeholder="Denumire test"
+                        value={newTestName}
+                        onChange={(e) => setNewTestName(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (!newTestName.trim()) return;
+                          const order =
+                            Math.max(
+                              0,
+                              ...savedTests
+                                .filter((t) => t.subject === subject)
+                                .map((t) => t.order ?? 0)
+                            ) + 1;
+                          const test: Test = {
+                            id: Date.now().toString(),
+                            name: newTestName.trim(),
+                            subject,
+                            questions: [],
+                            categories: [...categoryOptions],
+                            order,
+                          };
+                          setSavedTests((prev) => [...prev, test]);
+                          setAddingTestSubject(null);
+                          setNewTestName('');
+                          setSelectedTestId(test.id);
+                        }}
+                      >
+                        Salvează
+                      </Button>
+                    </div>
+                  )}
                   <ul className="pl-4">
                     {savedTests
                       .filter((t) => t.subject === subject)

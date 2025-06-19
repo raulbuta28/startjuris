@@ -55,6 +55,11 @@ export default function GrileAniAnteriori() {
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
 
+  // Themes from "Teme" tab
+  const [allThemes, setAllThemes] = useState<Test[]>([]);
+  const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null);
+  const [selectedThemeId, setSelectedThemeId] = useState('');
+
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
   const [manualAnswers, setManualAnswers] = useState<string[]>(['', '', '']);
@@ -121,6 +126,37 @@ export default function GrileAniAnteriori() {
         setTestsLoaded(true);
       });
   }, []);
+
+  // Load themes from main tests list
+  useEffect(() => {
+    const token = localStorage.getItem('token') || '';
+    fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setAllThemes)
+      .catch(() => {
+        const stored = localStorage.getItem('savedTests');
+        if (stored) {
+          try {
+            setAllThemes(JSON.parse(stored));
+          } catch {
+            /* ignore */
+          }
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!allThemes.length) return;
+    localStorage.setItem('savedTests', JSON.stringify(allThemes));
+    fetch('/api/save-tests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+      body: JSON.stringify(allThemes),
+    }).catch(() => {});
+  }, [allThemes]);
 
   useEffect(() => {
     if (!testsLoaded) return;
@@ -370,6 +406,14 @@ export default function GrileAniAnteriori() {
     setManualCorrect('');
     setManualExplanation('');
     setManualTestId('');
+  };
+
+  const addQuestionToTheme = (question: Question, themeId: string) => {
+    setAllThemes((prev) =>
+      prev.map((t) =>
+        t.id === themeId ? { ...t, questions: [...t.questions, question] } : t
+      )
+    );
   };
 
   const publishTest = () => {
@@ -1045,6 +1089,43 @@ export default function GrileAniAnteriori() {
                                 </p>
                               ))}
                           </div>
+                        )}
+                        {addMenuIndex === qi ? (
+                          <div className="flex items-center space-x-2 pl-4">
+                            <select
+                              className="border p-1 rounded flex-1"
+                              value={selectedThemeId}
+                              onChange={(e) => setSelectedThemeId(e.target.value)}
+                            >
+                              <option value="">Selectează tema</option>
+                              {allThemes.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}
+                                  {t.subject ? ` - ${t.subject}` : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (!selectedThemeId) return;
+                                addQuestionToTheme(q, selectedThemeId);
+                                setAddMenuIndex(null);
+                                setSelectedThemeId('');
+                              }}
+                            >
+                              Adaugă
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-4"
+                            onClick={() => setAddMenuIndex(qi)}
+                          >
+                            + Adaugă în temă
+                          </Button>
                         )}
                       </div>
                     ))}
