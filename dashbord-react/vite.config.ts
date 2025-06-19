@@ -17,6 +17,9 @@ export default defineConfig({
     fs: {
       allow: ['..']
     },
+    watch: {
+      ignored: ['../data/**']
+    },
     proxy: {
       '/api': 'http://localhost:8080'
     }
