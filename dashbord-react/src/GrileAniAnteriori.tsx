@@ -78,6 +78,41 @@ export default function GrileAniAnteriori() {
   const [manualExplanation, setManualExplanation] = useState('');
   const [manualTestId, setManualTestId] = useState('');
 
+  const savePrevTestsRequest = async (data: Test[]) => {
+    try {
+      const token = localStorage.getItem('token') || '';
+      const res = await fetch('/api/save-prev-tests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('failed');
+      localStorage.removeItem('pendingPrevTests');
+    } catch {
+      localStorage.setItem('pendingPrevTests', JSON.stringify(data));
+    }
+  };
+
+  const flushPendingPrevTests = () => {
+    const stored = localStorage.getItem('pendingPrevTests');
+    if (!stored) return;
+    try {
+      const data = JSON.parse(stored) as Test[];
+      savePrevTestsRequest(data);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    flushPendingPrevTests();
+    window.addEventListener('online', flushPendingPrevTests);
+    return () => window.removeEventListener('online', flushPendingPrevTests);
+  }, []);
+
 
   const toggleQuestionCategory = (
     qi: number,
@@ -172,14 +207,7 @@ export default function GrileAniAnteriori() {
   useEffect(() => {
     if (!testsLoaded) return;
     localStorage.setItem('savedPrevTests', JSON.stringify(savedTests));
-    fetch('/api/save-prev-tests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-      },
-      body: JSON.stringify(savedTests),
-    }).catch(() => {});
+    savePrevTestsRequest(savedTests);
   }, [savedTests, testsLoaded]);
 
   useEffect(() => {
@@ -571,14 +599,7 @@ export default function GrileAniAnteriori() {
     setTests(Array.from(new Set(updated.map((t) => t.name))));
     if (selectedTestId === id) setSelectedTestId(null);
     if (editingTest && editingTest.id === id) setEditingTest(null);
-    fetch('/api/save-prev-tests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-      },
-      body: JSON.stringify(updated),
-    }).catch(() => {});
+    savePrevTestsRequest(updated);
   };
 
   const moveTest = (id: string, dir: number) => {
