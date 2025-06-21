@@ -193,7 +193,11 @@ export default function GrileAniAnteriori() {
 
   useEffect(() => {
     if (!allThemes.length) return;
-    localStorage.setItem('savedTests', JSON.stringify(allThemes));
+    try {
+      localStorage.setItem('savedTests', JSON.stringify(allThemes));
+    } catch (err) {
+      console.warn('Unable to persist savedTests in localStorage:', err);
+    }
     fetch('/api/save-tests', {
       method: 'POST',
       headers: {
@@ -206,7 +210,11 @@ export default function GrileAniAnteriori() {
 
   useEffect(() => {
     if (!testsLoaded) return;
-    localStorage.setItem('savedPrevTests', JSON.stringify(savedTests));
+    try {
+      localStorage.setItem('savedPrevTests', JSON.stringify(savedTests));
+    } catch (err) {
+      console.warn('Unable to persist savedPrevTests in localStorage:', err);
+    }
     savePrevTestsRequest(savedTests);
   }, [savedTests, testsLoaded]);
 
