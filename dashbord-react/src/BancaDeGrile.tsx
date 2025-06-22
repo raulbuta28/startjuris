@@ -8,6 +8,9 @@ interface Question {
   note: string;
   explanation?: string;
   inTheme?: boolean;
+  articles?: string[];
+  theme?: string;
+  themes?: string[];
 }
 
 interface Test {
