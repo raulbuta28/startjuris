@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { cn, extractArticleRanges, rangeIncludes } from "@/lib/utils";
+import { cn, extractArticleRanges, rangeIncludes, detectSubject } from "@/lib/utils";
 import { explainQuestion } from "@/lib/agent";
 
 interface Tab {
@@ -38,6 +38,7 @@ type Question = {
   articles?: string[];
   theme?: string;
   themes?: string[];
+  subject?: string;
 };
 
 export default function GrileAniAnteriori() {
@@ -228,6 +229,42 @@ export default function GrileAniAnteriori() {
     const names = Array.from(new Set(savedTests.map((t) => t.name)));
     setTests(names);
   }, [savedTests, testsLoaded]);
+
+  const autoGenRef = React.useRef(false);
+  useEffect(() => {
+    if (!testsLoaded || autoGenRef.current) return;
+    autoGenRef.current = true;
+    (async () => {
+      for (let ti = 0; ti < savedTests.length; ti++) {
+        const t = savedTests[ti];
+        const isBarou = t.categories?.includes('Barou');
+        const isINR = t.categories?.includes('INR');
+        const isINM = t.categories?.includes('INM') && !isBarou && !isINR;
+        if (isINM) continue;
+        const start = isBarou ? 20 : 0;
+        const limit = isINR ? Math.min(50, t.questions.length) : t.questions.length;
+        for (let qi = start; qi < limit; qi += 2) {
+          const batch = [qi, qi + 1].filter((x) => x < limit);
+          const results = await Promise.allSettled(batch.map((i) => explainQuestion(t.questions[i])));
+          setSavedTests((prev) => {
+            const copy = [...prev];
+            const ct = { ...copy[ti], questions: [...copy[ti].questions] };
+            batch.forEach((idx, bi) => {
+              const r = results[bi];
+              if (r.status === 'fulfilled') {
+                const exp = r.value as string;
+                const subject = detectSubject(exp);
+                const articles = extractArticleRanges(exp);
+                ct.questions[idx] = { ...ct.questions[idx], explanation: exp, subject, articles };
+              }
+            });
+            copy[ti] = ct;
+            return copy;
+          });
+        }
+      }
+    })();
+  }, [testsLoaded]);
 
   const stripAnswerPrefix = (t: string) => {
     const m = t.trim().match(/^[A-Za-z][.)]\s*(.+)$/);
@@ -422,17 +459,23 @@ export default function GrileAniAnteriori() {
     try {
       const targetQuestions = isEditing && editingTest ? editingTest.questions : questions;
       const exp = await explainQuestion(targetQuestions[qi]);
+      const subject = detectSubject(exp);
+      const articles = extractArticleRanges(exp);
       if (isEditing && editingTest) {
         setEditingTest((prev) => {
           if (!prev) return prev;
           const copy = { ...prev, questions: [...prev.questions] };
           copy.questions[qi].explanation = exp;
+          copy.questions[qi].subject = subject;
+          copy.questions[qi].articles = articles;
           return copy;
         });
       } else {
         setQuestions((prev) => {
           const copy = [...prev];
           copy[qi].explanation = exp;
+          copy[qi].subject = subject;
+          copy[qi].articles = articles;
           return copy;
         });
       }
@@ -476,7 +519,9 @@ export default function GrileAniAnteriori() {
             const r = results[idx];
             if (r.status === 'fulfilled') {
               const exp = r.value;
-              t.questions[qi] = { ...t.questions[qi], explanation: exp };
+              const subject = detectSubject(exp);
+              const articles = extractArticleRanges(exp);
+              t.questions[qi] = { ...t.questions[qi], explanation: exp, subject, articles };
               qList[qi] = t.questions[qi];
             }
           });
@@ -521,7 +566,9 @@ export default function GrileAniAnteriori() {
             const r = results[idx];
             if (r.status === 'fulfilled') {
               const exp = r.value;
-              t.questions[qi] = { ...t.questions[qi], explanation: exp };
+              const subject = detectSubject(exp);
+              const articles = extractArticleRanges(exp);
+              t.questions[qi] = { ...t.questions[qi], explanation: exp, subject, articles };
               qList[qi] = t.questions[qi];
             }
           });
@@ -547,6 +594,7 @@ export default function GrileAniAnteriori() {
       t.questions = t.questions.map((q) => {
         if (!q.explanation?.trim()) return q;
         const articles = extractArticleRanges(q.explanation);
+        const subject = detectSubject(q.explanation) || q.subject;
         const themeSet = new Set<string>();
         for (const art of articles) {
           const first = parseInt(art.split('-')[0], 10);
@@ -564,7 +612,7 @@ export default function GrileAniAnteriori() {
         }
         const themes = Array.from(themeSet);
         const theme = themes[0];
-        return { ...q, articles, theme, themes };
+        return { ...q, articles, theme, themes, subject };
       });
       copy[testIndex] = t;
       return copy;
@@ -1026,7 +1074,7 @@ export default function GrileAniAnteriori() {
                         {loadingExp[qi] ? (
                           <span>Se generează...</span>
                         ) : q.explanation ? (
-                          <span>Explicație generată</span>
+                          <span>Regenerează explicația</span>
                         ) : (
                           <>
                             <svg
@@ -1064,6 +1112,32 @@ export default function GrileAniAnteriori() {
                             return copy;
                           });
                         }
+                      }}
+                    />
+                    <input
+                      className="w-full border rounded p-2 mt-2"
+                      placeholder="Materia"
+                      value={q.subject || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setQuestions((prev) => {
+                          const copy = [...prev];
+                          copy[qi].subject = val;
+                          return copy;
+                        });
+                      }}
+                    />
+                    <input
+                      className="w-full border rounded p-2 mt-2"
+                      placeholder="Articole"
+                      value={(q.articles || []).join(', ')}
+                      onChange={(e) => {
+                        const parts = e.target.value.split(',').map((x) => x.trim()).filter(Boolean);
+                        setQuestions((prev) => {
+                          const copy = [...prev];
+                          copy[qi].articles = parts;
+                          return copy;
+                        });
                       }}
                     />
                     {q.answers.map((a, ai) => (
@@ -1331,6 +1405,9 @@ export default function GrileAniAnteriori() {
                               ))}
                           </div>
                         )}
+                        {q.subject && (
+                          <p className="text-sm text-gray-500">Materia: {q.subject}</p>
+                        )}
                         {q.articles && q.articles.length > 0 && (
                           <p className="text-sm text-gray-500">
                             {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
@@ -1501,9 +1578,7 @@ export default function GrileAniAnteriori() {
                           >
                             {loadingExp[qi]
                               ? 'Se generează...'
-                              : q.explanation
-                              ? 'Explicație generată'
-                              : 'Explicație AI'}
+                              : 'Regenerează explicația'}
                           </Button>
                         </div>
                       )}
@@ -1653,6 +1728,34 @@ export default function GrileAniAnteriori() {
                             if (!prev) return prev;
                             const copy = { ...prev, questions: [...prev.questions] };
                             copy.questions[qi].explanation = val;
+                            return copy;
+                          });
+                        }}
+                      />
+                      <input
+                        className="w-full border rounded p-2 mt-2"
+                        placeholder="Materia"
+                        value={q.subject || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditingTest((prev) => {
+                            if (!prev) return prev;
+                            const copy = { ...prev, questions: [...prev.questions] };
+                            copy.questions[qi].subject = val;
+                            return copy;
+                          });
+                        }}
+                      />
+                      <input
+                        className="w-full border rounded p-2 mt-2"
+                        placeholder="Articole"
+                        value={(q.articles || []).join(', ')}
+                        onChange={(e) => {
+                          const parts = e.target.value.split(',').map((x) => x.trim()).filter(Boolean);
+                          setEditingTest((prev) => {
+                            if (!prev) return prev;
+                            const copy = { ...prev, questions: [...prev.questions] };
+                            copy.questions[qi].articles = parts;
                             return copy;
                           });
                         }}

@@ -65,3 +65,20 @@ export function rangeIncludes(range: string, n: number): boolean {
   if (isNaN(e)) return n === s;
   return n >= s && n <= e;
 }
+
+export function detectSubject(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  if (lower.includes('codul de procedura penala') || lower.includes('cod de procedura penala') || lower.includes('procedura penala')) {
+    return 'Drept procesual penal';
+  }
+  if (lower.includes('cod penal')) {
+    return 'Drept penal';
+  }
+  if (lower.includes('codul de procedura civila') || lower.includes('cod de procedura civila') || lower.includes('procedura civila')) {
+    return 'Drept procesual civil';
+  }
+  if (lower.includes('cod civil')) {
+    return 'Drept civil';
+  }
+  return undefined;
+}
