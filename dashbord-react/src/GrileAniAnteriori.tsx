@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, extractArticleRanges, rangeIncludes } from "@/lib/utils";
 import { explainQuestion } from "@/lib/agent";
 
 interface Tab {
@@ -21,6 +21,7 @@ const tabs: Tab[] = [
   { id: "generator", label: "Generator" },
   { id: "creare", label: "Creare grile" },
   { id: "teme", label: "Grile ani anteriori" },
+  { id: "articole_teme", label: "Articole teme" },
 ];
 
 
@@ -34,6 +35,8 @@ type Question = {
   explanation?: string;
   categories?: string[];
   inTheme?: boolean;
+  articles?: string[];
+  theme?: string;
 };
 
 export default function GrileAniAnteriori() {
@@ -60,6 +63,7 @@ export default function GrileAniAnteriori() {
   const [allThemes, setAllThemes] = useState<Test[]>([]);
   const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null);
   const [selectedThemeId, setSelectedThemeId] = useState('');
+  const [themeRanges, setThemeRanges] = useState<Record<string, string>>({});
 
   const intervalOptions = [
     { label: '1-20', start: 1, end: 20 },
@@ -482,6 +486,80 @@ export default function GrileAniAnteriori() {
     } finally {
       setLoadingAllExp(false);
     }
+  };
+
+  const regenerateAllExplanations = async () => {
+    if (!selectedTestId || loadingAllExp) return;
+    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+    if (testIndex === -1) return;
+    const qList = [...savedTests[testIndex].questions];
+    const indexes = qList.map((_, i) => i).filter((i) => shouldGenerateExp(i));
+    setLoadingAllExp(true);
+    try {
+      setSavedTests((prev) => {
+        const copy = [...prev];
+        const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
+        indexes.forEach((qi) => {
+          t.questions[qi] = { ...t.questions[qi], explanation: '' };
+        });
+        copy[testIndex] = t;
+        return copy;
+      });
+      for (let i = 0; i < indexes.length; i += 2) {
+        const batch = indexes.slice(i, i + 2);
+        const results = await Promise.allSettled(
+          batch.map((qi) => explainQuestion(qList[qi]))
+        );
+        setSavedTests((prev) => {
+          const copy = [...prev];
+          const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
+          batch.forEach((qi, idx) => {
+            const r = results[idx];
+            if (r.status === 'fulfilled') {
+              const exp = r.value;
+              t.questions[qi] = { ...t.questions[qi], explanation: exp };
+              qList[qi] = t.questions[qi];
+            }
+          });
+          copy[testIndex] = t;
+          return copy;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Eroare la generarea explicațiilor');
+    } finally {
+      setLoadingAllExp(false);
+    }
+  };
+
+  const assignArticles = () => {
+    if (!selectedTestId) return;
+    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+    if (testIndex === -1) return;
+    setSavedTests((prev) => {
+      const copy = [...prev];
+      const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
+      t.questions = t.questions.map((q) => {
+        if (!q.explanation?.trim()) return q;
+        const articles = extractArticleRanges(q.explanation);
+        let theme: string | undefined;
+        const first = articles[0] ? parseInt(articles[0].split('-')[0], 10) : NaN;
+        if (!isNaN(first)) {
+          for (const [id, rangesStr] of Object.entries(themeRanges)) {
+            const ranges = rangesStr.split(',').map((r) => r.trim()).filter(Boolean);
+            if (ranges.some((r) => rangeIncludes(r, first))) {
+              const th = allThemes.find((x) => x.id === id);
+              if (th) theme = th.name;
+              break;
+            }
+          }
+        }
+        return { ...q, articles, theme };
+      });
+      copy[testIndex] = t;
+      return copy;
+    });
   };
 
 
@@ -1031,9 +1109,17 @@ export default function GrileAniAnteriori() {
                               {p}
                             </p>
                           ))}
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2">
+                  </div>
+                )}
+                {q.articles && q.articles.length > 0 && (
+                  <p className="text-sm text-gray-500">
+                    {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
+                  </p>
+                )}
+                {q.theme && (
+                  <p className="text-sm text-gray-500">Stabilire tema: {q.theme}</p>
+                )}
+                <div className="flex items-center space-x-2">
                       {categoryOptions.map((cat) => (
                         <label key={cat} className="flex items-center space-x-1">
                           <input
@@ -1147,6 +1233,12 @@ export default function GrileAniAnteriori() {
                         <Button onClick={generateAllExplanations} disabled={loadingAllExp}>
                           {loadingAllExp ? 'Se generează...' : 'Activează explicațiile'}
                         </Button>
+                        <Button onClick={regenerateAllExplanations} disabled={loadingAllExp}>
+                          {loadingAllExp ? 'Se generează...' : 'Regenerează explicațiile'}
+                        </Button>
+                        <Button onClick={assignArticles} disabled={loadingAllExp}>
+                          Stabilește articolele
+                        </Button>
                         {intervalOptions.map((opt) => (
                           <label key={opt.label} className="flex items-center space-x-1 text-sm">
                             <input
@@ -1223,6 +1315,14 @@ export default function GrileAniAnteriori() {
                                 </p>
                               ))}
                           </div>
+                        )}
+                        {q.articles && q.articles.length > 0 && (
+                          <p className="text-sm text-gray-500">
+                            {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
+                          </p>
+                        )}
+                        {q.theme && (
+                          <p className="text-sm text-gray-500">Stabilire tema: {q.theme}</p>
                         )}
                         {addMenuIndex === qi ? (
                           <div className="flex items-center space-x-2 pl-4">
@@ -1615,6 +1715,27 @@ export default function GrileAniAnteriori() {
               />
               <Button onClick={addManualQuestion}>Adaugă grilă</Button>
             </div>
+          </div>
+        );
+      case "articole_teme":
+        return (
+          <div className="space-y-4">
+            {allThemes.map((t) => (
+              <div key={t.id} className="space-y-1 border-b pb-2">
+                <p className="font-semibold">
+                  {t.name}
+                  {t.subject ? ` - ${t.subject}` : ""}
+                </p>
+                <input
+                  className="border p-1 rounded w-full"
+                  placeholder="Ex: 230-270, 300-320"
+                  value={themeRanges[t.id] || ""}
+                  onChange={(e) =>
+                    setThemeRanges((prev) => ({ ...prev, [t.id]: e.target.value }))
+                  }
+                />
+              </div>
+            ))}
           </div>
         );
       default:
