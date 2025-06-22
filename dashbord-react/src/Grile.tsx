@@ -135,7 +135,11 @@ export default function Grile() {
 
   useEffect(() => {
     if (!testsLoaded) return;
-    localStorage.setItem('savedTests', JSON.stringify(savedTests));
+    try {
+      localStorage.setItem('savedTests', JSON.stringify(savedTests));
+    } catch (err) {
+      console.warn('Unable to persist savedTests in localStorage:', err);
+    }
     fetch('/api/save-tests', {
       method: 'POST',
       headers: {
