@@ -37,6 +37,7 @@ type Question = {
   inTheme?: boolean;
   articles?: string[];
   theme?: string;
+  themes?: string[];
 };
 
 export default function GrileAniAnteriori() {
@@ -295,6 +296,7 @@ export default function GrileAniAnteriori() {
           explanation: "",
           categories: [...categoryOptions],
           inTheme: false,
+          themes: [],
         };
         continue;
       }
@@ -310,6 +312,7 @@ export default function GrileAniAnteriori() {
             explanation: "",
             categories: [...categoryOptions],
             inTheme: false,
+            themes: [],
           };
         }
         current.answers.push(aMatch[2] || aMatch[1]);
@@ -405,6 +408,7 @@ export default function GrileAniAnteriori() {
       explanation: "",
       categories: [...categoryOptions],
       inTheme: false,
+      themes: [],
     };
     updateQuestionsState((prev) => [...prev, newQ], isEditing);
     setEditingQuestions((s) => ({
@@ -543,19 +547,24 @@ export default function GrileAniAnteriori() {
       t.questions = t.questions.map((q) => {
         if (!q.explanation?.trim()) return q;
         const articles = extractArticleRanges(q.explanation);
-        let theme: string | undefined;
-        const first = articles[0] ? parseInt(articles[0].split('-')[0], 10) : NaN;
-        if (!isNaN(first)) {
+        const themeSet = new Set<string>();
+        for (const art of articles) {
+          const first = parseInt(art.split('-')[0], 10);
+          if (isNaN(first)) continue;
           for (const [id, rangesStr] of Object.entries(themeRanges)) {
-            const ranges = rangesStr.split(',').map((r) => r.trim()).filter(Boolean);
+            const ranges = rangesStr
+              .split(',')
+              .map((r) => r.trim())
+              .filter(Boolean);
             if (ranges.some((r) => rangeIncludes(r, first))) {
               const th = allThemes.find((x) => x.id === id);
-              if (th) theme = th.name;
-              break;
+              if (th) themeSet.add(th.name);
             }
           }
         }
-        return { ...q, articles, theme };
+        const themes = Array.from(themeSet);
+        const theme = themes[0];
+        return { ...q, articles, theme, themes };
       });
       copy[testIndex] = t;
       return copy;
@@ -574,6 +583,7 @@ export default function GrileAniAnteriori() {
       explanation: manualExplanation.trim(),
       categories: [...categoryOptions],
       inTheme: false,
+      themes: [],
     };
     setSavedTests((prev) =>
       prev.map((t) => (t.id === manualTestId ? { ...t, questions: [...t.questions, newQ] } : t))
@@ -591,6 +601,7 @@ export default function GrileAniAnteriori() {
     sourceTestId?: string,
     qIndex?: number
   ) => {
+    const th = allThemes.find((t) => t.id === themeId);
     setAllThemes((prev) =>
       prev.map((t) =>
         t.id === themeId ? { ...t, questions: [...t.questions, question] } : t
@@ -601,7 +612,9 @@ export default function GrileAniAnteriori() {
         prev.map((t) => {
           if (t.id !== sourceTestId) return t;
           const qs = [...t.questions];
-          qs[qIndex] = { ...qs[qIndex], inTheme: true };
+          const existing = qs[qIndex].themes || [];
+          const newThemes = th ? Array.from(new Set([...existing, th.name])) : existing;
+          qs[qIndex] = { ...qs[qIndex], inTheme: true, themes: newThemes, theme: newThemes[0] };
           return { ...t, questions: qs };
         })
       );
@@ -1116,8 +1129,10 @@ export default function GrileAniAnteriori() {
                     {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
                   </p>
                 )}
-                {q.theme && (
-                  <p className="text-sm text-gray-500">Stabilire tema: {q.theme}</p>
+                {(q.themes?.length || q.theme) && (
+                  <p className="text-sm text-gray-500">
+                    Stabilire tema: {q.themes ? q.themes.join(', ') : q.theme}
+                  </p>
                 )}
                 <div className="flex items-center space-x-2">
                       {categoryOptions.map((cat) => (
@@ -1321,8 +1336,10 @@ export default function GrileAniAnteriori() {
                             {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
                           </p>
                         )}
-                        {q.theme && (
-                          <p className="text-sm text-gray-500">Stabilire tema: {q.theme}</p>
+                        {(q.themes?.length || q.theme) && (
+                          <p className="text-sm text-gray-500">
+                            Stabilire tema: {q.themes ? q.themes.join(', ') : q.theme}
+                          </p>
                         )}
                         {addMenuIndex === qi ? (
                           <div className="flex items-center space-x-2 pl-4">
