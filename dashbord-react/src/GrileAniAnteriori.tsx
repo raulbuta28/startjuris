@@ -74,8 +74,8 @@ export default function GrileAniAnteriori() {
     { label: '50-70', start: 50, end: 70 },
     { label: '70-100', start: 70, end: 100 },
   ];
-  const [excludedIntervals, setExcludedIntervals] = useState<string[]>([]);
-  const [loadingAllExp, setLoadingAllExp] = useState(false);
+  const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
+  const [loadingAllExp, setLoadingAllExp] = useState<Record<string, boolean>>({});
 
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
@@ -489,23 +489,25 @@ export default function GrileAniAnteriori() {
 
   const shouldGenerateExp = (index: number) => {
     const nr = index + 1;
-    return !intervalOptions.some(
+    if (selectedIntervals.length === 0) return true;
+    return intervalOptions.some(
       (i) =>
-        excludedIntervals.includes(i.label) &&
+        selectedIntervals.includes(i.label) &&
         nr >= i.start &&
         nr <= i.end
     );
   };
 
-  const generateAllExplanations = async () => {
-    if (!selectedTestId || loadingAllExp) return;
-    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+  const generateAllExplanations = async (id?: string) => {
+    const targetId = id || selectedTestId;
+    if (!targetId || loadingAllExp[targetId]) return;
+    const testIndex = savedTests.findIndex((t) => t.id === targetId);
     if (testIndex === -1) return;
     const qList = [...savedTests[testIndex].questions];
     const indexes = qList
       .map((_, i) => i)
       .filter((i) => shouldGenerateExp(i) && !qList[i].explanation?.trim());
-    setLoadingAllExp(true);
+    setLoadingAllExp((s) => ({ ...s, [targetId]: true }));
     try {
       for (let i = 0; i < indexes.length; i += 3) {
         const batch = indexes.slice(i, i + 3);
@@ -533,17 +535,18 @@ export default function GrileAniAnteriori() {
       console.error(err);
       alert('Eroare la generarea explicațiilor');
     } finally {
-      setLoadingAllExp(false);
+      setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
     }
   };
 
-  const regenerateAllExplanations = async () => {
-    if (!selectedTestId || loadingAllExp) return;
-    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+  const regenerateAllExplanations = async (id?: string) => {
+    const targetId = id || selectedTestId;
+    if (!targetId || loadingAllExp[targetId]) return;
+    const testIndex = savedTests.findIndex((t) => t.id === targetId);
     if (testIndex === -1) return;
     const qList = [...savedTests[testIndex].questions];
     const indexes = qList.map((_, i) => i).filter((i) => shouldGenerateExp(i));
-    setLoadingAllExp(true);
+    setLoadingAllExp((s) => ({ ...s, [targetId]: true }));
     try {
       setSavedTests((prev) => {
         const copy = [...prev];
@@ -580,7 +583,7 @@ export default function GrileAniAnteriori() {
       console.error(err);
       alert('Eroare la generarea explicațiilor');
     } finally {
-      setLoadingAllExp(false);
+      setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
     }
   };
 
@@ -1200,7 +1203,7 @@ export default function GrileAniAnteriori() {
                 )}
                 {q.articles && q.articles.length > 0 && (
                   <p className="text-sm text-gray-500">
-                    {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
+                    Articole: {q.articles.join('; ')}
                   </p>
                 )}
                 {(q.themes?.length || q.theme) && (
@@ -1278,6 +1281,13 @@ export default function GrileAniAnteriori() {
                       >
                         ↓
                       </button>
+                      <Button
+                        size="sm"
+                        onClick={() => generateAllExplanations(test.id)}
+                        disabled={loadingAllExp[test.id]}
+                      >
+                        {loadingAllExp[test.id] ? '...':'Generează'}
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -1319,22 +1329,22 @@ export default function GrileAniAnteriori() {
                         ))}
                       </div>
                       <div className="flex items-center space-x-2 mt-2 flex-wrap">
-                        <Button onClick={generateAllExplanations} disabled={loadingAllExp}>
-                          {loadingAllExp ? 'Se generează...' : 'Activează explicațiile'}
+                        <Button onClick={() => generateAllExplanations()} disabled={loadingAllExp[selectedTestId ?? '']}> 
+                          {loadingAllExp[selectedTestId ?? ''] ? 'Se generează...' : 'Activează explicațiile'}
                         </Button>
-                        <Button onClick={regenerateAllExplanations} disabled={loadingAllExp}>
-                          {loadingAllExp ? 'Se generează...' : 'Regenerează explicațiile'}
+                        <Button onClick={() => regenerateAllExplanations()} disabled={loadingAllExp[selectedTestId ?? '']}>
+                          {loadingAllExp[selectedTestId ?? ''] ? 'Se generează...' : 'Regenerează explicațiile'}
                         </Button>
-                        <Button onClick={assignArticles} disabled={loadingAllExp}>
+                        <Button onClick={assignArticles} disabled={loadingAllExp[selectedTestId ?? '']}>
                           Stabilește articolele
                         </Button>
                         {intervalOptions.map((opt) => (
                           <label key={opt.label} className="flex items-center space-x-1 text-sm">
                             <input
                               type="checkbox"
-                              checked={excludedIntervals.includes(opt.label)}
+                              checked={selectedIntervals.includes(opt.label)}
                               onChange={() =>
-                                setExcludedIntervals((prev) =>
+                                setSelectedIntervals((prev) =>
                                   prev.includes(opt.label)
                                     ? prev.filter((i) => i !== opt.label)
                                     : [...prev, opt.label]
@@ -1410,7 +1420,7 @@ export default function GrileAniAnteriori() {
                         )}
                         {q.articles && q.articles.length > 0 && (
                           <p className="text-sm text-gray-500">
-                            {q.articles.map((a, i) => `${i + 1}. ${a}`).join(' ')}
+                            Articole: {q.articles.join('; ')}
                           </p>
                         )}
                         {(q.themes?.length || q.theme) && (
