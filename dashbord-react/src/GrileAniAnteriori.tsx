@@ -274,8 +274,8 @@ export default function GrileAniAnteriori() {
   const lettersToIndexes = (letters: string): number[] =>
     letters
       .toUpperCase()
-      .replace(/[^A-Z]/g, ' ')
-      .split(/\s+/)
+      .replace(/[^A-Z]/g, '')
+      .split('')
       .filter((l) => l)
       .map((l) => l.charCodeAt(0) - 65);
 
@@ -366,8 +366,8 @@ export default function GrileAniAnteriori() {
       if (corrMatch && current) {
         const letters = corrMatch[1]
           .toUpperCase()
-          .replace(/[^A-Z]/g, " ")
-          .split(/\s+/)
+          .replace(/[^A-Z]/g, '')
+          .split('')
           .filter((l) => l);
         current.correct = letters
           .map((l) => l.charCodeAt(0) - 65)
