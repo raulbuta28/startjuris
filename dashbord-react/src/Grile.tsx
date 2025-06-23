@@ -209,6 +209,7 @@ export default function Grile() {
     const aReg = /^(?:R(?:ă|a)spuns\s+)?([A-Za-z])[.)]\s*(.+)$/;
     const correctReg = /^R(?:ă|a)spuns(?:uri)?\s+corect[e]?[:]?\s*(.+)$/i;
     const lettersOnlyReg = /^[A-Za-z](?:\s*,\s*[A-Za-z])+$/;
+    const noteReg = /^Not[ăa]?:?\s*(.+)$/i;
     const ignoreReg = /^Admitere\s/i;
 
     for (const line of lines) {
@@ -282,6 +283,12 @@ export default function Grile() {
         current.correct = letters
           .map((l) => l.charCodeAt(0) - 65)
           .filter((i) => i >= 0 && i < current.answers.length);
+        continue;
+      }
+
+      const noteMatch = line.match(noteReg);
+      if (noteMatch && current) {
+        current.note = noteMatch[1].trim();
         continue;
       }
 
