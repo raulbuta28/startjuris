@@ -540,13 +540,21 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-        data, err := ioutil.ReadFile(filepath.Join(dataDir, "books.json"))
-        if os.IsNotExist(err) {
-                data = []byte("[]")
-        } else if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
+	path := filepath.Join(dataDir, "books.json")
+	data, err := ioutil.ReadFile(path)
+	if os.IsNotExist(err) {
+		fallback := filepath.Join(rootDir, "dashbord-react", "books.json")
+		if b, err2 := ioutil.ReadFile(fallback); err2 == nil {
+			data = b
+			os.MkdirAll(dataDir, 0755)
+			_ = os.WriteFile(path, data, 0644)
+		} else {
+			data = []byte("[]")
+		}
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	var books []map[string]interface{}
 	if err := json.Unmarshal(data, &books); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -578,13 +586,13 @@ func saveNews(c *gin.Context) {
 }
 
 func listNews(c *gin.Context) {
-        data, err := ioutil.ReadFile(filepath.Join(dataDir, "news.json"))
-        if os.IsNotExist(err) {
-                data = []byte("[]")
-        } else if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
+	data, err := ioutil.ReadFile(filepath.Join(dataDir, "news.json"))
+	if os.IsNotExist(err) {
+		data = []byte("[]")
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	var news []map[string]interface{}
 	if err := json.Unmarshal(data, &news); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -619,7 +627,14 @@ func listTests(c *gin.Context) {
 	path := filepath.Join(dataDir, "tests.json")
 	data, err := ioutil.ReadFile(path)
 	if os.IsNotExist(err) {
-		data = []byte("[]")
+		fallback := filepath.Join(rootDir, "backend", "tests.json")
+		if b, err2 := ioutil.ReadFile(fallback); err2 == nil {
+			data = b
+			os.MkdirAll(dataDir, 0755)
+			_ = os.WriteFile(path, data, 0644)
+		} else {
+			data = []byte("[]")
+		}
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -633,42 +648,42 @@ func listTests(c *gin.Context) {
 }
 
 func savePrevTests(c *gin.Context) {
-        var tests []map[string]interface{}
-        if err := c.BindJSON(&tests); err != nil {
-                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
-                return
-        }
-        data, err := json.MarshalIndent(tests, "", "  ")
-        if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
-        if err := os.MkdirAll(dataDir, 0755); err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
-        if err := os.WriteFile(filepath.Join(dataDir, "prev_tests.json"), data, 0644); err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
-        c.Status(http.StatusOK)
+	var tests []map[string]interface{}
+	if err := c.BindJSON(&tests); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	data, err := json.MarshalIndent(tests, "", "  ")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "prev_tests.json"), data, 0644); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
 }
 
 func listPrevTests(c *gin.Context) {
-        path := filepath.Join(dataDir, "prev_tests.json")
-        data, err := ioutil.ReadFile(path)
-        if os.IsNotExist(err) {
-                data = []byte("[]")
-        } else if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
-        var tests []map[string]interface{}
-        if err := json.Unmarshal(data, &tests); err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-                return
-        }
-        c.JSON(http.StatusOK, tests)
+	path := filepath.Join(dataDir, "prev_tests.json")
+	data, err := ioutil.ReadFile(path)
+	if os.IsNotExist(err) {
+		data = []byte("[]")
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var tests []map[string]interface{}
+	if err := json.Unmarshal(data, &tests); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, tests)
 }
 
 func uploadNewsImage(c *gin.Context) {
@@ -1493,12 +1508,12 @@ func main() {
 		api.POST("/save-news", saveNews)
 		api.POST("/news/upload-image", uploadNewsImage)
 
-                api.GET("/tests", listTests)
-                api.POST("/save-tests", saveTests)
-                api.GET("/prev-tests", listPrevTests)
-                api.POST("/save-prev-tests", savePrevTests)
+		api.GET("/tests", listTests)
+		api.POST("/save-tests", saveTests)
+		api.GET("/prev-tests", listPrevTests)
+		api.POST("/save-prev-tests", savePrevTests)
 
-                api.POST("/save-code/:id", saveCode)
+		api.POST("/save-code/:id", saveCode)
 	}
 
 	// serve React control panel

@@ -39,3 +39,14 @@ flutter run --dart-define=API_URL=http://10.0.2.2:8080/api
 
 Replace `10.0.2.2` with the IP of your backend when running on a device.
 
+### Local data directory
+
+The backend stores editable content such as uploaded tests or
+books inside the `data/` directory. This folder is ignored by Git so
+its contents do not travel with the repository. If you start with an
+empty `data/` folder the dashboard pages may appear blank.
+
+To restore the default examples the server will automatically copy the
+JSON files from the repository if the corresponding files are missing in
+`data/`.
+
