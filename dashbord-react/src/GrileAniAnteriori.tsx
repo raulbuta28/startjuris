@@ -69,10 +69,7 @@ export default function GrileAniAnteriori() {
 
   const intervalOptions = [
     { label: '1-20', start: 1, end: 20 },
-    { label: '20-40', start: 20, end: 40 },
-    { label: '40-50', start: 40, end: 50 },
-    { label: '50-70', start: 50, end: 70 },
-    { label: '70-100', start: 70, end: 100 },
+    { label: '51-100', start: 51, end: 100 },
   ];
   const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
   const [loadingAllExp, setLoadingAllExp] = useState<Record<string, boolean>>({});
@@ -490,7 +487,7 @@ export default function GrileAniAnteriori() {
   const shouldGenerateExp = (index: number) => {
     const nr = index + 1;
     if (selectedIntervals.length === 0) return true;
-    return intervalOptions.some(
+    return !intervalOptions.some(
       (i) =>
         selectedIntervals.includes(i.label) &&
         nr >= i.start &&

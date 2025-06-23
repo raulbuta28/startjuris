@@ -7,11 +7,23 @@ export function cn(...inputs: ClassValue[]) {
 
 export function extractArticleNumbers(text: string): number[] {
   const numbers: number[] = [];
+
+  // Patterns like "1.697" should be treated as article 1697
+  const dottedRe = /\b(\d{1,3})\.(\d{2,3})\b/g;
+  text = text.replace(dottedRe, (_, a, b) => {
+    numbers.push(parseInt(`${a}${b}`, 10));
+    return ' ';
+  });
+
   const bulletRe = /(?:^|[\n\r])\s*\d+[.)]\s*(\d{1,4})/g;
   text = text.replace(bulletRe, (_, n) => {
     numbers.push(parseInt(n, 10));
     return ' ';
   });
+
+  // Remove references to article paragraphs like "alin. (1)"
+  const alinRe = /alin\.\s*\(?\d{1,4}\)?/gi;
+  text = text.replace(alinRe, ' ');
 
   const matches = text.match(/\b\d{1,4}\b/g) || [];
   for (const m of matches) {
