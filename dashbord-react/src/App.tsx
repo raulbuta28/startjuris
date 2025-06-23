@@ -273,12 +273,32 @@ function Dashboard({ onLogout }: DashboardProps) {
 
   useEffect(() => {
     const token = localStorage.getItem('token') || '';
+
     fetch('/api/books', { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then(setBooks);
+      .then(async (r) => {
+        if (!r.ok) {
+          const txt = await r.text().catch(() => '');
+          console.error('failed to fetch books', txt);
+          return [] as Book[];
+        }
+        return (await r.json()) as Book[];
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setBooks(data);
+      });
+
     fetch('/api/news', { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then(setNews);
+      .then(async (r) => {
+        if (!r.ok) {
+          const txt = await r.text().catch(() => '');
+          console.error('failed to fetch news', txt);
+          return [] as NewsItem[];
+        }
+        return (await r.json()) as NewsItem[];
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setNews(data);
+      });
   }, []);
 
   const updateBooks = (updated: Book[]) => {
