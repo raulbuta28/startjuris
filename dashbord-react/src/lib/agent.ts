@@ -117,3 +117,33 @@ export async function generateGrilaStrict(prompt: string): Promise<GrilaQuestion
 
   return { text: questionText.replace(/:+$/, ''), answers, correct, explanation };
 }
+
+export async function detectSubjectAI(q: GrilaQuestion & { explanation?: string }): Promise<string> {
+  const prompt = `Citeste intrebarea si explicatia de mai jos si raspunde doar cu una dintre urmatoarele materii:
+- Drept civil (codul civil)
+- Drept procesual civil (codul de procedura civila)
+- Drept penal (codul penal)
+- Drept procesual penal (codul de procedura penala)
+
+Intrebare: ${q.text}
+Explicatie: ${q.explanation ?? ''}`.trim();
+
+  const res = await fetch(
+    `${import.meta.env.VITE_AGENT_ENDPOINT}/api/v1/chat/completions`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_AGENT_ACCESS_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+      }),
+    }
+  );
+
+  if (!res.ok) throw new Error(`Agent error ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() ?? '';
+}
