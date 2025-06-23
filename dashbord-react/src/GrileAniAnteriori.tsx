@@ -506,8 +506,8 @@ export default function GrileAniAnteriori() {
       .filter((i) => shouldGenerateExp(i) && !qList[i].explanation?.trim());
     setLoadingAllExp((s) => ({ ...s, [targetId]: true }));
     try {
-      for (let i = 0; i < indexes.length; i += 3) {
-        const batch = indexes.slice(i, i + 3);
+      for (let i = 0; i < indexes.length; i += 2) {
+        const batch = indexes.slice(i, i + 2);
         const results = await Promise.allSettled(
           batch.map((qi) => explainQuestion(qList[qi]))
         );
@@ -582,6 +582,11 @@ export default function GrileAniAnteriori() {
     } finally {
       setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
     }
+  };
+
+  const generateExplanationsForAllTests = async () => {
+    const ids = savedTests.map((t) => t.id);
+    await Promise.allSettled(ids.map((id) => generateAllExplanations(id)));
   };
 
   const assignArticles = () => {
@@ -1198,14 +1203,14 @@ export default function GrileAniAnteriori() {
                           ))}
                   </div>
                 )}
-                {q.articles && q.articles.length > 0 && (
+                {(q.articles && q.articles.length > 0) || q.subject ? (
                   <p className="text-sm text-gray-500">
-                    Articole: {q.articles.join('; ')}
+                    {q.articles && q.articles.length > 0 && (
+                      <>Articole: {q.articles.join('; ')}{' '}</>
+                    )}
+                    {q.subject && `Materia: ${q.subject}`}
                   </p>
-                )}
-                {q.subject && (
-                  <p className="text-sm text-gray-500">Materia: {q.subject}</p>
-                )}
+                ) : null}
                 {(q.themes?.length || q.theme) && (
                   <p className="text-sm text-gray-500">
                     Stabilire tema: {q.themes ? q.themes.join(', ') : q.theme}
@@ -1257,7 +1262,12 @@ export default function GrileAniAnteriori() {
           <div className="space-y-4">
             {!selectedTestId && !editingTest && (
               <>
-                <h3 className="text-lg font-semibold mb-4">Teste</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Teste</h3>
+                  <Button onClick={generateExplanationsForAllTests} disabled={Object.values(loadingAllExp).some(Boolean)}>
+                    Generează pentru toate
+                  </Button>
+                </div>
                 <ul className="pl-4 space-y-1">
                 {savedTests
                   .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -1415,14 +1425,14 @@ export default function GrileAniAnteriori() {
                               ))}
                           </div>
                         )}
-                        {q.subject && (
-                          <p className="text-sm text-gray-500">Materia: {q.subject}</p>
-                        )}
-                        {q.articles && q.articles.length > 0 && (
+                        {(q.articles && q.articles.length > 0) || q.subject ? (
                           <p className="text-sm text-gray-500">
-                            Articole: {q.articles.join('; ')}
+                            {q.articles && q.articles.length > 0 && (
+                              <>Articole: {q.articles.join('; ')}{' '}</>
+                            )}
+                            {q.subject && `Materia: ${q.subject}`}
                           </p>
-                        )}
+                        ) : null}
                         {(q.themes?.length || q.theme) && (
                           <p className="text-sm text-gray-500">
                             Stabilire tema: {q.themes ? q.themes.join(', ') : q.theme}
