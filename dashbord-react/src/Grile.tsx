@@ -205,17 +205,35 @@ export default function Grile() {
     const questions: Question[] = [];
     let current: Question | null = null;
     const qReg = /^(?:\d+[.)]|[IiÎî]ntrebare)\s*[:.)]?\s*(.+)$/;
+    const qAltReg = /^.+[:?]$/;
     const aReg = /^(?:R(?:ă|a)spuns\s+)?([A-Za-z])[.)]\s*(.+)$/;
     const correctReg = /^R(?:ă|a)spuns(?:uri)?\s+corect[e]?[:]?\s*(.+)$/i;
+    const lettersOnlyReg = /^[A-Za-z](?:\s*,\s*[A-Za-z])+$/;
+    const ignoreReg = /^Admitere\s/i;
 
     for (const line of lines) {
       if (!line) continue;
+      if (ignoreReg.test(line)) continue;
 
       const qMatch = line.match(qReg);
       if (qMatch) {
         if (current) questions.push(current);
         current = {
           text: qMatch[1],
+          answers: [],
+          correct: [],
+          note: "",
+          explanation: "",
+          categories: [...categoryOptions],
+        };
+        continue;
+      }
+
+      const qAltMatch = line.match(qAltReg);
+      if (qAltMatch) {
+        if (current) questions.push(current);
+        current = {
+          text: line.replace(/[:?]$/, ''),
           answers: [],
           correct: [],
           note: "",
@@ -244,6 +262,19 @@ export default function Grile() {
       const corrMatch = line.match(correctReg);
       if (corrMatch && current) {
         const letters = corrMatch[1]
+          .toUpperCase()
+          .replace(/[^A-Z]/g, '')
+          .split('')
+          .filter((l) => l);
+        current.correct = letters
+          .map((l) => l.charCodeAt(0) - 65)
+          .filter((i) => i >= 0 && i < current.answers.length);
+        continue;
+      }
+
+      const lettersMatch = line.match(lettersOnlyReg);
+      if (lettersMatch && current) {
+        const letters = line
           .toUpperCase()
           .replace(/[^A-Z]/g, '')
           .split('')
