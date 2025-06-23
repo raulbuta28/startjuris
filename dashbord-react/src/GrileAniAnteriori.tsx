@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn, extractArticleRanges, rangeIncludes, detectSubject } from "@/lib/utils";
-import { explainQuestion } from "@/lib/agent";
+import { explainQuestion, detectSubjectAI } from "@/lib/agent";
 
 interface Tab {
   id: string;
@@ -73,6 +73,11 @@ export default function GrileAniAnteriori() {
   ];
   const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
   const [loadingAllExp, setLoadingAllExp] = useState<Record<string, boolean>>({});
+  const [expDone, setExpDone] = useState<Record<string, boolean>>({});
+
+  const [subjectIntervals, setSubjectIntervals] = useState<string[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState<Record<string, boolean>>({});
+  const [subjectsDone, setSubjectsDone] = useState<Record<string, boolean>>({});
 
   // Generator manual states
   const [manualQuestion, setManualQuestion] = useState('');
@@ -528,13 +533,15 @@ export default function GrileAniAnteriori() {
           return copy;
         });
       }
-    } catch (err) {
-      console.error(err);
-      alert('Eroare la generarea explicațiilor');
-    } finally {
-      setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
-    }
-  };
+  } catch (err) {
+    console.error(err);
+    alert('Eroare la generarea explicațiilor');
+  } finally {
+    setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
+    const done = qList.every((q, i) => !shouldGenerateExp(i) || q.explanation?.trim());
+    setExpDone((d) => ({ ...d, [targetId]: done }));
+  }
+};
 
   const regenerateAllExplanations = async (id?: string) => {
     const targetId = id || selectedTestId;
@@ -576,13 +583,15 @@ export default function GrileAniAnteriori() {
           return copy;
         });
       }
-    } catch (err) {
-      console.error(err);
-      alert('Eroare la generarea explicațiilor');
-    } finally {
-      setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
-    }
-  };
+  } catch (err) {
+    console.error(err);
+    alert('Eroare la generarea explicațiilor');
+  } finally {
+    setLoadingAllExp((s) => ({ ...s, [targetId]: false }));
+    const done = qList.every((q, i) => !shouldGenerateExp(i) || q.explanation?.trim());
+    setExpDone((d) => ({ ...d, [targetId]: done }));
+  }
+};
 
   const generateExplanationsForAllTests = async () => {
     const ids = savedTests.map((t) => t.id);
@@ -622,6 +631,57 @@ export default function GrileAniAnteriori() {
       copy[testIndex] = t;
       return copy;
     });
+  };
+
+  const shouldAssignSubject = (index: number) => {
+    const nr = index + 1;
+    if (subjectIntervals.length === 0) return true;
+    return !intervalOptions.some(
+      (i) =>
+        subjectIntervals.includes(i.label) &&
+        nr >= i.start &&
+        nr <= i.end
+    );
+  };
+
+  const assignSubjects = async (id?: string) => {
+    const targetId = id || selectedTestId;
+    if (!targetId || loadingSubjects[targetId]) return;
+    const testIndex = savedTests.findIndex((t) => t.id === targetId);
+    if (testIndex === -1) return;
+    const qList = [...savedTests[testIndex].questions];
+    const indexes = qList
+      .map((_, i) => i)
+      .filter((i) => shouldAssignSubject(i) && qList[i].explanation?.trim());
+    setLoadingSubjects((s) => ({ ...s, [targetId]: true }));
+    try {
+      for (let i = 0; i < indexes.length; i += 2) {
+        const batch = indexes.slice(i, i + 2);
+        const results = await Promise.allSettled(
+          batch.map((qi) => detectSubjectAI(qList[qi]))
+        );
+        setSavedTests((prev) => {
+          const copy = [...prev];
+          const t = { ...copy[testIndex], questions: [...copy[testIndex].questions] };
+          batch.forEach((qi, idx) => {
+            const r = results[idx];
+            if (r.status === 'fulfilled') {
+              t.questions[qi] = { ...t.questions[qi], subject: r.value };
+              qList[qi] = t.questions[qi];
+            }
+          });
+          copy[testIndex] = t;
+          return copy;
+        });
+      }
+      const done = qList.every((q, i) => !shouldAssignSubject(i) || q.subject);
+      setSubjectsDone((s) => ({ ...s, [targetId]: done }));
+    } catch (err) {
+      console.error(err);
+      alert('Eroare la stabilirea materiei');
+    } finally {
+      setLoadingSubjects((s) => ({ ...s, [targetId]: false }));
+    }
   };
 
 
@@ -1296,8 +1356,53 @@ export default function GrileAniAnteriori() {
                         onClick={() => generateAllExplanations(test.id)}
                         disabled={loadingAllExp[test.id]}
                       >
-                        {loadingAllExp[test.id] ? '...':'Generează'}
+                        {loadingAllExp[test.id] ? '...' : 'Generează'}
                       </Button>
+                      {expDone[test.id] && (
+                        <span className="text-green-600 text-xs">✓</span>
+                      )}
+                      {intervalOptions.map((opt) => (
+                        <label key={opt.label} className="flex items-center space-x-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={selectedIntervals.includes(opt.label)}
+                            onChange={() =>
+                              setSelectedIntervals((prev) =>
+                                prev.includes(opt.label)
+                                  ? prev.filter((i) => i !== opt.label)
+                                  : [...prev, opt.label]
+                              )
+                            }
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      ))}
+                      <Button
+                        size="sm"
+                        onClick={() => assignSubjects(test.id)}
+                        disabled={loadingSubjects[test.id]}
+                      >
+                        {loadingSubjects[test.id] ? '...' : 'Stabilește materia'}
+                      </Button>
+                      {subjectsDone[test.id] && (
+                        <span className="text-green-600 text-xs">✓</span>
+                      )}
+                      {intervalOptions.map((opt) => (
+                        <label key={`s-${opt.label}`} className="flex items-center space-x-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={subjectIntervals.includes(opt.label)}
+                            onChange={() =>
+                              setSubjectIntervals((prev) =>
+                                prev.includes(opt.label)
+                                  ? prev.filter((i) => i !== opt.label)
+                                  : [...prev, opt.label]
+                              )
+                            }
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      ))}
                     </li>
                   ))}
                 </ul>
@@ -1339,15 +1444,24 @@ export default function GrileAniAnteriori() {
                         ))}
                       </div>
                       <div className="flex items-center space-x-2 mt-2 flex-wrap">
-                        <Button onClick={() => generateAllExplanations()} disabled={loadingAllExp[selectedTestId ?? '']}> 
+                        <Button onClick={() => generateAllExplanations()} disabled={loadingAllExp[selectedTestId ?? '']}>
                           {loadingAllExp[selectedTestId ?? ''] ? 'Se generează...' : 'Activează explicațiile'}
                         </Button>
+                        {expDone[selectedTestId ?? ''] && (
+                          <span className="text-green-600 text-xs">✓</span>
+                        )}
                         <Button onClick={() => regenerateAllExplanations()} disabled={loadingAllExp[selectedTestId ?? '']}>
                           {loadingAllExp[selectedTestId ?? ''] ? 'Se generează...' : 'Regenerează explicațiile'}
                         </Button>
                         <Button onClick={assignArticles} disabled={loadingAllExp[selectedTestId ?? '']}>
                           Stabilește articolele
                         </Button>
+                        <Button onClick={() => assignSubjects()} disabled={loadingSubjects[selectedTestId ?? '']}>
+                          {loadingSubjects[selectedTestId ?? ''] ? '...' : 'Stabilește materia'}
+                        </Button>
+                        {subjectsDone[selectedTestId ?? ''] && (
+                          <span className="text-green-600 text-xs">✓</span>
+                        )}
                         {intervalOptions.map((opt) => (
                           <label key={opt.label} className="flex items-center space-x-1 text-sm">
                             <input
@@ -1355,6 +1469,22 @@ export default function GrileAniAnteriori() {
                               checked={selectedIntervals.includes(opt.label)}
                               onChange={() =>
                                 setSelectedIntervals((prev) =>
+                                  prev.includes(opt.label)
+                                    ? prev.filter((i) => i !== opt.label)
+                                    : [...prev, opt.label]
+                                )
+                              }
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        ))}
+                        {intervalOptions.map((opt) => (
+                          <label key={`s-${opt.label}`} className="flex items-center space-x-1 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={subjectIntervals.includes(opt.label)}
+                              onChange={() =>
+                                setSubjectIntervals((prev) =>
                                   prev.includes(opt.label)
                                     ? prev.filter((i) => i !== opt.label)
                                     : [...prev, opt.label]
