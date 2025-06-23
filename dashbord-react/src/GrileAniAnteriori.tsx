@@ -1203,6 +1203,9 @@ export default function GrileAniAnteriori() {
                     Articole: {q.articles.join('; ')}
                   </p>
                 )}
+                {q.subject && (
+                  <p className="text-sm text-gray-500">Materia: {q.subject}</p>
+                )}
                 {(q.themes?.length || q.theme) && (
                   <p className="text-sm text-gray-500">
                     Stabilire tema: {q.themes ? q.themes.join(', ') : q.theme}

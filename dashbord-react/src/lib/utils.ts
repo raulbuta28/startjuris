@@ -80,16 +80,30 @@ export function rangeIncludes(range: string, n: number): boolean {
 
 export function detectSubject(text: string): string | undefined {
   const lower = text.toLowerCase();
-  if (lower.includes('codul de procedura penala') || lower.includes('cod de procedura penala') || lower.includes('procedura penala')) {
+  if (
+    lower.includes('codul de procedura penala') ||
+    lower.includes('cod de procedura penala') ||
+    lower.includes('procedura penala') ||
+    /c\.?\s*proc\.?\s*pen/.test(lower) ||
+    /\bcpp\b/.test(lower) ||
+    /c\.pr\.pen/.test(lower)
+  ) {
     return 'Drept procesual penal';
   }
-  if (lower.includes('cod penal')) {
+  if (lower.includes('cod penal') || /\bcp\b/.test(lower)) {
     return 'Drept penal';
   }
-  if (lower.includes('codul de procedura civila') || lower.includes('cod de procedura civila') || lower.includes('procedura civila')) {
+  if (
+    lower.includes('codul de procedura civila') ||
+    lower.includes('cod de procedura civila') ||
+    lower.includes('procedura civila') ||
+    /c\.?\s*proc\.?\s*civ/.test(lower) ||
+    /\bcpc\b/.test(lower) ||
+    /c\.pr\.civ/.test(lower)
+  ) {
     return 'Drept procesual civil';
   }
-  if (lower.includes('cod civil')) {
+  if (lower.includes('cod civil') || /\bcc\b/.test(lower) || /c\.\s*civ/.test(lower)) {
     return 'Drept civil';
   }
   return undefined;
