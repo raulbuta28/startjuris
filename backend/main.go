@@ -540,11 +540,13 @@ func saveBooks(c *gin.Context) {
 }
 
 func listBooks(c *gin.Context) {
-	data, err := ioutil.ReadFile(filepath.Join(dataDir, "books.json"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+        data, err := ioutil.ReadFile(filepath.Join(dataDir, "books.json"))
+        if os.IsNotExist(err) {
+                data = []byte("[]")
+        } else if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
 	var books []map[string]interface{}
 	if err := json.Unmarshal(data, &books); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -576,11 +578,13 @@ func saveNews(c *gin.Context) {
 }
 
 func listNews(c *gin.Context) {
-	data, err := ioutil.ReadFile(filepath.Join(dataDir, "news.json"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+        data, err := ioutil.ReadFile(filepath.Join(dataDir, "news.json"))
+        if os.IsNotExist(err) {
+                data = []byte("[]")
+        } else if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }
 	var news []map[string]interface{}
 	if err := json.Unmarshal(data, &news); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
