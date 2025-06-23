@@ -50,3 +50,8 @@ To restore the default examples the server will automatically copy the
 JSON files from the repository if the corresponding files are missing in
 `data/`.
 
+You can change where this data is written by setting the `DATA_DIR`
+environment variable before running the backend. This is useful when
+deploying online so the files can live on a persistent volume and remain
+available across restarts.
+

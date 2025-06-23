@@ -25,3 +25,12 @@ defines helper functions used by `main.go`.
 
 The server listens on `localhost:8080`. Bind to your machine's IP address or
 `0.0.0.0` if you need to access it from other devices on your network.
+
+### Persistent data
+
+Uploaded books, tests and other editable content are stored inside the
+`data/` directory located at the project root. To keep this information in
+a custom location, set the `DATA_DIR` environment variable before starting
+the server. Pointing this variable to a directory on a mounted volume is the
+recommended way to ensure your files survive server restarts or moving the
+application online.
