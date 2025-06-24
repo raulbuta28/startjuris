@@ -1338,6 +1338,9 @@ export default function GrileAniAnteriori() {
                         onClick={() => setSelectedTestId(test.id)}
                       >
                         {test.name}
+                        {expDone[test.id] && (
+                          <span className="text-green-600 text-xs ml-1">✓</span>
+                        )}
                       </span>
                       <button
                         onClick={() => moveTest(test.id, -1)}
@@ -1358,9 +1361,6 @@ export default function GrileAniAnteriori() {
                       >
                         {loadingAllExp[test.id] ? '...' : 'Generează'}
                       </Button>
-                      {expDone[test.id] && (
-                        <span className="text-green-600 text-xs">✓</span>
-                      )}
                       {intervalOptions.map((opt) => (
                         <label key={opt.label} className="flex items-center space-x-1 text-xs">
                           <input

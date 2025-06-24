@@ -24,6 +24,18 @@ export function extractArticleNumbers(text: string): number[] {
   const alinRe = /alin\.\s*\(?\d{1,4}\)?/gi;
   text = text.replace(alinRe, ' ');
 
+  // Ignore references to points or letters such as "pct. 1" or "lit. a)"
+  const pctRe = /pct\.\s*\d{1,4}/gi;
+  text = text.replace(pctRe, ' ');
+  const punctRe = /punct(?:ul)?\s*\d{1,4}/gi;
+  text = text.replace(punctRe, ' ');
+  const litRe = /lit(?:era)?\.\s*[a-zăâîșț]/gi;
+  text = text.replace(litRe, ' ');
+
+  // Remove standalone numbers in parentheses that are not article numbers
+  const parenRe = /\(\s*\d{1,4}\s*\)/g;
+  text = text.replace(parenRe, ' ');
+
   const singleRe = new RegExp(`${artPattern}\\s*(\\d{1,4})`, 'gi');
   let m: RegExpExecArray | null;
   while ((m = singleRe.exec(text)) !== null) {
