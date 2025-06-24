@@ -826,12 +826,21 @@ export default function GrileAniAnteriori() {
     qIndex: number,
     sourceTestId: string,
   ) => {
-    if (!question.subject || !question.subject.trim()) {
+    // ensure we have articles and subject extracted from the explanation
+    let subject = question.subject?.trim();
+    let arts = question.articles || [];
+    if ((!subject || subject === "") && question.explanation) {
+      subject = detectSubject(question.explanation) || undefined;
+    }
+    if (arts.length === 0 && question.explanation) {
+      arts = extractArticleRanges(question.explanation);
+    }
+    if (!subject) {
       alert("Selectează materia apoi trimite grila");
       return;
     }
+
     const themeIds = new Set<string>();
-    const arts = question.articles || [];
     for (const art of arts) {
       const first = parseArticleStart(art);
       if (isNaN(first)) continue;
@@ -845,15 +854,19 @@ export default function GrileAniAnteriori() {
         }
       }
     }
-    const subject = question.subject.trim().toLowerCase();
-    Array.from(themeIds)
-      .filter((id) => {
-        const th = allThemes.find((t) => t.id === id);
-        return th && th.subject && th.subject.trim().toLowerCase() === subject;
-      })
-      .forEach((id) => {
-        addQuestionToTheme(question, id, sourceTestId, qIndex);
-      });
+    const matched = Array.from(themeIds).filter((id) => {
+      const th = allThemes.find((t) => t.id === id);
+      return th && th.subject && th.subject.trim().toLowerCase() === subject!.toLowerCase();
+    });
+
+    if (matched.length === 0) {
+      alert("Nu s-a găsit tema potrivită pentru articolele selectate");
+      return;
+    }
+
+    matched.forEach((id) => {
+      addQuestionToTheme({ ...question, articles: arts, subject }, id, sourceTestId, qIndex);
+    });
   };
 
   const publishTest = () => {
