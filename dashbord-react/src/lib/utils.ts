@@ -7,27 +7,27 @@ export function cn(...inputs: ClassValue[]) {
 
 export function extractArticleNumbers(text: string): number[] {
   const numbers: number[] = [];
+  const artPattern = '(?:art\\.?|articol(?:ul|ele)?)';
 
-  // Patterns like "1.697" should be treated as article 1697
-  const dottedRe = /\b(\d{1,3})\.(\d{2,3})\b/g;
+  // Patterns like "art. 1.697" should be treated as article 1697
+  const dottedRe = new RegExp(`${artPattern}\\s*(\\d{1,3})\\.(\\d{2,3})`, 'gi');
   text = text.replace(dottedRe, (_, a, b) => {
     numbers.push(parseInt(`${a}${b}`, 10));
     return ' ';
   });
 
-  const bulletRe = /(?:^|[\n\r])\s*\d+[.)]\s*(\d{1,4})/g;
-  text = text.replace(bulletRe, (_, n) => {
-    numbers.push(parseInt(n, 10));
-    return ' ';
-  });
+  // Remove bullet indexes like "1. Art. 10" so they don't get captured
+  const bulletRe = /(?:^|[\n\r])\s*\d+[.)]\s*/g;
+  text = text.replace(bulletRe, '\n');
 
   // Remove references to article paragraphs like "alin. (1)"
   const alinRe = /alin\.\s*\(?\d{1,4}\)?/gi;
   text = text.replace(alinRe, ' ');
 
-  const matches = text.match(/\b\d{1,4}\b/g) || [];
-  for (const m of matches) {
-    numbers.push(parseInt(m, 10));
+  const singleRe = new RegExp(`${artPattern}\\s*(\\d{1,4})`, 'gi');
+  let m: RegExpExecArray | null;
+  while ((m = singleRe.exec(text)) !== null) {
+    numbers.push(parseInt(m[1], 10));
   }
 
   return Array.from(new Set(numbers)).sort((a, b) => a - b);
@@ -52,7 +52,8 @@ export function collapseNumberRanges(nums: number[]): string[] {
 
 export function extractArticleRanges(text: string): string[] {
   const ranges: string[] = [];
-  const rangeRe = /(\d{1,4})\s*[–-]\s*(\d{1,4})/g;
+  const artPattern = '(?:art\\.?|articol(?:ul|ele)?)';
+  const rangeRe = new RegExp(`${artPattern}\\s*(\\d{1,4})\\s*[–-]\\s*(\\d{1,4})`, 'gi');
   text = text.replace(rangeRe, (_, a, b) => {
     const start = parseInt(a, 10);
     const end = parseInt(b, 10);
