@@ -814,6 +814,15 @@ export default function GrileAniAnteriori() {
     savePrevTestsRequest(updated);
   };
 
+  const deleteAllTests = () => {
+    if (!window.confirm('Sigur dorești să ștergi toate testele?')) return;
+    setSavedTests([]);
+    setTests([]);
+    setSelectedTestId(null);
+    setEditingTest(null);
+    savePrevTestsRequest([]);
+  };
+
   const moveTest = (id: string, dir: number) => {
     setSavedTests((prev) => {
       const idx = prev.findIndex((t) => t.id === id);
@@ -1324,9 +1333,14 @@ export default function GrileAniAnteriori() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Teste</h3>
-                  <Button onClick={generateExplanationsForAllTests} disabled={Object.values(loadingAllExp).some(Boolean)}>
-                    Generează pentru toate
-                  </Button>
+                  <div className="space-x-2">
+                    <Button onClick={generateExplanationsForAllTests} disabled={Object.values(loadingAllExp).some(Boolean)}>
+                      Generează pentru toate
+                    </Button>
+                    <Button variant="destructive" onClick={deleteAllTests}>
+                      Șterge toate
+                    </Button>
+                  </div>
                 </div>
                 <ul className="pl-4 space-y-1">
                 {savedTests
