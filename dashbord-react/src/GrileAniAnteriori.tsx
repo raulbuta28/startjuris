@@ -759,6 +759,10 @@ export default function GrileAniAnteriori() {
     qIndex: number,
     sourceTestId: string
   ) => {
+    if (!question.subject || !question.subject.trim()) {
+      alert('Selectează materia apoi trimite grila');
+      return;
+    }
     const themeIds = new Set<string>();
     const arts = question.articles || [];
     for (const art of arts) {
@@ -774,9 +778,15 @@ export default function GrileAniAnteriori() {
         }
       }
     }
-    themeIds.forEach((id) => {
-      addQuestionToTheme(question, id, sourceTestId, qIndex);
-    });
+    const subject = question.subject.trim().toLowerCase();
+    Array.from(themeIds)
+      .filter((id) => {
+        const th = allThemes.find((t) => t.id === id);
+        return th && th.subject && th.subject.trim().toLowerCase() === subject;
+      })
+      .forEach((id) => {
+        addQuestionToTheme(question, id, sourceTestId, qIndex);
+      });
   };
 
   const publishTest = () => {
@@ -1642,10 +1652,23 @@ export default function GrileAniAnteriori() {
                                 </option>
                               ))}
                             </select>
-                            <Button
-                              size="sm"
-                              onClick={() => {
+                              <Button
+                                size="sm"
+                                onClick={() => {
                                 if (!selectedThemeId) return;
+                                if (!q.subject || !q.subject.trim()) {
+                                  alert('Selectează materia apoi trimite grila');
+                                  return;
+                                }
+                                const th = allThemes.find((t) => t.id === selectedThemeId);
+                                if (
+                                  th &&
+                                  th.subject &&
+                                  q.subject.trim().toLowerCase() !== th.subject.trim().toLowerCase()
+                                ) {
+                                  alert('Materia grilei nu corespunde cu materia temei');
+                                  return;
+                                }
                                 addQuestionToTheme(q, selectedThemeId, selectedTestId!, qi);
                                 setAddMenuIndex(null);
                                 setSelectedThemeId('');
