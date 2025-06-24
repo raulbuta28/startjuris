@@ -1,42 +1,42 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function extractArticleNumbers(text: string): number[] {
   const numbers: number[] = [];
-  const artPattern = '(?:art\\.?|articol(?:ul|ele)?)';
+  const artPattern = "(?:art\\.?|articol(?:ul|ele)?)";
 
   // Patterns like "art. 1.697" should be treated as article 1697
-  const dottedRe = new RegExp(`${artPattern}\\s*(\\d{1,3})\\.(\\d{2,3})`, 'gi');
+  const dottedRe = new RegExp(`${artPattern}\\s*(\\d{1,3})\\.(\\d{2,3})`, "gi");
   text = text.replace(dottedRe, (_, a, b) => {
     numbers.push(parseInt(`${a}${b}`, 10));
-    return ' ';
+    return " ";
   });
 
   // Remove bullet indexes like "1. Art. 10" so they don't get captured
   const bulletRe = /(?:^|[\n\r])\s*\d+[.)]\s*/g;
-  text = text.replace(bulletRe, '\n');
+  text = text.replace(bulletRe, "\n");
 
   // Remove references to article paragraphs like "alin. (1)"
   const alinRe = /alin\.\s*\(?\d{1,4}\)?/gi;
-  text = text.replace(alinRe, ' ');
+  text = text.replace(alinRe, " ");
 
   // Ignore references to points or letters such as "pct. 1" or "lit. a)"
   const pctRe = /pct\.\s*\d{1,4}/gi;
-  text = text.replace(pctRe, ' ');
+  text = text.replace(pctRe, " ");
   const punctRe = /punct(?:ul)?\s*\d{1,4}/gi;
-  text = text.replace(punctRe, ' ');
+  text = text.replace(punctRe, " ");
   const litRe = /lit(?:era)?\.\s*[a-zăâîșț]/gi;
-  text = text.replace(litRe, ' ');
+  text = text.replace(litRe, " ");
 
   // Remove standalone numbers in parentheses that are not article numbers
   const parenRe = /\(\s*\d{1,4}\s*\)/g;
-  text = text.replace(parenRe, ' ');
+  text = text.replace(parenRe, " ");
 
-  const singleRe = new RegExp(`${artPattern}\\s*(\\d{1,4})`, 'gi');
+  const singleRe = new RegExp(`${artPattern}\\s*(\\d{1,4})`, "gi");
   let m: RegExpExecArray | null;
   while ((m = singleRe.exec(text)) !== null) {
     numbers.push(parseInt(m[1], 10));
@@ -64,60 +64,73 @@ export function collapseNumberRanges(nums: number[]): string[] {
 
 export function extractArticleRanges(text: string): string[] {
   const ranges: string[] = [];
-  const artPattern = '(?:art\\.?|articol(?:ul|ele)?)';
-  const rangeRe = new RegExp(`${artPattern}\\s*(\\d{1,4})\\s*[–-]\\s*(\\d{1,4})`, 'gi');
+  const artPattern = "(?:art\\.?|articol(?:ul|ele)?)";
+  const rangeRe = new RegExp(
+    `${artPattern}\\s*(\\d{1,4})\\s*[–-]\\s*(\\d{1,4})`,
+    "gi",
+  );
   text = text.replace(rangeRe, (_, a, b) => {
     const start = parseInt(a, 10);
     const end = parseInt(b, 10);
     if (!isNaN(start) && !isNaN(end)) {
       ranges.push(`${start}-${end}`);
     }
-    return ' ';
+    return " ";
   });
 
   const numbers = extractArticleNumbers(text);
   ranges.push(...collapseNumberRanges(numbers));
 
   return Array.from(new Set(ranges)).sort((a, b) => {
-    const as = parseInt(a.split('-')[0], 10);
-    const bs = parseInt(b.split('-')[0], 10);
+    const as = parseInt(a.split("-")[0], 10);
+    const bs = parseInt(b.split("-")[0], 10);
     return as - bs;
   });
 }
 
 export function rangeIncludes(range: string, n: number): boolean {
-  const [s, e] = range.split('-').map((x) => parseInt(x, 10));
+  const [s, e] = range.split("-").map((x) => parseInt(x, 10));
   if (isNaN(e)) return n === s;
   return n >= s && n <= e;
+}
+
+export function parseArticleStart(str: string): number {
+  const firstPart = str.split("-")[0];
+  const match = firstPart.match(/\d+/);
+  return match ? parseInt(match[0], 10) : NaN;
 }
 
 export function detectSubject(text: string): string | undefined {
   const lower = text.toLowerCase();
   if (
-    lower.includes('codul de procedura penala') ||
-    lower.includes('cod de procedura penala') ||
-    lower.includes('procedura penala') ||
+    lower.includes("codul de procedura penala") ||
+    lower.includes("cod de procedura penala") ||
+    lower.includes("procedura penala") ||
     /c\.?\s*proc\.?\s*pen/.test(lower) ||
     /\bcpp\b/.test(lower) ||
     /c\.pr\.pen/.test(lower)
   ) {
-    return 'Drept procesual penal';
+    return "Drept procesual penal";
   }
-  if (lower.includes('cod penal') || /\bcp\b/.test(lower)) {
-    return 'Drept penal';
+  if (lower.includes("cod penal") || /\bcp\b/.test(lower)) {
+    return "Drept penal";
   }
   if (
-    lower.includes('codul de procedura civila') ||
-    lower.includes('cod de procedura civila') ||
-    lower.includes('procedura civila') ||
+    lower.includes("codul de procedura civila") ||
+    lower.includes("cod de procedura civila") ||
+    lower.includes("procedura civila") ||
     /c\.?\s*proc\.?\s*civ/.test(lower) ||
     /\bcpc\b/.test(lower) ||
     /c\.pr\.civ/.test(lower)
   ) {
-    return 'Drept procesual civil';
+    return "Drept procesual civil";
   }
-  if (lower.includes('cod civil') || /\bcc\b/.test(lower) || /c\.\s*civ/.test(lower)) {
-    return 'Drept civil';
+  if (
+    lower.includes("cod civil") ||
+    /\bcc\b/.test(lower) ||
+    /c\.\s*civ/.test(lower)
+  ) {
+    return "Drept civil";
   }
   return undefined;
 }
