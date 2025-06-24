@@ -15,6 +15,7 @@ interface Test {
   questions: Question[];
   categories?: string[];
   order?: number;
+  articleInterval?: string;
 }
 
 const tabs: Tab[] = [
@@ -198,6 +199,18 @@ export default function GrileAniAnteriori() {
         }
       });
   }, []);
+
+  useEffect(() => {
+    setThemeRanges((prev) => {
+      const copy = { ...prev };
+      allThemes.forEach((t) => {
+        if (t.articleInterval !== undefined) {
+          copy[t.id] = t.articleInterval;
+        }
+      });
+      return copy;
+    });
+  }, [allThemes]);
 
   useEffect(() => {
     if (!allThemes.length) return;
@@ -732,6 +745,38 @@ export default function GrileAniAnteriori() {
         })
       );
     }
+  };
+
+  const saveThemeRange = (id: string) => {
+    const value = themeRanges[id] || '';
+    setAllThemes((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, articleInterval: value } : t))
+    );
+  };
+
+  const autoAssignQuestionToTheme = (
+    question: Question,
+    qIndex: number,
+    sourceTestId: string
+  ) => {
+    const themeIds = new Set<string>();
+    const arts = question.articles || [];
+    for (const art of arts) {
+      const first = parseInt(art.split('-')[0], 10);
+      if (isNaN(first)) continue;
+      for (const [id, rangesStr] of Object.entries(themeRanges)) {
+        const ranges = rangesStr
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean);
+        if (ranges.some((r) => rangeIncludes(r, first))) {
+          themeIds.add(id);
+        }
+      }
+    }
+    themeIds.forEach((id) => {
+      addQuestionToTheme(question, id, sourceTestId, qIndex);
+    });
   };
 
   const publishTest = () => {
@@ -1619,6 +1664,15 @@ export default function GrileAniAnteriori() {
                             + Adaugă în temă
                           </Button>
                         )}
+                        <button
+                          className="ml-2 text-blue-600"
+                          onClick={() =>
+                            selectedTestId &&
+                            autoAssignQuestionToTheme(q, qi, selectedTestId)
+                          }
+                        >
+                          <span className="material-icons text-sm">send</span>
+                        </button>
                       </div>
                     ))}
                 </>
@@ -2018,6 +2072,9 @@ export default function GrileAniAnteriori() {
                     setThemeRanges((prev) => ({ ...prev, [t.id]: e.target.value }))
                   }
                 />
+                <Button size="sm" onClick={() => saveThemeRange(t.id)}>
+                  Salvează
+                </Button>
               </div>
             ))}
           </div>
