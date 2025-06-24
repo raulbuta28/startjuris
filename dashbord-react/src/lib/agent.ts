@@ -10,7 +10,7 @@ export interface GrilaQuestion {
  */
 export async function explainQuestion(q: GrilaQuestion): Promise<string> {
   const prompt = `
-Citește cu atenție grila de mai jos, apoi explică de ce variantele greșite sunt greșite și de ce varianta/variantele corecte sunt corecte. Folosește DOAR informații din Codul civil, Codul penal, Codul de procedură civilă, Codul de procedură penală din baza KB și citează articolul/alin. exact. Evită informații externe. Răspunde în 3-5 fraze clare, compară explicit fiecare variantă. Explicația trebuie să fie puțin mai amplă, împărțită în paragrafe scurte si logice fara a pune denumiri statice sa para naturala fara a menționa conform codului (care o fi), ci asta menționezi doar atunci cand scrii articolul codul relevant și să includă definiția instituției juridice relevante extrasă din codul aplicabil.
+Citește cu atenție grila de mai jos, apoi explică de ce variantele greșite sunt greșite și de ce varianta/variantele corecte sunt corecte. Folosește DOAR informații din Codul civil, Codul penal, Codul de procedură civilă, Codul de procedură penală din baza KB și citează articolul/alin. exact. Evită informații externe. Răspunde în 3-5 fraze clare, compară explicit fiecare variantă. Explicația trebuie să fie logică si fara a menționa conform codului (care o fi).  
 
 Întrebare:
 ${q.text}
