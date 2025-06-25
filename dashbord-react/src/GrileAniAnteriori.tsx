@@ -75,6 +75,14 @@ export default function GrileAniAnteriori() {
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [loadingExp, setLoadingExp] = useState<Record<number, boolean>>({});
 
+  // Edit single question
+  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(
+    null,
+  );
+  const [editingQuestionData, setEditingQuestionData] = useState<Question | null>(
+    null,
+  );
+
   // Themes from "Teme" tab
   const [allThemes, setAllThemes] = useState<Test[]>([]);
   const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null);
@@ -680,9 +688,13 @@ export default function GrileAniAnteriori() {
         questions: [...copy[testIndex].questions],
       };
       t.questions = t.questions.map((q) => {
-        if (!q.explanation?.trim()) return q;
-        const articles = extractArticleRanges(q.explanation);
-        const subject = detectSubject(q.explanation) || q.subject;
+        let articles = q.articles ?? [];
+        let subject = q.subject;
+        if (articles.length === 0 && q.explanation?.trim()) {
+          articles = extractArticleRanges(q.explanation);
+          subject = detectSubject(q.explanation) || subject;
+        }
+        if (articles.length === 0) return { ...q, subject };
         const themeSet = new Set<string>();
         for (const art of articles) {
           const first = parseArticleStart(art);
@@ -1009,6 +1021,81 @@ export default function GrileAniAnteriori() {
       qs[index] = { ...qs[index], subject: current === subject ? "" : subject };
       copy[ti] = { ...copy[ti], questions: qs };
       return copy;
+    });
+  };
+
+  const startEditQuestion = (index: number) => {
+    if (!selectedTestId) return;
+    const test = savedTests.find((t) => t.id === selectedTestId);
+    if (!test) return;
+    setEditingQuestionData({ ...test.questions[index] });
+    setEditingQuestionIndex(index);
+  };
+
+  const cancelEditQuestion = () => {
+    setEditingQuestionIndex(null);
+    setEditingQuestionData(null);
+  };
+
+  const saveEditedQuestion = () => {
+    if (
+      editingQuestionIndex === null ||
+      !editingQuestionData ||
+      !selectedTestId
+    )
+      return;
+    setSavedTests((prev) => {
+      const copy = [...prev];
+      const ti = copy.findIndex((t) => t.id === selectedTestId);
+      if (ti === -1) return prev;
+      const qs = [...copy[ti].questions];
+      qs[editingQuestionIndex] = editingQuestionData;
+      copy[ti] = { ...copy[ti], questions: qs };
+      return copy;
+    });
+    cancelEditQuestion();
+  };
+
+  const updateEditingQuestion = (update: (q: Question) => Question) => {
+    setEditingQuestionData((prev) => (prev ? update(prev) : prev));
+  };
+
+  const toggleEditingQuestionCorrect = (ai: number) => {
+    updateEditingQuestion((q) => {
+      const corr = q.correct.includes(ai)
+        ? q.correct.filter((c) => c !== ai)
+        : [...q.correct, ai];
+      return { ...q, correct: corr };
+    });
+  };
+
+  const updateEditingAnswer = (ai: number, val: string) => {
+    updateEditingQuestion((q) => {
+      const ans = [...q.answers];
+      ans[ai] = val;
+      return { ...q, answers: ans };
+    });
+  };
+
+  const deleteEditingAnswer = (ai: number) => {
+    updateEditingQuestion((q) => {
+      const ans = q.answers.filter((_, i) => i !== ai);
+      const corr = q.correct.filter((c) => c !== ai).map((c) => (c > ai ? c - 1 : c));
+      return { ...q, answers: ans, correct: corr };
+    });
+  };
+
+  const addEditingAnswer = () => {
+    updateEditingQuestion((q) => ({ ...q, answers: [...q.answers, "" ] }));
+  };
+
+  const toggleEditingQuestionCategory = (cat: string) => {
+    updateEditingQuestion((q) => {
+      const current = q.categories ?? [...categoryOptions];
+      const updated = current.includes(cat)
+        ? current.filter((c) => c !== cat)
+        : [...current, cat];
+      return { ...q, categories: updated };
     });
   };
 
@@ -1768,145 +1855,258 @@ export default function GrileAniAnteriori() {
                     {savedTests
                       .find((t) => t.id === selectedTestId)
                       ?.questions.map((q, qi) => (
-                        <div
-                          key={qi}
-                          className={cn(
-                            "border-t pt-4 space-y-1",
-                            q.inTheme && "bg-green-100",
-                          )}
-                        >
-                          <p className="font-bold leading-tight">
-                            {qi + 1}. {q.text}
-                          </p>
-                          {q.answers.map((a, ai) => (
-                            <p key={ai} className="pl-4 leading-tight">
-                              {String.fromCharCode(65 + ai)}. {a}
-                            </p>
-                          ))}
-                          <p className="text-sm italic">
-                            Răspuns corect:{" "}
-                            {q.correct
-                              .map((c) => String.fromCharCode(65 + c))
-                              .join(", ")}
-                          </p>
-                          {q.note && (
-                            <p className="text-sm text-gray-600">
-                              Nota: {q.note}
-                            </p>
-                          )}
-                          {q.explanation && (
-                            <div className="text-sm space-y-1">
-                              <p className="font-medium">Explicație:</p>
-                              {q.explanation
-                                .split(/\n+/)
-                                .filter((p) => p.trim())
-                                .map((p, i) => (
-                                  <p key={i} className="indent-4">
-                                    {p}
-                                  </p>
-                                ))}
-                            </div>
-                          )}
-                          {(q.articles && q.articles.length > 0) || q.subject ? (
-                            <p className="text-sm text-gray-500">
-                              {q.articles && q.articles.length > 0 && (
-                                <>Articole: {q.articles.join("; ")} </>
-                              )}
-                              {q.subject && `Materia: ${q.subject}`}
-                            </p>
-                          ) : null}
-                          <div className="pl-4 flex flex-wrap gap-2 text-sm">
-                            {subjectOptions.map((s) => (
-                              <label key={s} className="flex items-center space-x-1">
+                        editingQuestionIndex === qi ? (
+                          <div
+                            key={qi}
+                            className="border-t pt-4 space-y-2 bg-gray-50"
+                          >
+                            <input
+                              className="border p-1 rounded w-full"
+                              value={editingQuestionData?.text || ""}
+                              onChange={(e) =>
+                                updateEditingQuestion((prev) => ({
+                                  ...prev,
+                                  text: e.target.value,
+                                }))
+                              }
+                            />
+                            {editingQuestionData?.answers.map((a, ai) => (
+                              <div key={ai} className="flex items-center space-x-2">
+                                <input
+                                  className="border p-1 rounded flex-1"
+                                  value={a}
+                                  onChange={(e) =>
+                                    updateEditingAnswer(ai, e.target.value)
+                                  }
+                                />
                                 <input
                                   type="checkbox"
-                              checked={q.subject === s}
-                              onChange={() => setQuestionSubject(qi, s)}
-                            />
-                            <span>{s}</span>
-                          </label>
-                        ))}
-                      </div>
-                      {(q.themes?.length || q.theme) && (
-                        <p className="text-sm text-gray-500">
-                          Stabilire tema:{" "}
-                          {q.themes ? q.themes.join(", ") : q.theme}
-                        </p>
-                          )}
-                          {addMenuIndex === qi ? (
-                            <div className="flex items-center space-x-2 pl-4">
-                              <select
-                                className="border p-1 rounded flex-1"
-                                value={selectedThemeId}
-                                onChange={(e) =>
-                                  setSelectedThemeId(e.target.value)
-                                }
-                              >
-                                <option value="">Selectează tema</option>
-                                {allThemes.map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.name}
-                                    {t.subject ? ` - ${t.subject}` : ""}
-                                  </option>
-                                ))}
-                              </select>
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  if (!selectedThemeId) return;
-                                  if (!q.subject || !q.subject.trim()) {
-                                    alert(
-                                      "Selectează materia apoi trimite grila",
-                                    );
-                                    return;
-                                  }
-                                  const th = allThemes.find(
-                                    (t) => t.id === selectedThemeId,
-                                  );
-                                  if (
-                                    th &&
-                                    th.subject &&
-                                    q.subject.trim().toLowerCase() !==
-                                      th.subject.trim().toLowerCase()
-                                  ) {
-                                    alert(
-                                      "Materia grilei nu corespunde cu materia temei",
-                                    );
-                                    return;
-                                  }
-                                  addQuestionToTheme(
-                                    q,
-                                    selectedThemeId,
-                                    selectedTestId!,
-                                    qi,
-                                  );
-                                  setAddMenuIndex(null);
-                                  setSelectedThemeId("");
-                                }}
-                              >
-                                Adaugă
-                              </Button>
-                            </div>
-                          ) : (
+                                  checked={editingQuestionData.correct.includes(ai)}
+                                  onChange={() => toggleEditingQuestionCorrect(ai)}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteEditingAnswer(ai)}
+                                >
+                                  Șterge
+                                </Button>
+                              </div>
+                            ))}
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="ml-4"
-                              onClick={() => setAddMenuIndex(qi)}
+                              onClick={addEditingAnswer}
                             >
-                              + Adaugă în temă
+                              + Adaugă răspuns
                             </Button>
-                          )}
-                          <button
-                            className="ml-2 text-blue-600"
-                            onClick={() =>
-                              selectedTestId &&
-                              autoAssignQuestionToTheme(q, qi, selectedTestId)
-                            }
+                            <textarea
+                              className="w-full border rounded p-2 mt-2"
+                              placeholder="Nota"
+                              value={editingQuestionData?.note || ""}
+                              onChange={(e) =>
+                                updateEditingQuestion((prev) => ({
+                                  ...prev,
+                                  note: e.target.value,
+                                }))
+                              }
+                            />
+                            <textarea
+                              className="w-full border rounded p-2 mt-2"
+                              placeholder="Explicație"
+                              value={editingQuestionData?.explanation || ""}
+                              onChange={(e) =>
+                                updateEditingQuestion((prev) => ({
+                                  ...prev,
+                                  explanation: e.target.value,
+                                }))
+                              }
+                            />
+                            <input
+                              className="w-full border rounded p-2 mt-2"
+                              placeholder="Materia"
+                              value={editingQuestionData?.subject || ""}
+                              onChange={(e) =>
+                                updateEditingQuestion((prev) => ({
+                                  ...prev,
+                                  subject: e.target.value,
+                                }))
+                              }
+                            />
+                            <input
+                              className="w-full border rounded p-2 mt-2"
+                              placeholder="Articole"
+                              value={(editingQuestionData?.articles || []).join(", ")}
+                              onChange={(e) =>
+                                updateEditingQuestion((prev) => ({
+                                  ...prev,
+                                  articles: e.target.value
+                                    .split(",")
+                                    .map((x) => x.trim())
+                                    .filter(Boolean),
+                                }))
+                              }
+                            />
+                            <div className="flex items-center space-x-2 mt-1">
+                              {categoryOptions.map((cat) => (
+                                <label key={cat} className="flex items-center space-x-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      editingQuestionData?.categories?.includes(cat) ||
+                                      false
+                                    }
+                                    onChange={() => toggleEditingQuestionCategory(cat)}
+                                  />
+                                  <span>{cat}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <div className="space-x-2">
+                              <Button size="sm" variant="secondary" onClick={saveEditedQuestion}>
+                                Salvează modificările
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEditQuestion}>
+                                Renunță
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            key={qi}
+                            className={cn(
+                              "border-t pt-4 space-y-1",
+                              q.inTheme && "bg-green-100",
+                            )}
                           >
-                            <span className="material-icons text-sm">send</span>
-                          </button>
-                        </div>
+                            <p className="font-bold leading-tight">
+                              {qi + 1}. {q.text}
+                            </p>
+                            {q.answers.map((a, ai) => (
+                              <p key={ai} className="pl-4 leading-tight">
+                                {String.fromCharCode(65 + ai)}. {a}
+                              </p>
+                            ))}
+                            <p className="text-sm italic">
+                              Răspuns corect:{" "}
+                              {q.correct
+                                .map((c) => String.fromCharCode(65 + c))
+                                .join(", ")}
+                            </p>
+                            {q.note && (
+                              <p className="text-sm text-gray-600">Nota: {q.note}</p>
+                            )}
+                            {q.explanation && (
+                              <div className="text-sm space-y-1">
+                                <p className="font-medium">Explicație:</p>
+                                {q.explanation
+                                  .split(/\n+/)
+                                  .filter((p) => p.trim())
+                                  .map((p, i) => (
+                                    <p key={i} className="indent-4">
+                                      {p}
+                                    </p>
+                                  ))}
+                              </div>
+                            )}
+                            {(q.articles && q.articles.length > 0) || q.subject ? (
+                              <p className="text-sm text-gray-500">
+                                {q.articles && q.articles.length > 0 && (
+                                  <>Articole: {q.articles.join("; ")} </>
+                                )}
+                                {q.subject && `Materia: ${q.subject}`}
+                              </p>
+                            ) : null}
+                            <div className="pl-4 flex flex-wrap gap-2 text-sm">
+                              {subjectOptions.map((s) => (
+                                <label key={s} className="flex items-center space-x-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={q.subject === s}
+                                    onChange={() => setQuestionSubject(qi, s)}
+                                  />
+                                  <span>{s}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {(q.themes?.length || q.theme) && (
+                              <p className="text-sm text-gray-500">
+                                Stabilire tema:{" "}
+                                {q.themes ? q.themes.join(", ") : q.theme}
+                              </p>
+                            )}
+                            {addMenuIndex === qi ? (
+                              <div className="flex items-center space-x-2 pl-4">
+                                <select
+                                  className="border p-1 rounded flex-1"
+                                  value={selectedThemeId}
+                                  onChange={(e) => setSelectedThemeId(e.target.value)}
+                                >
+                                  <option value="">Selectează tema</option>
+                                  {allThemes.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.name}
+                                      {t.subject ? ` - ${t.subject}` : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!selectedThemeId) return;
+                                    if (!q.subject || !q.subject.trim()) {
+                                      alert("Selectează materia apoi trimite grila");
+                                      return;
+                                    }
+                                    const th = allThemes.find((t) => t.id === selectedThemeId);
+                                    if (
+                                      th &&
+                                      th.subject &&
+                                      q.subject.trim().toLowerCase() !==
+                                        th.subject.trim().toLowerCase()
+                                    ) {
+                                      alert(
+                                        "Materia grilei nu corespunde cu materia temei",
+                                      );
+                                      return;
+                                    }
+                                    addQuestionToTheme(q, selectedThemeId, selectedTestId!, qi);
+                                    setAddMenuIndex(null);
+                                    setSelectedThemeId("");
+                                  }}
+                                >
+                                  Adaugă
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="ml-4"
+                                onClick={() => setAddMenuIndex(qi)}
+                              >
+                                + Adaugă în temă
+                              </Button>
+                            )}
+                            <button
+                              className="ml-2 text-blue-600"
+                              onClick={() =>
+                                selectedTestId &&
+                                autoAssignQuestionToTheme(q, qi, selectedTestId)
+                              }
+                            >
+                              <span className="material-icons text-sm">send</span>
+                            </button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-2"
+                              onClick={() => startEditQuestion(qi)}
+                            >
+                              Editează
+                            </Button>
+                          </div>
+                        )
                       ))}
                   </>
                 )}
