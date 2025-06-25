@@ -719,6 +719,55 @@ export default function GrileAniAnteriori() {
     });
   };
 
+  const assignArticleForQuestion = (qi: number) => {
+    if (!selectedTestId) return;
+    const testIndex = savedTests.findIndex((t) => t.id === selectedTestId);
+    if (testIndex === -1) return;
+    setSavedTests((prev) => {
+      const copy = [...prev];
+      const t = {
+        ...copy[testIndex],
+        questions: [...copy[testIndex].questions],
+      };
+      let q = { ...t.questions[qi] };
+      let articles = q.articles ?? [];
+      const subject = q.subject;
+      if (!subject || !subject.trim()) {
+        alert("Selectează materia înainte de a genera articolul");
+        return prev;
+      }
+      if (articles.length === 0 && q.explanation?.trim()) {
+        articles = extractArticleRanges(q.explanation);
+      }
+      if (articles.length === 0) {
+        alert("Nu s-a găsit articol în explicație");
+        return prev;
+      }
+      articles = [articles[0]];
+      const themeSet = new Set<string>();
+      for (const art of articles) {
+        const first = parseArticleStart(art);
+        if (isNaN(first)) continue;
+        for (const [id, rangesStr] of Object.entries(themeRanges)) {
+          const ranges = rangesStr
+            .split(",")
+            .map((r) => r.trim())
+            .filter(Boolean);
+          if (ranges.some((r) => rangeIncludes(r, first))) {
+            const th = allThemes.find((x) => x.id === id);
+            if (th) themeSet.add(th.name);
+          }
+        }
+      }
+      const themes = Array.from(themeSet);
+      const theme = themes[0];
+      q = { ...q, articles, theme, themes, subject };
+      t.questions[qi] = q;
+      copy[testIndex] = t;
+      return copy;
+    });
+  };
+
   const shouldAssignSubject = (index: number) => {
     const nr = index + 1;
     if (subjectIntervals.length === 0) return true;
@@ -2097,6 +2146,14 @@ export default function GrileAniAnteriori() {
                             >
                               <span className="material-icons text-sm">send</span>
                             </button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="ml-2"
+                              onClick={() => assignArticleForQuestion(qi)}
+                            >
+                              Articol AI
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
