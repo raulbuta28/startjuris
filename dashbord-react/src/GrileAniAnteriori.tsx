@@ -85,6 +85,13 @@ export default function GrileAniAnteriori() {
     { label: "1-20", start: 1, end: 20 },
     { label: "51-100", start: 51, end: 100 },
   ];
+
+  const subjectOptions = [
+    "Drept civil",
+    "Drept procesual civil",
+    "Drept penal",
+    "Drept procesual penal",
+  ];
   const [selectedIntervals, setSelectedIntervals] = useState<string[]>([]);
   const [loadingAllExp, setLoadingAllExp] = useState<Record<string, boolean>>(
     {},
@@ -991,6 +998,20 @@ export default function GrileAniAnteriori() {
     );
   };
 
+  const setQuestionSubject = (index: number, subject: string) => {
+    if (!selectedTestId) return;
+    setSavedTests((prev) => {
+      const copy = [...prev];
+      const ti = copy.findIndex((t) => t.id === selectedTestId);
+      if (ti === -1) return prev;
+      const qs = [...copy[ti].questions];
+      const current = qs[index].subject;
+      qs[index] = { ...qs[index], subject: current === subject ? "" : subject };
+      copy[ti] = { ...copy[ti], questions: qs };
+      return copy;
+    });
+  };
+
   const renderTab = () => {
     switch (active) {
       case "creare":
@@ -1786,8 +1807,7 @@ export default function GrileAniAnteriori() {
                                 ))}
                             </div>
                           )}
-                          {(q.articles && q.articles.length > 0) ||
-                          q.subject ? (
+                          {(q.articles && q.articles.length > 0) || q.subject ? (
                             <p className="text-sm text-gray-500">
                               {q.articles && q.articles.length > 0 && (
                                 <>Articole: {q.articles.join("; ")} </>
@@ -1795,11 +1815,23 @@ export default function GrileAniAnteriori() {
                               {q.subject && `Materia: ${q.subject}`}
                             </p>
                           ) : null}
-                          {(q.themes?.length || q.theme) && (
-                            <p className="text-sm text-gray-500">
-                              Stabilire tema:{" "}
-                              {q.themes ? q.themes.join(", ") : q.theme}
-                            </p>
+                          <div className="pl-4 flex flex-wrap gap-2 text-sm">
+                            {subjectOptions.map((s) => (
+                              <label key={s} className="flex items-center space-x-1">
+                                <input
+                                  type="checkbox"
+                              checked={q.subject === s}
+                              onChange={() => setQuestionSubject(qi, s)}
+                            />
+                            <span>{s}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {(q.themes?.length || q.theme) && (
+                        <p className="text-sm text-gray-500">
+                          Stabilire tema:{" "}
+                          {q.themes ? q.themes.join(", ") : q.theme}
+                        </p>
                           )}
                           {addMenuIndex === qi ? (
                             <div className="flex items-center space-x-2 pl-4">
