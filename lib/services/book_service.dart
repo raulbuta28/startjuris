@@ -12,9 +12,34 @@ class AdminBook {
 
   factory AdminBook.fromJson(Map<String, dynamic> json) {
     String image = (json['image'] as String?)?.replaceFirst('../', '') ?? '';
-    if (!image.startsWith('http') && !image.startsWith('assets/')) {
+
+    // If the image URL is absolute but points to localhost, replace the host
+    // with the configured API host so that the image can be loaded on a device.
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      try {
+        final uri = Uri.parse(image);
+        if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
+          final base = Uri.parse(ApiService.baseUrl);
+          image = uri.replace(host: base.host, port: base.port).toString();
+        }
+      } catch (_) {
+        // fall through and keep the original image value
+      }
+    } else if (image.startsWith('/uploads') || image.startsWith('uploads/')) {
+      // For relative upload paths, prefix with the API host
+      final base = Uri.parse(ApiService.baseUrl);
+      final path = image.startsWith('/') ? image.substring(1) : image;
+      image = Uri(
+        scheme: base.scheme,
+        host: base.host,
+        port: base.port,
+        path: path,
+      ).toString();
+    } else if (!image.startsWith('assets/')) {
+      // Local bundled asset
       image = 'assets/' + image;
     }
+
     return AdminBook(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
