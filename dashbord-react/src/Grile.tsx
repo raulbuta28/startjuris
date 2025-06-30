@@ -39,6 +39,7 @@ type Question = {
   note: string;
   explanation?: string;
   categories?: string[];
+  verified?: boolean;
 };
 
 export default function Grile() {
@@ -73,6 +74,10 @@ export default function Grile() {
   const [manualExplanation, setManualExplanation] = useState('');
   const [manualTestId, setManualTestId] = useState('');
 
+  // Move question between themes
+  const [moveIndex, setMoveIndex] = useState<number | null>(null);
+  const [moveTargetId, setMoveTargetId] = useState('');
+
 
   const toggleQuestionCategory = (
     qi: number,
@@ -103,6 +108,7 @@ export default function Grile() {
           questions: (t.questions ?? []).map((q: any) => ({
             ...q,
             categories: q.categories ?? ['INM', 'Barou', 'INR'],
+            verified: q.verified ?? false,
           })),
         }));
         setSavedTests(withDefaults);
@@ -121,6 +127,7 @@ export default function Grile() {
               questions: (t.questions ?? []).map((q: any) => ({
                 ...q,
                 categories: q.categories ?? ['INM', 'Barou', 'INR'],
+                verified: q.verified ?? false,
               })),
             }));
             setSavedTests(withDefaults);
@@ -226,6 +233,7 @@ export default function Grile() {
           note: "",
           explanation: "",
           categories: [...categoryOptions],
+          verified: false,
         };
         continue;
       }
@@ -240,6 +248,7 @@ export default function Grile() {
           note: "",
           explanation: "",
           categories: [...categoryOptions],
+          verified: false,
         };
         continue;
       }
@@ -254,6 +263,7 @@ export default function Grile() {
             note: "",
             explanation: "",
             categories: [...categoryOptions],
+            verified: false,
           };
         }
         current.answers.push(aMatch[2] || aMatch[1]);
@@ -353,6 +363,48 @@ export default function Grile() {
     }, isEditing);
   };
 
+  const toggleVerified = (qi: number, isEditing = false) => {
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        const qs = [...prev.questions];
+        qs[qi] = { ...qs[qi], verified: !qs[qi].verified };
+        return { ...prev, questions: qs };
+      });
+    } else if (selectedTestId) {
+      setSavedTests((prev) =>
+        prev.map((t) => {
+          if (t.id !== selectedTestId) return t;
+          const qs = [...t.questions];
+          qs[qi] = { ...qs[qi], verified: !qs[qi].verified };
+          return { ...t, questions: qs };
+        })
+      );
+    }
+  };
+
+  const moveQuestionToTest = (
+    sourceId: string,
+    qIndex: number,
+    targetId: string
+  ) => {
+    if (!targetId) return;
+    setSavedTests((prev) => {
+      const sIdx = prev.findIndex((t) => t.id === sourceId);
+      const tIdx = prev.findIndex((t) => t.id === targetId);
+      if (sIdx === -1 || tIdx === -1) return prev;
+      const from = { ...prev[sIdx], questions: [...prev[sIdx].questions] };
+      const to = { ...prev[tIdx], questions: [...prev[tIdx].questions] };
+      const [q] = from.questions.splice(qIndex, 1);
+      if (!q) return prev;
+      to.questions.push(q);
+      const arr = [...prev];
+      arr[sIdx] = from;
+      arr[tIdx] = to;
+      return arr;
+    });
+  };
+
   const addQuestion = (isEditing = false) => {
     const newQ: Question = {
       text: "",
@@ -361,6 +413,7 @@ export default function Grile() {
       note: "",
       explanation: "",
       categories: [...categoryOptions],
+      verified: false,
     };
     updateQuestionsState((prev) => [...prev, newQ], isEditing);
     setEditingQuestions((s) => ({
@@ -407,6 +460,7 @@ export default function Grile() {
       note: '',
       explanation: manualExplanation.trim(),
       categories: [...categoryOptions],
+      verified: false,
     };
     setSavedTests((prev) =>
       prev.map((t) => (t.id === manualTestId ? { ...t, questions: [...t.questions, newQ] } : t))
@@ -1086,9 +1140,20 @@ export default function Grile() {
                     .find((t) => t.id === selectedTestId)
                     ?.questions.map((q, qi) => (
                       <div key={qi} className="border-t pt-4 space-y-1">
-                        <p className="font-bold leading-tight">
-                          {qi + 1}. {q.text}
-                        </p>
+                        <div className="flex items-start">
+                          <p className="flex-1 font-bold leading-tight">
+                            {qi + 1}. {q.text}{" "}
+                            {q.verified && (
+                              <span className="text-green-600 ml-1">✓</span>
+                            )}
+                          </p>
+                          <input
+                            type="checkbox"
+                            className="mt-1 mr-2"
+                            checked={q.verified || false}
+                            onChange={() => toggleVerified(qi)}
+                          />
+                        </div>
                         {q.answers.map((a, ai) => (
                           <p key={ai} className="pl-4 leading-tight">
                             {String.fromCharCode(65 + ai)}. {a}
@@ -1115,6 +1180,55 @@ export default function Grile() {
                                 </p>
                               ))}
                           </div>
+                        )}
+                        {moveIndex === qi ? (
+                          <div className="pl-4 flex items-center space-x-2">
+                            <select
+                              className="border p-1 rounded flex-1"
+                              value={moveTargetId}
+                              onChange={(e) => setMoveTargetId(e.target.value)}
+                            >
+                              <option value="">Selectează tema</option>
+                              {savedTests
+                                .filter((t) => t.id !== selectedTestId)
+                                .map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name} - {t.subject}
+                                  </option>
+                                ))}
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (!moveTargetId || selectedTestId === null)
+                                  return;
+                                moveQuestionToTest(selectedTestId, qi, moveTargetId);
+                                setMoveIndex(null);
+                                setMoveTargetId('');
+                              }}
+                            >
+                              Trimite
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setMoveIndex(null);
+                                setMoveTargetId('');
+                              }}
+                            >
+                              Renunță
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="ml-4"
+                            onClick={() => setMoveIndex(qi)}
+                          >
+                            Mutare grilă
+                          </Button>
                         )}
                       </div>
                     ))}
@@ -1190,8 +1304,17 @@ export default function Grile() {
                       ) : (
                         <div className="flex items-center space-x-2">
                           <p className="flex-1 font-bold leading-tight">
-                            {qi + 1}. {q.text}
+                            {qi + 1}. {q.text}{" "}
+                            {q.verified && (
+                              <span className="text-green-600 ml-1">✓</span>
+                            )}
                           </p>
+                          <input
+                            type="checkbox"
+                            className="mr-2"
+                            checked={q.verified || false}
+                            onChange={() => toggleVerified(qi, true)}
+                          />
                           <Button
                             size="sm"
                             variant="ghost"
@@ -1401,6 +1524,54 @@ export default function Grile() {
                           </label>
                         ))}
                       </div>
+                      {moveIndex === qi ? (
+                        <div className="flex items-center space-x-2 mt-2">
+                          <select
+                            className="border p-1 rounded flex-1"
+                            value={moveTargetId}
+                            onChange={(e) => setMoveTargetId(e.target.value)}
+                          >
+                            <option value="">Selectează tema</option>
+                            {savedTests
+                              .filter((t) => t.id !== editingTest!.id)
+                              .map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name} - {t.subject}
+                                </option>
+                              ))}
+                          </select>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              if (!moveTargetId) return;
+                              moveQuestionToTest(editingTest!.id, qi, moveTargetId);
+                              setMoveIndex(null);
+                              setMoveTargetId('');
+                            }}
+                          >
+                            Trimite
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setMoveIndex(null);
+                              setMoveTargetId('');
+                            }}
+                          >
+                            Renunță
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setMoveIndex(qi)}
+                        >
+                          Mutare grilă
+                        </Button>
+                      )}
                     </div>
                   ))}
                   <div className="text-right">
