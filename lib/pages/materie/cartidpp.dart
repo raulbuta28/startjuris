@@ -67,7 +67,10 @@ class CartiDPP extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => carte.file.isNotEmpty
-                          ? EbookReaderPage(title: carte.title, url: carte.file)
+                          ? PremiumEbookReaderPage(
+                              title: carte.title,
+                              url: carte.file,
+                            )
                           : PovesterePage(
                               titlu: carte.title,
                               imagine: carte.image,

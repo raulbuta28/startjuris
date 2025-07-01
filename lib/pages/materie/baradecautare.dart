@@ -213,7 +213,7 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
         context,
         MaterialPageRoute(
           builder: (_) => book.file.isNotEmpty
-              ? EbookReaderPage(title: book.title, url: book.file)
+              ? PremiumEbookReaderPage(title: book.title, url: book.file)
               : PovesterePage(
                   titlu: book.title,
                   imagine: book.image,
