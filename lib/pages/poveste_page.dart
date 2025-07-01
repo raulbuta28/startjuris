@@ -28,12 +28,12 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
   bool _isReaderMode = false;
   
   // Local state management
-  double _fontSize = 16.0;
-  double _lineHeight = 1.5;
+  double _fontSize = 18.0;
+  double _lineHeight = 1.3;
   bool _isDarkMode = false;
   Color _backgroundColor = Colors.white;
   Color _textColor = Colors.black87;
-  String _fontFamily = 'Roboto';
+  String _fontFamily = GoogleFonts.openSans().fontFamily;
 
   @override
   void initState() {
@@ -117,7 +117,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
         ),
         title: Text(
           widget.titlu,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.openSans(
             color: _textColor,
             fontWeight: FontWeight.w600,
           ),
@@ -140,8 +140,22 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
             },
           ),
           IconButton(
-            icon: Icon(Icons.settings_outlined, color: _textColor),
             onPressed: _showSettingsModal,
+            icon: Container(
+              decoration: BoxDecoration(
+                color: _isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              padding: const EdgeInsets.all(6),
+              child: Icon(Icons.settings, color: _textColor),
+            ),
           ),
         ],
       ),
@@ -150,43 +164,10 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              if (!_isReaderMode)
-                SliverToBoxAdapter(
-                  child: Hero(
-                    tag: widget.imagine,
-                    child: Image.asset(
-                      widget.imagine,
-                      width: double.infinity,
-                      height: 300,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
               SliverToBoxAdapter(
-                child: AnimatedPadding(
-                  duration: const Duration(milliseconds: 300),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: _isReaderMode ? 40 : 20,
-                    vertical: _isReaderMode ? 40 : 20,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!_isReaderMode) ...[
-                        const SizedBox(height: 20),
-                        Text(
-                          widget.titlu,
-                          style: GoogleFonts.roboto(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: _textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                      _buildContent(),
-                    ],
-                  ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  child: _buildContent(),
                 ),
               ),
             ],
@@ -211,7 +192,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
                     const SizedBox(width: 16),
                     Text(
                       '${widget.progress.toStringAsFixed(0)}%',
-                      style: GoogleFonts.roboto(
+                      style: GoogleFonts.openSans(
                         color: _textColor,
                         fontWeight: FontWeight.w500,
                       ),
@@ -241,7 +222,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
             children: [
               Text(
                 'Setări citire',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.openSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: _textColor,
@@ -250,7 +231,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
               const SizedBox(height: 20),
               Text(
                 'Dimensiune text',
-                style: GoogleFonts.roboto(color: _textColor),
+                style: GoogleFonts.openSans(color: _textColor),
               ),
               Slider(
                 value: _fontSize,
@@ -266,7 +247,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
               const SizedBox(height: 20),
               Text(
                 'Înălțime rânduri',
-                style: GoogleFonts.roboto(color: _textColor),
+                style: GoogleFonts.openSans(color: _textColor),
               ),
               Slider(
                 value: _lineHeight,
@@ -282,7 +263,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
               const SizedBox(height: 20),
               Text(
                 'Mod citire',
-                style: GoogleFonts.roboto(color: _textColor),
+                style: GoogleFonts.openSans(color: _textColor),
               ),
               const SizedBox(height: 10),
               Row(
@@ -346,7 +327,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
           const SizedBox(height: 8),
           Text(
             label,
-            style: GoogleFonts.roboto(color: _textColor),
+            style: GoogleFonts.openSans(color: _textColor),
           ),
         ],
       ),
