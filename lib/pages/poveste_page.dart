@@ -312,7 +312,7 @@ class _PovesteRePageState extends State<PovesterePage>
                   children: [
                     Text(
                       'Pagina \$_currentPage din \$_totalPages',
-                      style: GoogleFonts.sfProText(
+                      style: GoogleFonts.inter(
                         color: _textColor.withOpacity(0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -321,7 +321,7 @@ class _PovesteRePageState extends State<PovesterePage>
                     const Spacer(),
                     Text(
                       '\${_currentProgress.toStringAsFixed(0)}%',
-                      style: GoogleFonts.sfProText(
+                      style: GoogleFonts.inter(
                         color: _accentColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -359,14 +359,14 @@ class _PovesteRePageState extends State<PovesterePage>
                   children: [
                     Text(
                       '\${_wordsRead} cuvinte citite',
-                      style: GoogleFonts.sfProText(
+                      style: GoogleFonts.inter(
                         color: _textColor.withOpacity(0.6),
                         fontSize: 12,
                       ),
                     ),
                     Text(
                       '~\${(_estimatedTimeLeft.inMinutes * (1 - _currentProgress / 100)).round()} min rămas',
-                      style: GoogleFonts.sfProText(
+                      style: GoogleFonts.inter(
                         color: _textColor.withOpacity(0.6),
                         fontSize: 12,
                       ),
@@ -406,7 +406,7 @@ class _PovesteRePageState extends State<PovesterePage>
               children: [
                 Text(
                   'Statistici citire',
-                  style: GoogleFonts.sfProDisplay(
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: _textColor,
@@ -455,7 +455,7 @@ class _PovesteRePageState extends State<PovesterePage>
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.sfProDisplay(
+          style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: _textColor,
@@ -463,7 +463,7 @@ class _PovesteRePageState extends State<PovesterePage>
         ),
         Text(
           label,
-          style: GoogleFonts.sfProText(
+          style: GoogleFonts.inter(
             fontSize: 12,
             color: _textColor.withOpacity(0.6),
           ),
@@ -562,7 +562,7 @@ class _PovesteRePageState extends State<PovesterePage>
       ),
       title: Text(
         widget.titlu,
-        style: GoogleFonts.sfProDisplay(
+        style: GoogleFonts.inter(
           color: _textColor,
           fontWeight: FontWeight.w600,
           fontSize: 17,
@@ -689,7 +689,7 @@ class _PovesteRePageState extends State<PovesterePage>
           const SizedBox(height: 20),
           Text(
             'Setări citire premium',
-            style: GoogleFonts.sfProDisplay(
+            style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: _textColor,
@@ -749,7 +749,7 @@ class _PovesteRePageState extends State<PovesterePage>
       children: [
         Text(
           title,
-          style: GoogleFonts.sfProDisplay(
+          style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: _textColor,
@@ -852,7 +852,7 @@ class _PovesteRePageState extends State<PovesterePage>
                 const SizedBox(height: 8),
                 Text(
                   theme['name'] as String,
-                  style: GoogleFonts.sfProText(
+                  style: GoogleFonts.inter(
                     color: _textColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -882,7 +882,7 @@ class _PovesteRePageState extends State<PovesterePage>
           children: [
             Text(
               label,
-              style: GoogleFonts.sfProText(
+              style: GoogleFonts.inter(
                 color: _textColor.withOpacity(0.8),
                 fontSize: 16,
               ),
@@ -895,7 +895,7 @@ class _PovesteRePageState extends State<PovesterePage>
               ),
               child: Text(
                 displayValue,
-                style: GoogleFonts.sfProText(
+                style: GoogleFonts.inter(
                   color: _accentColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
