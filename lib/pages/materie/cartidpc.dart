@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../poveste_page.dart';
+import '../ebook_reader_page.dart';
 import '../../services/book_service.dart';
 
 class CartiDPC extends StatelessWidget {
@@ -65,12 +66,14 @@ class CartiDPC extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PovesterePage(
-                        titlu: carte.title,
-                        imagine: carte.image,
-                        continut: carte.content,
-                        progress: 0.0,
-                      ),
+                      builder: (context) => carte.file.isNotEmpty
+                          ? EbookReaderPage(title: carte.title, url: carte.file)
+                          : PovesterePage(
+                              titlu: carte.title,
+                              imagine: carte.image,
+                              continut: carte.content,
+                              progress: 0.0,
+                            ),
                     ),
                   );
                 },

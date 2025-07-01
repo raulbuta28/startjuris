@@ -991,6 +991,125 @@ func uploadBookImage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
+func uploadBookFile(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing file"})
+		return
+	}
+
+	os.MkdirAll("uploads/ebooks", os.ModePerm)
+	fname := uuid.New().String() + filepath.Ext(file.Filename)
+	path := filepath.Join("uploads", "ebooks", fname)
+	if err := c.SaveUploadedFile(file, path); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
+		return
+	}
+
+	cover := extractEpubCover(path)
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	host := c.Request.Host
+
+	resp := gin.H{
+		"fileUrl": fmt.Sprintf("%s://%s/uploads/ebooks/%s", scheme, host, fname),
+	}
+	if cover != "" {
+		resp["coverUrl"] = fmt.Sprintf("%s://%s/%s", scheme, host, cover)
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func extractEpubCover(epubPath string) string {
+	r, err := zip.OpenReader(epubPath)
+	if err != nil {
+		return ""
+	}
+	defer r.Close()
+
+	var opfPath string
+	for _, f := range r.File {
+		if f.Name == "META-INF/container.xml" {
+			rc, _ := f.Open()
+			data, _ := io.ReadAll(rc)
+			rc.Close()
+			type rootfiles struct {
+				Rootfiles struct {
+					Rootfile struct {
+						FullPath string `xml:"full-path,attr"`
+					} `xml:"rootfile"`
+				} `xml:"rootfiles"`
+			}
+			var c rootfiles
+			if xml.Unmarshal(data, &c) == nil {
+				opfPath = c.Rootfiles.Rootfile.FullPath
+			}
+			break
+		}
+	}
+	if opfPath == "" {
+		return ""
+	}
+
+	var coverHref string
+	for _, f := range r.File {
+		if f.Name == opfPath {
+			rc, _ := f.Open()
+			data, _ := io.ReadAll(rc)
+			rc.Close()
+			type manifest struct {
+				Items []struct {
+					ID         string `xml:"id,attr"`
+					Href       string `xml:"href,attr"`
+					Properties string `xml:"properties,attr"`
+					MediaType  string `xml:"media-type,attr"`
+				} `xml:"manifest>item"`
+			}
+			var m manifest
+			if xml.Unmarshal(data, &m) == nil {
+				for _, it := range m.Items {
+					id := strings.ToLower(it.ID)
+					if strings.Contains(id, "cover") || strings.Contains(it.Properties, "cover-image") {
+						if strings.HasPrefix(it.MediaType, "image") {
+							coverHref = it.Href
+							break
+						}
+					}
+				}
+			}
+			break
+		}
+	}
+	if coverHref == "" {
+		return ""
+	}
+
+	base := filepath.Dir(opfPath)
+	full := filepath.ToSlash(filepath.Join(base, coverHref))
+	for _, f := range r.File {
+		if f.Name == full {
+			rc, err := f.Open()
+			if err != nil {
+				return ""
+			}
+			defer rc.Close()
+			data, _ := io.ReadAll(rc)
+			os.MkdirAll("uploads/books", os.ModePerm)
+			name := uuid.New().String() + filepath.Ext(f.Name)
+			out := filepath.Join("uploads", "books", name)
+			if err := os.WriteFile(out, data, 0644); err == nil {
+				return out
+			}
+			break
+		}
+	}
+	return ""
+}
+
 func wsHandler(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
@@ -1503,6 +1622,7 @@ func main() {
 		api.GET("/books", listBooks)
 		api.POST("/save-books", saveBooks)
 		api.POST("/books/upload-image", uploadBookImage)
+		api.POST("/books/upload-file", uploadBookFile)
 
 		api.GET("/news", listNews)
 		api.POST("/save-news", saveNews)
