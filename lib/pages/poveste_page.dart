@@ -309,16 +309,20 @@ class _PovesteRePageState extends State<PovesterePage>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Pagina \$_currentPage din \$_totalPages',
-                      style: GoogleFonts.inter(
-                        color: _textColor.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        'Pagina \$_currentPage din \$_totalPages',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: _textColor.withOpacity(0.7),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       '\${_currentProgress.toStringAsFixed(0)}%',
                       style: GoogleFonts.inter(
