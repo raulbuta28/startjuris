@@ -442,7 +442,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
         return Transform.translate(
           offset: Offset(0, (1 - _thumbnailAnimation.value) * 100),
           child: Opacity(
-            opacity: _thumbnailAnimation.value,
+            opacity: _thumbnailAnimation.value.clamp(0.0, 1.0),
             child: Container(
               height: 100,
               margin: const EdgeInsets.only(bottom: 80),

@@ -36,7 +36,7 @@ class AdminBook {
         port: base.port,
         path: path,
       ).toString();
-    } else if (!image.startsWith('assets/')) {
+    } else if (image.isNotEmpty && !image.startsWith('assets/')) {
       // Local bundled asset
       image = 'assets/' + image;
     }
