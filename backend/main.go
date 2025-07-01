@@ -63,9 +63,10 @@ var dataDir = func() string {
 	}
 	return filepath.Join(rootDir, "data")
 }()
+var uploadsDir = filepath.Join(dataDir, "uploads")
 
 func ensureDataDir() {
-	os.MkdirAll(dataDir, 0755)
+	os.MkdirAll(uploadsDir, 0755)
 }
 
 type User struct {
@@ -693,9 +694,9 @@ func uploadNewsImage(c *gin.Context) {
 		return
 	}
 
-	os.MkdirAll("uploads/noutati", os.ModePerm)
+	os.MkdirAll(filepath.Join(uploadsDir, "noutati"), os.ModePerm)
 	filename := uuid.New().String() + filepath.Ext(file.Filename)
-	path := filepath.Join("uploads", "noutati", filename)
+	path := filepath.Join(uploadsDir, "noutati", filename)
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
 		return
@@ -943,9 +944,9 @@ func uploadAvatar(c *gin.Context) {
 		return
 	}
 
-	os.MkdirAll("uploads/avatars", os.ModePerm)
+	os.MkdirAll(filepath.Join(uploadsDir, "avatars"), os.ModePerm)
 	filename := uuid.New().String() + filepath.Ext(file.Filename)
-	path := filepath.Join("uploads", "avatars", filename)
+	path := filepath.Join(uploadsDir, "avatars", filename)
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
 		return
@@ -973,9 +974,9 @@ func uploadBookImage(c *gin.Context) {
 		return
 	}
 
-	os.MkdirAll("uploads/books", os.ModePerm)
+	os.MkdirAll(filepath.Join(uploadsDir, "books"), os.ModePerm)
 	filename := uuid.New().String() + filepath.Ext(file.Filename)
-	path := filepath.Join("uploads", "books", filename)
+	path := filepath.Join(uploadsDir, "books", filename)
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
 		return
@@ -998,9 +999,9 @@ func uploadBookFile(c *gin.Context) {
 		return
 	}
 
-	os.MkdirAll("uploads/ebooks", os.ModePerm)
+	os.MkdirAll(filepath.Join(uploadsDir, "ebook"), os.ModePerm)
 	fname := uuid.New().String() + filepath.Ext(file.Filename)
-	path := filepath.Join("uploads", "ebooks", fname)
+	path := filepath.Join(uploadsDir, "ebook", fname)
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
 		return
@@ -1015,7 +1016,7 @@ func uploadBookFile(c *gin.Context) {
 	host := c.Request.Host
 
 	resp := gin.H{
-		"fileUrl": fmt.Sprintf("%s://%s/uploads/ebooks/%s", scheme, host, fname),
+		"fileUrl": fmt.Sprintf("%s://%s/uploads/ebook/%s", scheme, host, fname),
 	}
 	if cover != "" {
 		resp["coverUrl"] = fmt.Sprintf("%s://%s/%s", scheme, host, cover)
@@ -1098,11 +1099,12 @@ func extractEpubCover(epubPath string) string {
 			}
 			defer rc.Close()
 			data, _ := io.ReadAll(rc)
-			os.MkdirAll("uploads/books", os.ModePerm)
+			os.MkdirAll(filepath.Join(uploadsDir, "books"), os.ModePerm)
 			name := uuid.New().String() + filepath.Ext(f.Name)
-			out := filepath.Join("uploads", "books", name)
+			out := filepath.Join(uploadsDir, "books", name)
+			rel := filepath.Join("uploads", "books", name)
 			if err := os.WriteFile(out, data, 0644); err == nil {
-				return out
+				return rel
 			}
 			break
 		}
@@ -1639,7 +1641,7 @@ func main() {
 	// serve React control panel
 	r.Static("/controlpanel", getDashboardPath())
 
-	r.Static("/uploads", "./uploads")
+	r.Static("/uploads", uploadsDir)
 
 	// Listen on localhost. If you need to access the API from other
 	// devices on your network, bind to your machine's IP or "0.0.0.0".
