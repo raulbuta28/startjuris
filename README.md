@@ -15,6 +15,15 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+After modifying package versions in `pubspec.yaml` (for example updating
+`epub_view` to resolve dependency conflicts), run:
+
+```bash
+flutter pub get
+```
+
+This will download compatible versions and update `pubspec.lock` accordingly.
+
 ## Backend API
 
 The Flutter app communicates with the Go backend found in the `backend/` directory. Start it locally with:
