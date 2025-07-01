@@ -33,7 +33,7 @@ class _PovesteRePageState extends State<PovesterePage> with TickerProviderStateM
   bool _isDarkMode = false;
   Color _backgroundColor = Colors.white;
   Color _textColor = Colors.black87;
-  String _fontFamily = GoogleFonts.openSans().fontFamily;
+  String _fontFamily = GoogleFonts.openSans().fontFamily ?? '';
 
   @override
   void initState() {
