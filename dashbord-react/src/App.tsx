@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import BookEditor, { Book as BookType } from './BookEditor';
 import NewsEditor, { NewsItem } from './NewsEditor';
 import CodurileLaZi from './CodurileLaZi';
@@ -109,6 +109,13 @@ function Sidebar({ active, onSelect }: SidebarProps) {
 
 type Book = BookType;
 
+interface Theme {
+  id: string;
+  name: string;
+  subject?: string;
+  articleInterval?: string;
+}
+
 interface BookCarouselProps {
   title: string;
   books: Book[];
@@ -187,7 +194,7 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
   };
 
   const handleAdd = (prefix: string) => {
-    const nb: Book = { id: nextId(prefix), title: 'New Book', image: '', content: '' };
+    const nb: Book = { id: nextId(prefix), title: 'New Book', image: '', content: '', subject: '', articleInterval: '' };
     onEdit(nb);
   };
 
@@ -267,6 +274,7 @@ interface DashboardProps {
 function Dashboard({ onLogout }: DashboardProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [themes, setThemes] = useState<Theme[]>([]);
   const [section, setSection] = useState('materie');
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
@@ -299,6 +307,13 @@ function Dashboard({ onLogout }: DashboardProps) {
       .then((data) => {
         if (Array.isArray(data)) setNews(data);
       });
+
+    fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: Theme[]) => {
+        if (Array.isArray(data)) setThemes(data);
+      })
+      .catch(() => {});
   }, []);
 
   const updateBooks = (updated: Book[]) => {
@@ -324,6 +339,48 @@ function Dashboard({ onLogout }: DashboardProps) {
       body: JSON.stringify(updated),
     });
   };
+
+  const importedRef = useRef(false);
+  useEffect(() => {
+    if (importedRef.current || themes.length === 0) return;
+    importedRef.current = true;
+    const prefixMap: Record<string, string> = {
+      'Drept civil': 'civil',
+      'Drept procesual civil': 'dpc',
+      'Drept penal': 'dp_',
+      'Drept procesual penal': 'dpp',
+    };
+    const existing = new Set(books.map((b) => b.id));
+    const extra: Book[] = [];
+    themes.forEach((t) => {
+      const base = {
+        title: t.name,
+        image: '',
+        content: '',
+        subject: t.subject,
+        articleInterval: t.articleInterval,
+      } as Book;
+      const pref = prefixMap[t.subject || ''];
+      if (pref) {
+        const id = `${pref}_t${t.id}`;
+        if (!existing.has(id)) {
+          extra.push({ ...base, id });
+          existing.add(id);
+        }
+      }
+      ['inm', 'barou', 'not'].forEach((p) => {
+        const id = `${p}_t${t.id}`;
+        if (!existing.has(id)) {
+          extra.push({ ...base, id });
+          existing.add(id);
+        }
+      });
+    });
+    if (extra.length) {
+      const updated = [...books, ...extra];
+      updateBooks(updated);
+    }
+  }, [themes, books]);
 
   const renderSection = () => {
     if (editingBook) {
