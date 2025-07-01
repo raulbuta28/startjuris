@@ -7,6 +7,7 @@ This simple backend provides:
 - **/profile**: GET returns the authenticated user's data using an `Authorization: Bearer <token>` header.
 - **/profile**: PUT updates the user's profile fields (`username`, `email`, `bio`, `phone`).
 - **/profile/avatar**: POST multipart form with an `avatar` file to upload a profile picture. Files are saved under `uploads/avatars/` and served from `/uploads`.
+- **/books/upload-file**: POST an EPUB file. The server saves it under `uploads/ebooks/` and automatically extracts the first page as the cover image, returning both the file and cover URLs.
 - **/files**: GET list of all files in the project directory.
 - **/codes**: GET list of all available legal codes saved from the React dashboard.
 - **/codes/:id**: GET the full structure of a specific code in JSON form.

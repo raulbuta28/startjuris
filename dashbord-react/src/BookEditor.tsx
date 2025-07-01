@@ -20,25 +20,6 @@ interface EditorProps {
 export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
   const [form, setForm] = useState({ ...book });
   const [uploading, setUploading] = useState(false);
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('image', file);
-    setUploading(true);
-    try {
-      const res = await fetch('/api/books/upload-image', {
-        method: 'POST',
-        body: fd,
-      });
-      const data = await res.json();
-      if (data.url) {
-        setForm({ ...form, image: data.url });
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleBookFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,18 +54,11 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
         placeholder="Title"
       />
       <div className="space-y-2">
-        <input
-          className="w-full border p-2 rounded"
-          value={form.image}
-          onChange={e => setForm({ ...form, image: e.target.value })}
-          placeholder="Image URL"
-        />
-        <input type="file" accept="image/*" onChange={handleFile} />
-        <input type="file" accept=".epub" onChange={handleBookFile} />
-        {uploading && <div className="text-sm text-gray-500">Uploading...</div>}
         {form.image && (
           <img src={form.image} alt="preview" className="w-32" />
         )}
+        <input type="file" accept=".epub" onChange={handleBookFile} />
+        {uploading && <div className="text-sm text-gray-500">Uploading...</div>}
       </div>
       <button
         className="px-4 py-2 bg-blue-600 text-white rounded"
