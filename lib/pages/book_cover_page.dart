@@ -19,12 +19,14 @@ class _BookCoverPageState extends State<BookCoverPage>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 800),
     );
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-    _controller.forward().then((_) async {
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (mounted) {
+    _fade = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _controller.forward();
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => widget.nextPage),

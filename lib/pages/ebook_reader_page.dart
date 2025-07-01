@@ -19,7 +19,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
     with TickerProviderStateMixin {
   PageController? _pageController;
   ScrollController? _thumbnailController;
-  List<Paragraph> _paragraphs = [];
+  List<PageData> _pages = [];
   bool _loading = true;
   bool _showUI = false;
   bool _darkMode = false;
@@ -101,8 +101,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
       if (res.statusCode == 200) {
         final book = await EpubDocument.openData(res.bodyBytes);
         final chapters = parseChapters(book);
-        final parsed = parseParagraphs(chapters);
-        _paragraphs = parsed.flatParagraphs;
+        _pages = parsePages(chapters);
         _pageController = PageController();
         _thumbnailController = ScrollController();
       }
@@ -144,7 +143,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
   }
 
   void _scrollToCurrentThumbnail() {
-    if (_thumbnailController != null && _paragraphs.isNotEmpty) {
+    if (_thumbnailController != null && _pages.isNotEmpty) {
       final itemWidth = 80.0;
       final targetOffset = _currentPage * itemWidth - (MediaQuery.of(context).size.width / 2) + (itemWidth / 2);
       _thumbnailController!.animateTo(
@@ -166,8 +165,8 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
   }
 
   void _performSearch(String query) {
-    final idx = _paragraphs.indexWhere(
-      (p) => p.element.text.toLowerCase().contains(query.toLowerCase()),
+    final idx = _pages.indexWhere(
+      (p) => p.preview.toLowerCase().contains(query.toLowerCase()),
     );
     if (idx >= 0) {
       _goToPage(idx);
@@ -185,7 +184,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
   }
 
   Widget _buildPage(int index) {
-    final html = _paragraphs[index].element.outerHtml;
+    final html = _pages[index].html;
     return Container(
       color: _backgroundColor,
       child: SingleChildScrollView(
@@ -224,6 +223,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
 
   Widget _buildThumbnail(int index) {
     final isSelected = index == _currentPage;
+    final preview = _pages[index].preview;
     return GestureDetector(
       onTap: () => _goToPage(index),
       child: AnimatedContainer(
@@ -231,40 +231,35 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
         margin: const EdgeInsets.symmetric(horizontal: 4),
         width: 60,
         height: 80,
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.grey.shade300,
+          color: isSelected ? Colors.blue.shade100 : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected 
-            ? Border.all(color: Colors.blue, width: 2)
-            : Border.all(color: Colors.grey.shade400, width: 1),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ] : [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            )
-          ],
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.shade400,
+            width: isSelected ? 2 : 1,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.article_outlined,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
-              size: 24,
+            Expanded(
+              child: Text(
+                preview,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isSelected ? Colors.blue.shade900 : Colors.grey.shade800,
+                ),
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               '${index + 1}',
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade600,
-                fontSize: 12,
+                color: isSelected ? Colors.blue.shade900 : Colors.grey.shade600,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -321,9 +316,9 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (_paragraphs.isNotEmpty)
+                      if (_pages.isNotEmpty)
                         Text(
-                          'Pagina ${_currentPage + 1} din ${_paragraphs.length}',
+                          'Pagina ${_currentPage + 1} din ${_pages.length}',
                           style: TextStyle(
                             fontSize: 12,
                             color: _textColor.withOpacity(0.6),
@@ -391,9 +386,9 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
-                      widthFactor: _paragraphs.isEmpty 
-                        ? 0 
-                        : (_currentPage + 1) / _paragraphs.length,
+                      widthFactor: _pages.isEmpty
+                        ? 0
+                        : (_currentPage + 1) / _pages.length,
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.blue,
@@ -405,7 +400,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
                 ),
                 const SizedBox(width: 12),
                 IconButton(
-                  onPressed: _currentPage < _paragraphs.length - 1
+                  onPressed: _currentPage < _pages.length - 1
                     ? () => _goToPage(_currentPage + 1)
                     : null,
                   icon: const Icon(Icons.chevron_right),
@@ -460,7 +455,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
                 controller: _thumbnailController,
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                itemCount: _paragraphs.length,
+                itemCount: _pages.length,
                 itemBuilder: (context, index) => _buildThumbnail(index),
               ),
             ),
@@ -643,7 +638,7 @@ class _PremiumEbookReaderPageState extends State<PremiumEbookReaderPage>
                   )
                 : PageView.builder(
                     controller: _pageController,
-                    itemCount: _paragraphs.length,
+                    itemCount: _pages.length,
                     onPageChanged: (index) => setState(() => _currentPage = index),
                     itemBuilder: (context, index) => _buildPage(index),
                   ),

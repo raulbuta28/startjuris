@@ -102,3 +102,24 @@ ParseParagraphsResult parseParagraphs(List<EpubChapter> chapters) {
 
   return ParseParagraphsResult(paragraphs, chapterIndexes);
 }
+
+class PageData {
+  PageData(this.html, this.preview);
+
+  final String html;
+  final String preview;
+}
+
+List<PageData> parsePages(List<EpubChapter> chapters) {
+  final List<PageData> pages = [];
+  for (final chapter in chapters) {
+    final document = chapterDocument(chapter);
+    if (document == null) continue;
+    final body = document.getElementsByTagName('body').first;
+    final html = body.outerHtml;
+    String preview = body.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (preview.length > 80) preview = '${preview.substring(0, 80)}...';
+    pages.add(PageData(html, preview));
+  }
+  return pages;
+}
