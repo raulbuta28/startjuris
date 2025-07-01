@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../poveste_page.dart';
 import '../ebook_reader_page.dart';
+import '../book_cover_page.dart';
 import '../../services/book_service.dart';
 
 class CartiCivil extends StatelessWidget {
@@ -63,20 +64,23 @@ class CartiCivil extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: () {
+                  final page = carte.file.isNotEmpty
+                      ? PremiumEbookReaderPage(
+                          title: carte.title,
+                          url: carte.file,
+                        )
+                      : PovesterePage(
+                          titlu: carte.title,
+                          imagine: carte.image,
+                          continut: carte.content,
+                          progress: 0.0,
+                        );
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => carte.file.isNotEmpty
-                          ? PremiumEbookReaderPage(
-                              title: carte.title,
-                              url: carte.file,
-                            )
-                          : PovesterePage(
-                              titlu: carte.title,
-                              imagine: carte.image,
-                              continut: carte.content,
-                              progress: 0.0,
-                            ),
+                      builder: (_) => carte.image.isNotEmpty
+                          ? BookCoverPage(image: carte.image, nextPage: page)
+                          : page,
                     ),
                   );
                 },
