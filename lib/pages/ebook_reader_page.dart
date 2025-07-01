@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:epubx/epubx.dart';
+import 'package:epub_view/epub_view.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:http/http.dart' as http;
 

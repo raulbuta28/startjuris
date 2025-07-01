@@ -1,4 +1,4 @@
-import 'package:epubx/epubx.dart';
+import 'package:epub_view/epub_view.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
 
