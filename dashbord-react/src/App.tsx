@@ -9,6 +9,7 @@ import TesteSuplimentare from './TesteSuplimentare';
 import TesteCombinate from './TesteCombinate';
 import Simulari from './Simulari';
 import BancaDeGrile from './BancaDeGrile';
+import UtilizatoriAbonamente from './UtilizatoriAbonamente';
 
 interface LoginProps {
   onLogin: () => void;
@@ -81,6 +82,7 @@ const sections = [
   { key: 'simulari', label: 'Simulari', icon: 'quiz' },
   { key: 'banca', label: 'Banca de grile', icon: 'library_books' },
   { key: 'meciuri', label: 'Grile meciuri', icon: 'sports_esports' },
+  { key: 'utilizatori', label: 'Utilizatori/Abonamente', icon: 'people' },
 ];
 
 interface SidebarProps {
@@ -442,6 +444,9 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
     if (section === 'banca') {
       return <BancaDeGrile />;
+    }
+    if (section === 'utilizatori') {
+      return <UtilizatoriAbonamente />;
     }
     if (section === 'grile_anterioare') {
       return <GrileAniAnteriori />;
