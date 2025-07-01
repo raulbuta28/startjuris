@@ -196,7 +196,7 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
   };
 
   const handleAdd = (prefix: string) => {
-    const nb: Book = { id: nextId(prefix), title: 'New Book', image: '', content: '', subject: '', articleInterval: '' };
+    const nb: Book = { id: nextId(prefix), title: 'New Book', image: '', content: '', file: '', subject: '', articleInterval: '' };
     onEdit(nb);
   };
 
@@ -359,6 +359,7 @@ function Dashboard({ onLogout }: DashboardProps) {
         title: t.name,
         image: '',
         content: '',
+        file: '',
         subject: t.subject,
         articleInterval: t.articleInterval,
       } as Book;
