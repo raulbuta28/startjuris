@@ -147,3 +147,28 @@ Explicatie: ${q.explanation ?? ''}`.trim();
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() ?? '';
 }
+
+export async function generateThemeSummary(subject: string, interval: string): Promise<string> {
+  const prompt = `Realizeaza o sinteza in stil academic, clar si juridic, folosind doar informatiile din ${subject}.\n` +
+    `Rezuma articolele din intervalul ${interval} si mentioneaza diferentele, asemanarile si exceptiile esentiale.\n` +
+    `Evita comentariile inutile si structureaza raspunsul in paragrafe coerente.`;
+
+  const res = await fetch(
+    `${import.meta.env.VITE_AGENT_ENDPOINT}/api/v1/chat/completions`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_AGENT_ACCESS_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+      }),
+    }
+  );
+
+  if (!res.ok) throw new Error(`Agent error ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() ?? '';
+}

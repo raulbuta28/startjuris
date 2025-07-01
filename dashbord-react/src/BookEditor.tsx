@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import ReactQuill from 'react-quill';
+import { generateThemeSummary } from '@/lib/agent';
 
 export interface Book {
   id: string;
   title: string;
   image: string;
   content: string;
+  subject?: string;
+  articleInterval?: string;
 }
 
 interface EditorProps {
@@ -37,6 +40,7 @@ const formats = [
 export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
   const [form, setForm] = useState({ ...book });
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,9 +66,36 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
     onSave(form);
   };
 
+  const generateAI = async () => {
+    if (!form.subject || !form.articleInterval) return;
+    setGenerating(true);
+    try {
+      const text = await generateThemeSummary(form.subject, form.articleInterval);
+      setForm({ ...form, content: text });
+    } catch (err) {
+      console.error('AI error', err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <button className="text-blue-600" onClick={onCancel}>&larr; Back</button>
+      {form.articleInterval && (
+        <div className="flex items-center space-x-2">
+          <span className="font-semibold">Articole: {form.articleInterval}</span>
+          {form.subject && (
+            <button
+              className="px-2 py-1 text-sm bg-green-600 text-white rounded"
+              onClick={generateAI}
+              disabled={generating}
+            >
+              {generating ? 'Generare...' : 'Generare AI'}
+            </button>
+          )}
+        </div>
+      )}
       <input
         className="w-full border p-2 rounded"
         value={form.title}
