@@ -6,6 +6,138 @@ import 'package:google_fonts/google_fonts.dart';
 import 'meciuri2.dart';
 import 'meciuri3.dart';
 
+// Sample questions data
+final Map<String, List<Map<String, dynamic>>> questionsData = {
+  'Drept civil': [
+    {
+      'question': 'Care este termenul de prescripție extinctivă pentru drepturile patrimoniale?',
+      'options': ['3 ani', '5 ani', '10 ani', '15 ani'],
+      'correct': '3 ani',
+      'explanation': 'Conform art. 2517 Cod civil, termenul general de prescripție extinctivă este de 3 ani.'
+    },
+    {
+      'question': 'Contractul de vânzare-cumpărare se încheie prin:',
+      'options': ['Acordul de voințe', 'Plata prețului', 'Predarea bunului', 'Înregistrarea la notariat'],
+      'correct': 'Acordul de voințe',
+      'explanation': 'Contractul este consensual și se încheie prin simpla întâlnire a consimțămintelor.'
+    },
+    {
+      'question': 'Capacitatea de exercițiu completă se dobândește la vârsta de:',
+      'options': ['16 ani', '18 ani', '21 ani', '25 ani'],
+      'correct': '18 ani',
+      'explanation': 'Conform art. 37 Cod civil, capacitatea de exercițiu completă se dobândește la majorat.'
+    },
+    {
+      'question': 'Actul juridic nul de drept este:',
+      'options': ['Anulabil', 'Neexistent', 'Absolut nul', 'Relativ nul'],
+      'correct': 'Absolut nul',
+      'explanation': 'Actul juridic nul de drept este lovit de nulitate absolută și nu poate fi confirmat.'
+    },
+    {
+      'question': 'Servitutea este un drept real:',
+      'options': ['Principal', 'Accesoriu', 'De garanție', 'De folosință'],
+      'correct': 'Accesoriu',
+      'explanation': 'Servitutea este un drept real accesoriu care grevează un imobil în favoarea altuia.'
+    }
+  ],
+  'Drept penal': [
+    {
+      'question': 'Tentativa la infracțiune se pedepsește cu:',
+      'options': ['Jumătate din pedeapsa prevăzută', 'Pedeapsa întreagă', '1/3 din pedeapsa prevăzută', 'Nu se pedepsește'],
+      'correct': 'Jumătate din pedeapsa prevăzută',
+      'explanation': 'Conform art. 32 Cod penal, tentativa se pedepsește cu jumătate din limitele pedepsei.'
+    },
+    {
+      'question': 'Complicitatea morală constă în:',
+      'options': ['Ajutorarea la săvârșire', 'Determinarea la săvârșire', 'Organizarea infracțiunii', 'Ascunderea urmelor'],
+      'correct': 'Determinarea la săvârșire',
+      'explanation': 'Complicitatea morală presupune determinarea unei persoane să săvârșească o infracțiune.'
+    },
+    {
+      'question': 'Circumstanța atenuantă prevăzută în Codul penal este:',
+      'options': ['Reintegrarea daunei', 'Vârsta fragedă a victimei', 'Săvârșirea în grup', 'Recidiva'],
+      'correct': 'Reintegrarea daunei',
+      'explanation': 'Reintegrarea daunei sau repararea pagubei sunt circumstanțe atenuante legale.'
+    },
+    {
+      'question': 'Infracțiunea continuată presupune:',
+      'options': ['O singură rezoluție criminală', 'Mai multe rezoluții', 'Săvârșirea în grup', 'Recidiva'],
+      'correct': 'O singură rezoluție criminală',
+      'explanation': 'Infracțiunea continuată se caracterizează prin unitatea de rezoluție criminală.'
+    },
+    {
+      'question': 'Termenul de prescripție pentru infracțiunile foarte grave este:',
+      'options': ['5 ani', '10 ani', '15 ani', '20 ani'],
+      'correct': '20 ani',
+      'explanation': 'Pentru infracțiunile foarte grave, termenul de prescripție este de 20 de ani.'
+    }
+  ],
+  'Drept procesual civil': [
+    {
+      'question': 'Cererea de chemare în judecată se depune la:',
+      'options': ['Judecătoria', 'Tribunalul', 'Curtea de Apel', 'Instanța competentă'],
+      'correct': 'Instanța competentă',
+      'explanation': 'Cererea se depune la instanța competentă să judece cauza conform legii.'
+    },
+    {
+      'question': 'Termenul pentru formularea apelului este de:',
+      'options': ['10 zile', '15 zile', '30 zile', '60 zile'],
+      'correct': '30 zile',
+      'explanation': 'Apelul se formulează în termen de 30 de zile de la pronunțare sau comunicare.'
+    },
+    {
+      'question': 'Proba cu martori se administrează prin:',
+      'options': ['Întrebări libere', 'Interogatoriu', 'Declarații scrise', 'Toate variantele'],
+      'correct': 'Interogatoriu',
+      'explanation': 'Martorii sunt audiați prin interogatoriu, după depunerea jurământului.'
+    },
+    {
+      'question': 'Recursul în casație se formulează împotriva:',
+      'options': ['Sentințelor', 'Încheierii', 'Deciziilor definitive', 'Ordonanțelor'],
+      'correct': 'Deciziilor definitive',
+      'explanation': 'Recursul în casație se poate formula doar împotriva deciziilor definitive.'
+    },
+    {
+      'question': 'Competența teritorială se stabilește după:',
+      'options': ['Domiciliul reclamantului', 'Domiciliul pârâtului', 'Locul faptei', 'Alegerea părților'],
+      'correct': 'Domiciliul pârâtului',
+      'explanation': 'Regula generală: actor sequitur forum rei (actorul urmează instanța pârâtului).'
+    }
+  ],
+  'Drept procesual penal': [
+    {
+      'question': 'Termenul pentru formularea recursului în casație este:',
+      'options': ['10 zile', '15 zile', '30 zile', '45 zile'],
+      'correct': '15 zile',
+      'explanation': 'Recursul în casație se formulează în termen de 15 zile de la comunicare.'
+    },
+    {
+      'question': 'Arestul preventiv poate fi dispus pentru maximum:',
+      'options': ['30 zile', '60 zile', '90 zile', '180 zile'],
+      'correct': '30 zile',
+      'explanation': 'Arestul preventiv se poate dispune pentru maximum 30 de zile, cu posibilitatea prelungirii.'
+    },
+    {
+      'question': 'Percheziția domiciliară se efectuează cu:',
+      'options': ['Ordin verbal', 'Mandat scris', 'Autorizație telefonică', 'Aprobare ulterioară'],
+      'correct': 'Mandat scris',
+      'explanation': 'Percheziția domiciliară se efectuează numai cu mandat scris motivat.'
+    },
+    {
+      'question': 'Controlul judiciar poate fi dispus pentru:',
+      'options': ['15 zile', '30 zile', '60 zile', '90 zile'],
+      'correct': '60 zile',
+      'explanation': 'Controlul judiciar se poate dispune pentru maximum 60 de zile, cu posibilitatea prelungirii.'
+    },
+    {
+      'question': 'Flagrantul delict presupune:',
+      'options': ['Săvârșirea anterioară', 'Săvârșirea în timpul constatării', 'Urmele infracțiunii', 'Toate variantele'],
+      'correct': 'Săvârșirea în timpul constatării',
+      'explanation': 'Flagrantul presupune surprinderea făptuitorului în timp ce săvârșește infracțiunea.'
+    }
+  ]
+};
+
 class LightningPainter extends CustomPainter {
   final Animation<double> animation;
   final Color color;
@@ -59,34 +191,7 @@ class BattleProgressBar extends StatefulWidget {
   State<BattleProgressBar> createState() => _BattleProgressBarState();
 }
 
-class _BattleProgressBarState extends State<BattleProgressBar> with SingleTickerProviderStateMixin {
-  late AnimationController _lightningController;
-  late Animation<double> _lightningAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _lightningController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    
-    _lightningAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 10),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.3), weight: 10),
-      TweenSequenceItem(tween: Tween(begin: 0.3, end: 0.7), weight: 10),
-      TweenSequenceItem(tween: Tween(begin: 0.7, end: 0.0), weight: 10),
-    ]).animate(_lightningController);
-
-    _lightningController.repeat();
-  }
-
-  @override
-  void dispose() {
-    _lightningController.dispose();
-    super.dispose();
-  }
-
+class _BattleProgressBarState extends State<BattleProgressBar> {
   Widget _buildScoreText(int score) {
     String suffix;
     if (score == 0) {
@@ -109,21 +214,25 @@ class _BattleProgressBarState extends State<BattleProgressBar> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 50, // Reduced height
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 60,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Stack(
         children: [
-          // Battle line with lightning
+          // Background line
           Positioned.fill(
-            child: CustomPaint(
-              painter: LightningPainter(_lightningAnimation, Colors.white),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 25),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           // Player 1 score (Red)
           Positioned(
             left: 0,
-            width: 120, // Wider to accommodate text
-            top: 5, // Adjusted positioning
+            width: 120,
+            top: 5,
             bottom: 5,
             child: Container(
               decoration: BoxDecoration(
@@ -147,8 +256,8 @@ class _BattleProgressBarState extends State<BattleProgressBar> with SingleTicker
           // Player 2 score (Blue)
           Positioned(
             right: 0,
-            width: 120, // Wider to accommodate text
-            top: 5, // Adjusted positioning
+            width: 120,
+            top: 5,
             bottom: 5,
             child: Container(
               decoration: BoxDecoration(
@@ -169,13 +278,36 @@ class _BattleProgressBarState extends State<BattleProgressBar> with SingleTicker
               ),
             ),
           ),
+          // VS in center
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Center(
+                  child: Text(
+                    'VS',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// MeciuriPage: 24-26px gap, larger subject buttons, bigger text, custom border for selector
 class MeciuriPage extends StatefulWidget {
   const MeciuriPage({super.key});
 
@@ -217,8 +349,23 @@ class MeciuriPage extends StatefulWidget {
 class _MeciuriPageState extends State<MeciuriPage> {
   CameraController? _controller;
   bool _matchActive = false;
-  bool _showingFeedback = false;
-  final GlobalKey<QuestionTimerState> _timerKey = GlobalKey();
+  bool _gameFinished = false;
+  String? _selectedSubject;
+  String? _subjectSelector;
+  
+  int _currentQuestionIndex = 0;
+  int _player1Score = 0;
+  int _player2Score = 0;
+  
+  List<Map<String, dynamic>> _currentQuestions = [];
+  Map<int, String> _player1Answers = {};
+  Map<int, String> _player2Answers = {};
+  String? _player1CurrentAnswer;
+  String? _player2CurrentAnswer;
+  
+  Timer? _questionTimer;
+  int _secondsLeft = 15;
+  bool _timeUp = false;
 
   @override
   void initState() {
@@ -236,7 +383,7 @@ class _MeciuriPageState extends State<MeciuriPage> {
       
       _controller = CameraController(
         frontCamera,
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
         enableAudio: false,
       );
 
@@ -247,21 +394,127 @@ class _MeciuriPageState extends State<MeciuriPage> {
     }
   }
 
-  void _handleTimeUp() {
+  void _selectSubjectSelector(String selector) {
     setState(() {
-      _showingFeedback = true;
+      _subjectSelector = selector;
     });
   }
 
-  void _exitMatch() {
+  void _selectSubject(String subject) {
     setState(() {
-      _matchActive = false;
-      _showingFeedback = false;
+      _selectedSubject = subject;
     });
+  }
+
+  void _startMatch() {
+    if (_selectedSubject == null) return;
+    
+    setState(() {
+      _matchActive = true;
+      _currentQuestions = List.from(questionsData[_selectedSubject]!);
+      _currentQuestions.shuffle();
+      _currentQuestionIndex = 0;
+      _player1Score = 0;
+      _player2Score = 0;
+      _player1Answers.clear();
+      _player2Answers.clear();
+      _player1CurrentAnswer = null;
+      _player2CurrentAnswer = null;
+    });
+    
+    _startQuestionTimer();
+  }
+
+  void _startQuestionTimer() {
+    _secondsLeft = 15;
+    _timeUp = false;
+    _questionTimer?.cancel();
+    
+    _questionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+        } else {
+          _timeUp = true;
+          _handleTimeUp();
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  void _handleTimeUp() {
+    // Auto-save current answers
+    if (_player1CurrentAnswer != null) {
+      _player1Answers[_currentQuestionIndex] = _player1CurrentAnswer!;
+    }
+    if (_player2CurrentAnswer != null) {
+      _player2Answers[_currentQuestionIndex] = _player2CurrentAnswer!;
+    }
+    
+    _nextQuestion();
+  }
+
+  void _selectAnswer(int player, String answer) {
+    setState(() {
+      if (player == 1) {
+        _player1CurrentAnswer = answer;
+      } else {
+        _player2CurrentAnswer = answer;
+      }
+    });
+    
+    // If both players answered, proceed to next question
+    if (_player1CurrentAnswer != null && _player2CurrentAnswer != null) {
+      _player1Answers[_currentQuestionIndex] = _player1CurrentAnswer!;
+      _player2Answers[_currentQuestionIndex] = _player2CurrentAnswer!;
+      
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _nextQuestion();
+      });
+    }
+  }
+
+  void _nextQuestion() {
+    _questionTimer?.cancel();
+    
+    // Calculate scores for current question
+    final correctAnswer = _currentQuestions[_currentQuestionIndex]['correct'];
+    if (_player1Answers[_currentQuestionIndex] == correctAnswer) {
+      _player1Score++;
+    }
+    if (_player2Answers[_currentQuestionIndex] == correctAnswer) {
+      _player2Score++;
+    }
+    
+    if (_currentQuestionIndex < _currentQuestions.length - 1) {
+      setState(() {
+        _currentQuestionIndex++;
+        _player1CurrentAnswer = null;
+        _player2CurrentAnswer = null;
+      });
+      _startQuestionTimer();
+    } else {
+      _finishGame();
+    }
+  }
+
+  void _finishGame() {
+    setState(() {
+      _gameFinished = true;
+      _matchActive = false;
+    });
+    _questionTimer?.cancel();
+  }
+
+  void _exitMatch() {
+    _questionTimer?.cancel();
+    Navigator.of(context).pop();
   }
 
   @override
   void dispose() {
+    _questionTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -270,41 +523,159 @@ class _MeciuriPageState extends State<MeciuriPage> {
   Widget build(BuildContext context) {
     if (_controller == null || !_controller!.value.isInitialized) {
       return const Scaffold(
+        backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    if (_gameFinished) {
+      return GameSummary(
+        questions: _currentQuestions,
+        player1Answers: _player1Answers.values.toList(),
+        player2Answers: _player2Answers.values.toList(),
+        player1Score: _player1Score,
+        player2Score: _player2Score,
+        cameraController: _controller,
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
+            // Camera previews
             Expanded(
-              child: Row(
+              flex: 2,
+              child: Stack(
                 children: [
-                  Expanded(child: CameraPreview(_controller!)),
-                  Expanded(child: CameraPreview(_controller!)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.red, width: 2),
+                          ),
+                          child: CameraPreview(_controller!),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.blue, width: 2),
+                          ),
+                          child: CameraPreview(_controller!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Player labels
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Player 1',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Player 2',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Timer
+                  if (_matchActive)
+                    Positioned(
+                      top: 10,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _secondsLeft <= 5 ? Colors.red : Colors.black87,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _secondsLeft <= 5 ? Colors.red : Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            _secondsLeft.toString(),
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-            if (_matchActive && !_showingFeedback)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: QuestionTimer(
-                    key: _timerKey,
-                    onTimeUp: _handleTimeUp,
-                    isActive: _matchActive && !_showingFeedback,
-                    onTick: () {},
-                  ),
-                ),
+            // Battle progress bar
+            if (_matchActive)
+              BattleProgressBar(
+                player1Progress: _player1Score / 5,
+                player2Progress: _player2Score / 5,
+                player1Score: _player1Score,
+                player2Score: _player2Score,
               ),
+            // Bottom section
+            Expanded(
+              flex: 2,
+              child: BottomSection(
+                matchActive: _matchActive,
+                selectedSubject: _selectedSubject,
+                onSelectSubject: _selectSubject,
+                onStartMatch: _startMatch,
+                question: _matchActive ? _currentQuestions[_currentQuestionIndex] : null,
+                secondsLeft: _secondsLeft,
+                onAnswer: (player, answers) => _selectAnswer(player, answers.isNotEmpty ? answers.first : ''),
+                onToggleAnswer: _selectAnswer,
+                player1Score: _player1Score,
+                player2Score: _player2Score,
+                questionIndex: _currentQuestionIndex,
+                subjectSelector: _subjectSelector,
+                onSelectSubjectSelector: _selectSubjectSelector,
+                isUser1: true,
+                player1CurrentAnswer: _player1CurrentAnswer,
+                player2CurrentAnswer: _player2CurrentAnswer,
+              ),
+            ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _exitMatch,
-        child: const Icon(Icons.close),
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.close, color: Colors.white),
       ),
     );
   }
@@ -520,218 +891,213 @@ class GameSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final winner = player1Score > player2Score ? 1 : (player2Score > player1Score ? 2 : 0);
     
-    return Container(
-      color: Colors.black,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          children: [
-            // Trophy and winner section
-            Container(
-              width: double.infinity, // Ensure container takes full width
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple.shade900, Colors.blue.shade900],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 5,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Column(
+            children: [
+              // Trophy and winner section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.purple.shade900, Colors.blue.shade900],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  if (winner != 0) ...[
-                    Icon(
-                      Icons.emoji_events,
-                      size: 80,
-                      color: winner == 1 ? Colors.red : Colors.blue,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Câștigător: Player ${winner}',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] else ...[
-                    const Icon(
-                      Icons.handshake,
-                      size: 80,
-                      color: Colors.amber,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Remiză!',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 5,
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildPlayerScore('Player 1', player1Score, Colors.red),
-                      Container(
-                        width: 2,
-                        height: 50,
-                        color: Colors.white24,
+                ),
+                child: Column(
+                  children: [
+                    if (winner != 0) ...[
+                      Icon(
+                        Icons.emoji_events,
+                        size: 80,
+                        color: winner == 1 ? Colors.red : Colors.blue,
                       ),
-                      _buildPlayerScore('Player 2', player2Score, Colors.blue),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Câștigător: Player $winner',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ] else ...[
+                      const Icon(
+                        Icons.handshake,
+                        size: 80,
+                        color: Colors.amber,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Remiză!',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Updated camera previews with correct aspect ratio and circular shape
-            if (cameraController != null) SizedBox(
-              height: 100,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildCircularCameraPreview(Colors.red),
-                  const SizedBox(width: 16),
-                  _buildCircularCameraPreview(Colors.blue),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Questions summary with constrained width
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                children: [
-                  ...questions.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final question = entry.value;
-                    final player1Answer = player1Answers[index];
-                    final player2Answer = player2Answers[index];
-                    
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Întrebarea ${index + 1}',
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white70,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            question['question'],
-                            style: GoogleFonts.montserrat(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPlayerAnswer(
-                            'Player 1',
-                            player1Answer,
-                            question['correct'],
-                            Colors.red,
-                          ),
-                          const SizedBox(height: 8),
-                          _buildPlayerAnswer(
-                            'Player 2',
-                            player2Answer,
-                            question['correct'],
-                            Colors.blue,
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.withOpacity(0.3)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Explicație:',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  question['explanation'] ?? 'Nu există explicație disponibilă.',
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            // New match button
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const MeciuriPage()),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.purple.shade700, Colors.blue.shade700],
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildPlayerScore('Player 1', player1Score, Colors.red),
+                        Container(
+                          width: 2,
+                          height: 50,
+                          color: Colors.white24,
+                        ),
+                        _buildPlayerScore('Player 2', player2Score, Colors.blue),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.purple.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Camera previews
+              if (cameraController != null) SizedBox(
+                height: 100,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildCircularCameraPreview(Colors.red),
+                    const SizedBox(width: 16),
+                    _buildCircularCameraPreview(Colors.blue),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Questions summary
+              ...questions.asMap().entries.map((entry) {
+                final index = entry.key;
+                final question = entry.value;
+                final player1Answer = index < player1Answers.length ? player1Answers[index] : '';
+                final player2Answer = index < player2Answers.length ? player2Answers[index] : '';
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Întrebarea ${index + 1}',
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        question['question'],
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildPlayerAnswer(
+                        'Player 1',
+                        player1Answer,
+                        question['correct'],
+                        Colors.red,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildPlayerAnswer(
+                        'Player 2',
+                        player2Answer,
+                        question['correct'],
+                        Colors.blue,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Răspuns corect: ${question['correct']}',
+                              style: GoogleFonts.montserrat(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              question['explanation'] ?? 'Nu există explicație disponibilă.',
+                              style: GoogleFonts.montserrat(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  child: Text(
-                    'Începe un meci nou',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                );
+              }).toList(),
+              const SizedBox(height: 24),
+              // New match button
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const MeciuriPage()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.purple.shade700, Colors.blue.shade700],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purple.withOpacity(0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Începe un meci nou',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-          ],
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -816,12 +1182,14 @@ class GameSummary extends StatelessWidget {
             fontSize: 14,
           ),
         ),
-        Text(
-          answer,
-          style: GoogleFonts.montserrat(
-            color: isCorrect ? Colors.green : Colors.red,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+        Expanded(
+          child: Text(
+            answer.isEmpty ? 'Nu a răspuns' : answer,
+            style: GoogleFonts.montserrat(
+              color: answer.isEmpty ? Colors.orange : (isCorrect ? Colors.green : Colors.red),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
         ),
       ],
