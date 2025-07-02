@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'meciuri2.dart';
+import 'meciuri3.dart';
 
 class LightningPainter extends CustomPainter {
   final Animation<double> animation;
@@ -274,18 +276,27 @@ class _MeciuriPageState extends State<MeciuriPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            CameraPreview(_controller!),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: CameraPreview(_controller!)),
+                  Expanded(child: CameraPreview(_controller!)),
+                ],
+              ),
+            ),
             if (_matchActive && !_showingFeedback)
-              Positioned(
-                top: 16,
-                right: 16,
-                child: QuestionTimer(
-                  key: _timerKey,
-                  onTimeUp: _handleTimeUp,
-                  isActive: _matchActive && !_showingFeedback,
-                  onTick: () {},
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: QuestionTimer(
+                    key: _timerKey,
+                    onTimeUp: _handleTimeUp,
+                    isActive: _matchActive && !_showingFeedback,
+                    onTick: () {},
+                  ),
                 ),
               ),
           ],
