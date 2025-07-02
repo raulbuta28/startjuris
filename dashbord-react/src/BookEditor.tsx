@@ -30,9 +30,9 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
 
     if (file.type === 'application/pdf') {
       try {
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc =
-          `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
+          `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
         const buf = await file.arrayBuffer();
         const doc = await pdfjs.getDocument({ data: buf }).promise;
         const page = await doc.getPage(1);
