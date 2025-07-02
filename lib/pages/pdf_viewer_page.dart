@@ -45,10 +45,10 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   }
 
   Future<void> _loadDocument() async {
-    final documentFuture = _createDocument();
+    final document = await _createDocument();
     if (!mounted) return;
     setState(() {
-      _controller = PdfControllerPinch(document: documentFuture);
+      _controller = PdfControllerPinch(document: document);
     });
   }
 
