@@ -40,6 +40,7 @@ dependencies:
   just_audio: ^0.9.36
   flutter_inappwebview: ^6.1.5
   epub_view: ^3.2.0
+  syncfusion_flutter_pdfviewer: ^23.1.44
   path_provider: ^2.1.2
   sqflite: ^2.4.2
   path: ^1.9.1
