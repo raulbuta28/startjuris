@@ -26,24 +26,24 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     }
   }
 
-  Future<void> _loadDocument() async {
-    PdfDocument document;
+  void _loadDocument() {
+    Future<PdfDocument> documentFuture;
     if (widget.url.startsWith('http://') ||
         widget.url.startsWith('https://')) {
-      final data = await InternetFile.get(widget.url);
-      document = await PdfDocument.openData(data);
+      documentFuture = InternetFile.get(widget.url)
+          .then((data) => PdfDocument.openData(data));
     } else if (widget.url.startsWith('file://') ||
         widget.url.startsWith('/')) {
       final path = widget.url.startsWith('file://')
           ? widget.url.replaceFirst('file://', '')
           : widget.url;
-      document = await PdfDocument.openFile(path);
+      documentFuture = PdfDocument.openFile(path);
     } else {
-      document = await PdfDocument.openAsset(widget.url);
+      documentFuture = PdfDocument.openAsset(widget.url);
     }
     if (!mounted) return;
     setState(() {
-      _controller = PdfControllerPinch(document: document);
+      _controller = PdfControllerPinch(document: documentFuture);
     });
   }
 
