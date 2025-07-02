@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:internet_file/internet_file.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String title;
@@ -20,7 +21,11 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void initState() {
     super.initState();
-    _controller = PdfControllerPinch(document: PdfDocument.openNetwork(widget.url));
+    _controller = PdfControllerPinch(
+      document: PdfDocument.openData(
+        InternetFile.get(widget.url),
+      ),
+    );
   }
 
   @override
