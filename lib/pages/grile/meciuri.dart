@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../backend/providers/auth_provider.dart';
 import 'meciuri2.dart';
 import 'meciuri3.dart';
+import '../../services/tests_service.dart';
 
 // Sample questions data
 final Map<String, List<Map<String, dynamic>>> questionsData = {
@@ -365,6 +366,12 @@ class _MeciuriPageState extends State<MeciuriPage> {
   Map<int, String> _player2Answers = {};
   String? _player1CurrentAnswer;
   String? _player2CurrentAnswer;
+
+  List<FetchedTest> _tests = [];
+  bool _loadingTests = false;
+  String? _selectedChapter;
+  int _numQuestions = 5;
+  int _totalQuestions = 5;
   
   Timer? _questionTimer;
   int _secondsLeft = 15;
@@ -399,19 +406,52 @@ class _MeciuriPageState extends State<MeciuriPage> {
     }
   }
 
+  Future<void> _loadTests() async {
+    setState(() => _loadingTests = true);
+    try {
+      _tests = await TestsService.fetchTests();
+    } catch (e) {
+      debugPrint('Failed to load tests: $e');
+    }
+    setState(() => _loadingTests = false);
+  }
+
   void _selectSubject(String subject) {
     setState(() {
       _selectedSubject = subject;
+      _selectedChapter = null;
     });
+    if (_tests.isEmpty) {
+      _loadTests();
+    }
   }
 
   void _startMatch() {
     if (_selectedSubject == null) return;
-    
+
+    List<Map<String, dynamic>> all = [];
+    for (final t in _tests) {
+      if (t.subject != _selectedSubject) continue;
+      if (_selectedChapter != null && _selectedChapter!.isNotEmpty && _selectedChapter != 'Toată materia' && t.name != _selectedChapter) {
+        continue;
+      }
+      for (final q in t.questions) {
+        all.add({
+          'question': q.text,
+          'options': q.answers.map((a) => a.text).toList(),
+          'correct': q.correctAnswers.isNotEmpty ? q.correctAnswers.first : '',
+          'explanation': q.explanation,
+        });
+      }
+    }
+    if (all.isEmpty) return;
+    all.shuffle();
+    final selected = all.take(_numQuestions).toList();
+
     setState(() {
       _matchActive = true;
-      _currentQuestions = List.from(questionsData[_selectedSubject]!);
-      _currentQuestions.shuffle();
+      _currentQuestions = selected;
+      _totalQuestions = selected.length;
       _currentQuestionIndex = 0;
       _player1Score = 0;
       _player2Score = 0;
@@ -420,7 +460,7 @@ class _MeciuriPageState extends State<MeciuriPage> {
       _player1CurrentAnswer = null;
       _player2CurrentAnswer = null;
     });
-    
+
     _startQuestionTimer();
   }
 
@@ -643,8 +683,8 @@ class _MeciuriPageState extends State<MeciuriPage> {
             // Battle progress bar
             if (_matchActive)
               BattleProgressBar(
-                player1Progress: _player1Score / 5,
-                player2Progress: _player2Score / 5,
+                player1Progress: _player1Score / _totalQuestions,
+                player2Progress: _player2Score / _totalQuestions,
                 player1Score: _player1Score,
                 player2Score: _player2Score,
               ),
@@ -654,8 +694,18 @@ class _MeciuriPageState extends State<MeciuriPage> {
               child: BottomSection(
                 matchActive: _matchActive,
                 selectedSubject: _selectedSubject,
+                chapters: _tests
+                    .where((t) => t.subject == _selectedSubject)
+                    .map((t) => t.name)
+                    .toSet()
+                    .toList(),
+                selectedChapter: _selectedChapter,
+                onSelectChapter: (c) => setState(() => _selectedChapter = c),
                 onSelectSubject: _selectSubject,
                 onStartMatch: _startMatch,
+                questionCount: _numQuestions,
+                onSelectQuestionCount: (c) => setState(() => _numQuestions = c),
+                loading: _loadingTests,
                 question: _matchActive ? _currentQuestions[_currentQuestionIndex] : null,
                 secondsLeft: _secondsLeft,
                 onAnswer: (player, answers) => _selectAnswer(player, answers.isNotEmpty ? answers.first : ''),
@@ -663,6 +713,7 @@ class _MeciuriPageState extends State<MeciuriPage> {
                 player1Score: _player1Score,
                 player2Score: _player2Score,
                 questionIndex: _currentQuestionIndex,
+                totalQuestions: _totalQuestions,
                 isUser1: true,
                 player1Name: _player1Name,
                 player2Name: _player2Name,

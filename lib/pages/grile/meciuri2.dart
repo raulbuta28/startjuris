@@ -4,8 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 class BottomSection extends StatefulWidget {
   final bool matchActive;
   final String? selectedSubject;
+  final List<String> chapters;
+  final String? selectedChapter;
+  final Function(String?) onSelectChapter;
   final Function(String) onSelectSubject;
   final VoidCallback onStartMatch;
+  final int questionCount;
+  final Function(int) onSelectQuestionCount;
+  final bool loading;
   final Map<String, dynamic>? question;
   final int secondsLeft;
   final Function(int, List<String>) onAnswer;
@@ -13,6 +19,7 @@ class BottomSection extends StatefulWidget {
   final int player1Score;
   final int player2Score;
   final int questionIndex;
+  final int totalQuestions;
   final bool isUser1;
   final String player1Name;
   final String player2Name;
@@ -23,8 +30,14 @@ class BottomSection extends StatefulWidget {
     super.key,
     required this.matchActive,
     required this.selectedSubject,
+    required this.chapters,
+    required this.selectedChapter,
+    required this.onSelectChapter,
     required this.onSelectSubject,
     required this.onStartMatch,
+    required this.questionCount,
+    required this.onSelectQuestionCount,
+    required this.loading,
     required this.question,
     required this.secondsLeft,
     required this.onAnswer,
@@ -32,6 +45,7 @@ class BottomSection extends StatefulWidget {
     required this.player1Score,
     required this.player2Score,
     required this.questionIndex,
+    required this.totalQuestions,
     required this.isUser1,
     required this.player1Name,
     required this.player2Name,
@@ -85,42 +99,66 @@ class _BottomSectionState extends State<BottomSection> {
                       _buildSubjectButton('Drept procesual penal'),
                     ],
                   ),
-                  const SizedBox(height: 30),
-                  if (widget.selectedSubject != null)
-                    GestureDetector(
-                      onTap: widget.onStartMatch,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xffff4081), Color(0xfff50057)],
-                          ),
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.pinkAccent.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.play_arrow, size: 28, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Începe meciul',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                  const SizedBox(height: 20),
+                  if (widget.selectedSubject != null) ...[
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _buildChapterButton('Toată materia'),
+                        ...widget.chapters.map(_buildChapterButton).toList(),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCountButton(5),
+                        const SizedBox(width: 8),
+                        _buildCountButton(10),
+                        const SizedBox(width: 8),
+                        _buildCountButton(15),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    widget.loading
+                        ? const CircularProgressIndicator()
+                        : GestureDetector(
+                            onTap: widget.onStartMatch,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xffff4081), Color(0xfff50057)],
+                                ),
+                                borderRadius: BorderRadius.circular(25),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.pinkAccent.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.play_arrow, size: 28, color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Începe meciul',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
+                  ],
                 ],
               ),
             ),
@@ -134,7 +172,7 @@ class _BottomSectionState extends State<BottomSection> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Întrebarea ${widget.questionIndex + 1}/5',
+                        'Întrebarea ${widget.questionIndex + 1}/${widget.totalQuestions}',
                         style: GoogleFonts.montserrat(
                           color: Colors.white70,
                           fontWeight: FontWeight.bold,
@@ -245,6 +283,57 @@ class _BottomSectionState extends State<BottomSection> {
             color: Colors.white,
           ),
           textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChapterButton(String chapter) {
+    final isSelected = widget.selectedChapter == chapter;
+    return GestureDetector(
+      onTap: () => widget.onSelectChapter(chapter == 'Toată materia' ? null : chapter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.pinkAccent : Colors.black87,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.pinkAccent : Colors.white24,
+            width: 2,
+          ),
+        ),
+        child: Text(
+          chapter,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountButton(int count) {
+    final isSelected = widget.questionCount == count;
+    return GestureDetector(
+      onTap: () => widget.onSelectQuestionCount(count),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.pinkAccent : Colors.black87,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.pinkAccent : Colors.white24,
+            width: 2,
+          ),
+        ),
+        child: Text(
+          '$count',
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
