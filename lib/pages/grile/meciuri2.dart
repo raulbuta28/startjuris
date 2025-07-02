@@ -13,9 +13,9 @@ class BottomSection extends StatefulWidget {
   final int player1Score;
   final int player2Score;
   final int questionIndex;
-  final String? subjectSelector;
-  final Function(String) onSelectSubjectSelector;
   final bool isUser1;
+  final String player1Name;
+  final String player2Name;
   final String? player1CurrentAnswer;
   final String? player2CurrentAnswer;
 
@@ -32,9 +32,9 @@ class BottomSection extends StatefulWidget {
     required this.player1Score,
     required this.player2Score,
     required this.questionIndex,
-    required this.subjectSelector,
-    required this.onSelectSubjectSelector,
     required this.isUser1,
+    required this.player1Name,
+    required this.player2Name,
     this.player1CurrentAnswer,
     this.player2CurrentAnswer,
   });
@@ -59,69 +59,7 @@ class _BottomSectionState extends State<BottomSection> {
       ),
       child: Column(
         children: [
-          if (!widget.matchActive && widget.subjectSelector == null)
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  Text(
-                    'Cine stabilește materia?',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () => widget.onSelectSubjectSelector('User 1'),
-                    child: Container(
-                      width: 200,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.pinkAccent.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        'Player 1',
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => widget.onSelectSubjectSelector('User 2'),
-                    child: Container(
-                      width: 200,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        'Player 2',
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (!widget.matchActive && widget.subjectSelector != null && widget.subjectSelector == (widget.isUser1 ? 'User 1' : 'User 2'))
+          if (!widget.matchActive)
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -186,74 +124,6 @@ class _BottomSectionState extends State<BottomSection> {
                 ],
               ),
             ),
-          if (!widget.matchActive && widget.subjectSelector != null && widget.subjectSelector != (widget.isUser1 ? 'User 1' : 'User 2'))
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '${widget.subjectSelector} alege materia...',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  const CircularProgressIndicator(
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 20),
-                  if (widget.selectedSubject != null) ...[
-                    Text(
-                      'Materia selectată: ${widget.selectedSubject}',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    GestureDetector(
-                      onTap: widget.onStartMatch,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xffff4081), Color(0xfff50057)],
-                          ),
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.pinkAccent.withOpacity(0.4),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.play_arrow, size: 28, color: Colors.white),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Începe meciul',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
           if (widget.matchActive && widget.question != null)
             Expanded(
               child: Column(
@@ -299,65 +169,35 @@ class _BottomSectionState extends State<BottomSection> {
                       itemBuilder: (context, index) {
                         final option = widget.question!['options'][index];
                         final prefix = String.fromCharCode(65 + index) + ".";
-                        final isPlayer1Selected = widget.player1CurrentAnswer == option;
-                        final isPlayer2Selected = widget.player2CurrentAnswer == option;
-                        
+                        final isSelected = widget.isUser1
+                            ? widget.player1CurrentAnswer == option
+                            : widget.player2CurrentAnswer == option;
+                        final color = widget.isUser1 ? Colors.red : Colors.blue;
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              // Player 1 answer button
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => widget.onToggleAnswer(1, option),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isPlayer1Selected ? Colors.red : Colors.black87,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Colors.red.withOpacity(0.5),
-                                        width: isPlayer1Selected ? 2 : 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$prefix $option',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
+                          child: GestureDetector(
+                            onTap: () => widget.onToggleAnswer(
+                                widget.isUser1 ? 1 : 2, option),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? color : Colors.black87,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: color.withOpacity(0.5),
+                                  width: isSelected ? 2 : 1,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              // Player 2 answer button
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => widget.onToggleAnswer(2, option),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isPlayer2Selected ? Colors.blue : Colors.black87,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Colors.blue.withOpacity(0.5),
-                                        width: isPlayer2Selected ? 2 : 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$prefix $option',
-                                      style: GoogleFonts.montserrat(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
+                              child: Text(
+                                '$prefix $option',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         );
                       },
@@ -369,8 +209,8 @@ class _BottomSectionState extends State<BottomSection> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildPlayerStatus('Player 1', widget.player1CurrentAnswer, Colors.red),
-                        _buildPlayerStatus('Player 2', widget.player2CurrentAnswer, Colors.blue),
+                        _buildPlayerStatus(widget.player1Name, widget.player1CurrentAnswer, Colors.red),
+                        _buildPlayerStatus(widget.player2Name, widget.player2CurrentAnswer, Colors.blue),
                       ],
                     ),
                   ),

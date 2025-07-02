@@ -207,8 +207,8 @@ class ScoreDisplay extends StatelessWidget {
     super.key,
     required this.player1Score,
     required this.player2Score,
-    this.player1Name = 'Player 1',
-    this.player2Name = 'Player 2',
+    required this.player1Name,
+    required this.player2Name,
   });
 
   @override
