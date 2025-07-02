@@ -49,6 +49,7 @@ dependencies:
   json_annotation: ^4.8.1
   image_picker: ^1.0.4
   permission_handler: ^11.3.0
+  internet_file: ^1.2.0
   web_socket_channel: ^2.4.0
   pull_to_refresh: ^2.0.0
   dio: ^5.4.0

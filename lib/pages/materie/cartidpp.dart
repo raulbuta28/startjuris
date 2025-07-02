@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../poveste_page.dart';
-import '../ebook_reader_page.dart';
+import '../simple_ebook_view_page.dart';
 import '../book_cover_page.dart';
 import '../../services/book_service.dart';
 
@@ -65,7 +65,7 @@ class CartiDPP extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   final page = carte.file.isNotEmpty
-                      ? PremiumEbookReaderPage(
+                      ? SimpleEbookViewPage(
                           title: carte.title,
                           url: carte.file,
                         )
