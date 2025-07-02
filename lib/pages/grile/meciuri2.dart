@@ -101,15 +101,7 @@ class _BottomSectionState extends State<BottomSection> {
                   ),
                   const SizedBox(height: 20),
                   if (widget.selectedSubject != null) ...[
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _buildChapterButton('Toată materia'),
-                        ...widget.chapters.map(_buildChapterButton).toList(),
-                      ],
-                    ),
+                    _buildChapterSelector(),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -288,10 +280,105 @@ class _BottomSectionState extends State<BottomSection> {
     );
   }
 
-  Widget _buildChapterButton(String chapter) {
+  Widget _buildChapterSelector() {
+    final label = widget.selectedChapter ?? 'Toată materia';
+    final isSelected = widget.selectedChapter != null;
+    return GestureDetector(
+      onTap: _showChapterSelectionModal,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.pinkAccent : Colors.black87,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.pinkAccent : Colors.white24,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showChapterSelectionModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          builder: (context, scrollCtrl) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: ListView(
+                controller: scrollCtrl,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Selectează tema',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildChapterButton('Toată materia', onTap: () => Navigator.pop(context)),
+                  const SizedBox(height: 8),
+                  ...widget.chapters.map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: _buildChapterButton(c, onTap: () => Navigator.pop(context)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildChapterButton(String chapter, {VoidCallback? onTap}) {
     final isSelected = widget.selectedChapter == chapter;
     return GestureDetector(
-      onTap: () => widget.onSelectChapter(chapter == 'Toată materia' ? null : chapter),
+      onTap: () {
+        widget.onSelectChapter(chapter == 'Toată materia' ? null : chapter);
+        if (onTap != null) onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
