@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:epub_view/epub_view.dart';
-import 'package:internet_file/internet_file.dart';
+import 'package:http/http.dart' as http;
 
 class SimpleEbookViewPage extends StatefulWidget {
   final String title;
@@ -18,8 +18,14 @@ class _SimpleEbookViewPageState extends State<SimpleEbookViewPage> {
   void initState() {
     super.initState();
     _controller = EpubController(
-      document: EpubDocument.openData(InternetFile.get(widget.url)),
+      document: EpubDocument.openData(_loadEpub()),
     );
+  }
+
+  Future<List<int>> _loadEpub() async {
+    final response = await http.get(Uri.parse(widget.url));
+    if (response.statusCode == 200) return response.bodyBytes;
+    throw Exception('Failed to load ebook');
   }
 
   @override
