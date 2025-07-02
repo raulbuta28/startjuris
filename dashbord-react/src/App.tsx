@@ -120,13 +120,15 @@ interface Theme {
 
 interface BookCarouselProps {
   title: string;
+  prefix: string;
   books: Book[];
   onSelect: (b: Book) => void;
   onDelete: (b: Book) => void;
+  onMove: (prefix: string, b: Book, dir: number) => void;
   onAdd: () => void;
 }
 
-function BookCarousel({ title, books, onSelect, onDelete, onAdd }: BookCarouselProps) {
+function BookCarousel({ title, prefix, books, onSelect, onDelete, onMove, onAdd }: BookCarouselProps) {
   return (
     <div className="mb-6">
       <h3 className="font-semibold text-lg mb-2">{title}</h3>
@@ -142,6 +144,20 @@ function BookCarousel({ title, books, onSelect, onDelete, onAdd }: BookCarouselP
             >
               <span className="material-icons text-sm">close</span>
             </button>
+            <div className="absolute top-0 left-0 flex flex-col">
+              <button
+                className="text-gray-600"
+                onClick={() => onMove(prefix, b, -1)}
+              >
+                <span className="material-icons text-sm">arrow_upward</span>
+              </button>
+              <button
+                className="text-gray-600"
+                onClick={() => onMove(prefix, b, 1)}
+              >
+                <span className="material-icons text-sm">arrow_downward</span>
+              </button>
+            </div>
             <div className="cursor-pointer" onClick={() => onSelect(b)}>
               <img className="w-full" src={b.image} alt={b.title} />
               <div className="mt-2 text-sm text-center">{b.title}</div>
@@ -200,15 +216,32 @@ function Materie({ books, onUpdate, onEdit }: MaterieProps) {
     onEdit(nb);
   };
 
+  const handleMove = (prefix: string, b: Book, dir: number) => {
+    const indices = books
+      .map((bk, idx) => ({ bk, idx }))
+      .filter((x) => x.bk.id.startsWith(prefix));
+    const pos = indices.findIndex((x) => x.bk.id === b.id);
+    if (pos === -1) return;
+    const targetPos = pos + dir;
+    if (targetPos < 0 || targetPos >= indices.length) return;
+    const updated = [...books];
+    const i = indices[pos].idx;
+    const j = indices[targetPos].idx;
+    [updated[i], updated[j]] = [updated[j], updated[i]];
+    onUpdate(updated);
+  };
+
   return (
     <div className="space-y-6">
       {categories.map((cat) => (
         <BookCarousel
           key={cat.prefix}
           title={cat.label}
+          prefix={cat.prefix}
           books={filter(cat.prefix)}
           onSelect={onEdit}
           onDelete={handleDelete}
+          onMove={handleMove}
           onAdd={() => handleAdd(cat.prefix)}
         />
       ))}
