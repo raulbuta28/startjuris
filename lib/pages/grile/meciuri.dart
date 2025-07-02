@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../backend/providers/auth_provider.dart';
 import 'meciuri2.dart';
 import 'meciuri3.dart';
 
@@ -351,7 +353,8 @@ class _MeciuriPageState extends State<MeciuriPage> {
   bool _matchActive = false;
   bool _gameFinished = false;
   String? _selectedSubject;
-  String? _subjectSelector;
+  late String _player1Name;
+  String _player2Name = 'Adversar';
   
   int _currentQuestionIndex = 0;
   int _player1Score = 0;
@@ -371,6 +374,8 @@ class _MeciuriPageState extends State<MeciuriPage> {
   void initState() {
     super.initState();
     _initializeCamera();
+    final auth = context.read<AuthProvider>();
+    _player1Name = auth.user?.username ?? 'Player 1';
   }
 
   Future<void> _initializeCamera() async {
@@ -392,12 +397,6 @@ class _MeciuriPageState extends State<MeciuriPage> {
     } catch (e) {
       debugPrint('Error initializing camera: $e');
     }
-  }
-
-  void _selectSubjectSelector(String selector) {
-    setState(() {
-      _subjectSelector = selector;
-    });
   }
 
   void _selectSubject(String subject) {
@@ -536,6 +535,8 @@ class _MeciuriPageState extends State<MeciuriPage> {
         player1Score: _player1Score,
         player2Score: _player2Score,
         cameraController: _controller,
+        player1Name: _player1Name,
+        player2Name: _player2Name,
       );
     }
 
@@ -580,7 +581,7 @@ class _MeciuriPageState extends State<MeciuriPage> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Player 1',
+                        _player1Name,
                         style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -599,7 +600,7 @@ class _MeciuriPageState extends State<MeciuriPage> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Player 2',
+                        _player2Name,
                         style: GoogleFonts.montserrat(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -662,9 +663,9 @@ class _MeciuriPageState extends State<MeciuriPage> {
                 player1Score: _player1Score,
                 player2Score: _player2Score,
                 questionIndex: _currentQuestionIndex,
-                subjectSelector: _subjectSelector,
-                onSelectSubjectSelector: _selectSubjectSelector,
                 isUser1: true,
+                player1Name: _player1Name,
+                player2Name: _player2Name,
                 player1CurrentAnswer: _player1CurrentAnswer,
                 player2CurrentAnswer: _player2CurrentAnswer,
               ),
@@ -876,6 +877,8 @@ class GameSummary extends StatelessWidget {
   final int player1Score;
   final int player2Score;
   final CameraController? cameraController;
+  final String player1Name;
+  final String player2Name;
 
   const GameSummary({
     super.key,
@@ -885,6 +888,8 @@ class GameSummary extends StatelessWidget {
     required this.player1Score,
     required this.player2Score,
     this.cameraController,
+    required this.player1Name,
+    required this.player2Name,
   });
 
   @override
@@ -952,13 +957,13 @@ class GameSummary extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildPlayerScore('Player 1', player1Score, Colors.red),
+                        _buildPlayerScore(player1Name, player1Score, Colors.red),
                         Container(
                           width: 2,
                           height: 50,
                           color: Colors.white24,
                         ),
-                        _buildPlayerScore('Player 2', player2Score, Colors.blue),
+                        _buildPlayerScore(player2Name, player2Score, Colors.blue),
                       ],
                     ),
                   ],
@@ -1014,14 +1019,14 @@ class GameSummary extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       _buildPlayerAnswer(
-                        'Player 1',
+                        player1Name,
                         player1Answer,
                         question['correct'],
                         Colors.red,
                       ),
                       const SizedBox(height: 8),
                       _buildPlayerAnswer(
-                        'Player 2',
+                        player2Name,
                         player2Answer,
                         question['correct'],
                         Colors.blue,
