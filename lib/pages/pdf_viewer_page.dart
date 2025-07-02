@@ -12,7 +12,7 @@ class PdfViewerPage extends StatefulWidget {
 }
 
 class _PdfViewerPageState extends State<PdfViewerPage> {
-  late final PdfControllerPinch _controller;
+  PdfControllerPinch? _controller;
   int _pages = 0;
   int _current = 1;
   bool _dark = false;
@@ -21,16 +21,26 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void initState() {
     super.initState();
-    _controller = PdfControllerPinch(
-      document: PdfDocument.openData(
-        InternetFile.get(widget.url),
-      ),
-    );
+    if (widget.url.isEmpty) {
+      return;
+    }
+    PdfDocument document;
+    if (widget.url.startsWith('http://') || widget.url.startsWith('https://')) {
+      document = PdfDocument.openData(InternetFile.get(widget.url));
+    } else if (widget.url.startsWith('file://') || widget.url.startsWith('/')) {
+      final path = widget.url.startsWith('file://')
+          ? widget.url.replaceFirst('file://', '')
+          : widget.url;
+      document = PdfDocument.openFile(path);
+    } else {
+      document = PdfDocument.openAsset(widget.url);
+    }
+    _controller = PdfControllerPinch(document: document);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -40,13 +50,18 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.url.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('Fișier indisponibil')),
+      );
+    }
     final bg = _dark ? Colors.black : Colors.white;
     return Scaffold(
       backgroundColor: bg,
       body: Stack(
         children: [
           PdfViewPinch(
-            controller: _controller,
+            controller: _controller!,
             scrollDirection: Axis.horizontal,
             backgroundDecoration: BoxDecoration(color: bg),
             onDocumentLoaded: (doc) => setState(() => _pages = doc.pagesCount),
