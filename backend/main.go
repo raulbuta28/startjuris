@@ -1003,14 +1003,20 @@ func uploadBookFile(c *gin.Context) {
 	}
 
 	os.MkdirAll(filepath.Join(uploadsDir, "ebook"), os.ModePerm)
-	fname := uuid.New().String() + filepath.Ext(file.Filename)
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	fname := uuid.New().String() + ext
 	path := filepath.Join(uploadsDir, "ebook", fname)
 	if err := c.SaveUploadedFile(file, path); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save"})
 		return
 	}
 
-	cover := extractEpubCover(path)
+	var cover string
+	if ext == ".epub" {
+		cover = extractEpubCover(path)
+	} else if ext == ".pdf" {
+		cover = extractPDFCover(path)
+	}
 
 	scheme := "http"
 	if c.Request.TLS != nil {
@@ -1112,6 +1118,11 @@ func extractEpubCover(epubPath string) string {
 			break
 		}
 	}
+	return ""
+}
+
+func extractPDFCover(pdfPath string) string {
+	// PDF cover extraction not implemented
 	return ""
 }
 

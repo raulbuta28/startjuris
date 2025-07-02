@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/book_service.dart';
 import '../poveste_page.dart';
 import '../ebook_reader_page.dart';
+import '../pdf_viewer_page.dart';
 import '../book_cover_page.dart';
 
 class BaraDeCautarePage extends StatefulWidget {
@@ -211,14 +212,19 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
         style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
       ),
       onTap: () {
-        final page = book.file.isNotEmpty
-            ? PremiumEbookReaderPage(title: book.title, url: book.file)
-            : PovesterePage(
-                titlu: book.title,
-                imagine: book.image,
-                continut: book.content,
-                progress: 0.0,
-              );
+        Widget page;
+        if (book.file.toLowerCase().endsWith('.pdf')) {
+          page = PdfViewerPage(title: book.title, url: book.file);
+        } else if (book.file.isNotEmpty) {
+          page = PremiumEbookReaderPage(title: book.title, url: book.file);
+        } else {
+          page = PovesterePage(
+            titlu: book.title,
+            imagine: book.image,
+            continut: book.content,
+            progress: 0.0,
+          );
+        }
         Navigator.push(
           context,
           MaterialPageRoute(

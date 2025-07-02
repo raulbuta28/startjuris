@@ -57,7 +57,7 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
         {form.image && (
           <img src={form.image} alt="preview" className="w-32" />
         )}
-        <input type="file" accept=".epub" onChange={handleBookFile} />
+        <input type="file" accept=".epub,.pdf" onChange={handleBookFile} />
         {uploading && <div className="text-sm text-gray-500">Uploading...</div>}
       </div>
       <button
