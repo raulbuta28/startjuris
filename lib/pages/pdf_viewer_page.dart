@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:internet_file/internet_file.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String title;
@@ -302,38 +304,39 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                     strokeWidth: 2,
                   ),
                 ),
-                pageBuilder: (context, future, page) => FutureBuilder<PdfPageImage>(
-                  future: future,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return InteractiveViewer(
-                        // Permite zoom pentru calitate maximă
-                        minScale: 0.5,
-                        maxScale: 4.0,
-                        child: Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: MemoryImage(snapshot.data!.bytes),
-                              fit: BoxFit.contain,
-                              // Filtru pentru randare de înaltă calitate
-                              filterQuality: FilterQuality.high,
+                pageBuilder: (
+                  BuildContext context,
+                  Future<PdfPageImage> future,
+                  int page,
+                  PdfDocument document,
+                ) {
+                  return PhotoViewGalleryPageOptions.customChild(
+                    minScale: PhotoViewComputedScale.contained * 0.5,
+                    maxScale: PhotoViewComputedScale.covered * 4.0,
+                    child: FutureBuilder<PdfPageImage>(
+                      future: future,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Image.memory(
+                            snapshot.data!.bytes,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          );
+                        }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).primaryColor,
                             ),
+                            strokeWidth: 2,
                           ),
-                        ),
-                      );
-                    }
-                    return Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).primaryColor,
-                        ),
-                        strokeWidth: 2,
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
               onPageChanged: (page) {
                 if (mounted) {
