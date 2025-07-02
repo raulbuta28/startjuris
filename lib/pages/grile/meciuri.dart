@@ -3,7 +3,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'meciuri_combined.dart';
 
 class LightningPainter extends CustomPainter {
   final Animation<double> animation;
@@ -182,7 +181,7 @@ class MeciuriPage extends StatefulWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const MeciuriCombinedPage()),
+        MaterialPageRoute(builder: (_) => const MeciuriPage()),
       ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 150),
