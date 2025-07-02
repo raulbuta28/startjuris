@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/book_service.dart';
 import '../poveste_page.dart';
-import '../ebook_reader_page.dart';
+import '../simple_ebook_view_page.dart';
 import '../book_cover_page.dart';
 
 class BaraDeCautarePage extends StatefulWidget {
@@ -212,7 +212,7 @@ class _BaraDeCautarePageState extends State<BaraDeCautarePage> {
       ),
       onTap: () {
         final page = book.file.isNotEmpty
-            ? PremiumEbookReaderPage(title: book.title, url: book.file)
+            ? SimpleEbookViewPage(title: book.title, url: book.file)
             : PovesterePage(
                 titlu: book.title,
                 imagine: book.image,
