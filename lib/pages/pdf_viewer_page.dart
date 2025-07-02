@@ -26,7 +26,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     }
   }
 
-  void _loadDocument() {
+  Future<PdfDocument> _createDocument() {
     Future<PdfDocument> documentFuture;
     if (widget.url.startsWith('http://') ||
         widget.url.startsWith('https://')) {
@@ -41,9 +41,14 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     } else {
       documentFuture = PdfDocument.openAsset(widget.url);
     }
+    return documentFuture;
+  }
+
+  Future<void> _loadDocument() async {
+    final document = await _createDocument();
     if (!mounted) return;
     setState(() {
-      _controller = PdfControllerPinch(document: documentFuture);
+      _controller = PdfControllerPinch(document: document);
     });
   }
 
@@ -62,6 +67,13 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
     if (widget.url.isEmpty) {
       return const Scaffold(
         body: Center(child: Text('Fișier indisponibil')),
+      );
+    }
+    if (_controller == null) {
+      final bg = _dark ? Colors.black : Colors.white;
+      return Scaffold(
+        backgroundColor: bg,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     final bg = _dark ? Colors.black : Colors.white;
