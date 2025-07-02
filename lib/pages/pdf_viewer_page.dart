@@ -21,7 +21,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
       body: Stack(
         children: [
           InAppWebView(
-            initialUrlRequest: URLRequest(url: Uri.parse(widget.url)),
+            initialUrlRequest: URLRequest(url: WebUri(widget.url)),
             onWebViewCreated: (controller) => _controller = controller,
             onLoadStop: (_, __) => setState(() => _loading = false),
           ),
