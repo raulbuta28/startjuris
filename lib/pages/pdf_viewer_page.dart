@@ -21,21 +21,30 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.url.isEmpty) {
-      return;
+    if (widget.url.isNotEmpty) {
+      _loadDocument();
     }
+  }
+
+  Future<void> _loadDocument() async {
     PdfDocument document;
-    if (widget.url.startsWith('http://') || widget.url.startsWith('https://')) {
-      document = PdfDocument.openData(InternetFile.get(widget.url));
-    } else if (widget.url.startsWith('file://') || widget.url.startsWith('/')) {
+    if (widget.url.startsWith('http://') ||
+        widget.url.startsWith('https://')) {
+      final data = await InternetFile.get(widget.url);
+      document = await PdfDocument.openData(data);
+    } else if (widget.url.startsWith('file://') ||
+        widget.url.startsWith('/')) {
       final path = widget.url.startsWith('file://')
           ? widget.url.replaceFirst('file://', '')
           : widget.url;
-      document = PdfDocument.openFile(path);
+      document = await PdfDocument.openFile(path);
     } else {
-      document = PdfDocument.openAsset(widget.url);
+      document = await PdfDocument.openAsset(widget.url);
     }
-    _controller = PdfControllerPinch(document: document);
+    if (!mounted) return;
+    setState(() {
+      _controller = PdfControllerPinch(document: document);
+    });
   }
 
   @override
