@@ -1,248 +1,340 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class PreviewBattleLines extends StatefulWidget {
+class BattleAnimation extends StatefulWidget {
   final int player1Score;
   final int player2Score;
-  final double progress;
+  final bool isActive;
 
-  const PreviewBattleLines({
+  const BattleAnimation({
     super.key,
     required this.player1Score,
     required this.player2Score,
-    required this.progress,
+    required this.isActive,
   });
 
   @override
-  _PreviewBattleLinesState createState() => _PreviewBattleLinesState();
+  _BattleAnimationState createState() => _BattleAnimationState();
 }
 
-class _PreviewBattleLinesState extends State<PreviewBattleLines>
+class _BattleAnimationState extends State<BattleAnimation>
     with SingleTickerProviderStateMixin {
-  static const double _stroke = 12.0;
-  static const double _riseAmount = 200.0;
-  static const Duration _cycle = Duration(seconds: 6);
-
-  late final AnimationController _ctrl;
-  late final Animation<double> _vProgress;
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: _cycle)..repeat();
-    _vProgress = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.0, 1.0, curve: Curves.easeOut),
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
     );
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    
+    if (widget.isActive) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(BattleAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+      }
+    }
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: _stroke + _riseAmount + 100,
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (context, _) {
-          final v = _vProgress.value;
-          final t = _ctrl.value;
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              CustomPaint(
-                size: Size.infinite,
-                painter: _BattleLinePainter(
-                  v: v,
-                  t: t,
-                  progress: widget.progress,
-                ),
-              ),
-              if (v > 0)
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _ScorePainter(
-                      pink: widget.player1Score,
-                      gold: widget.player2Score,
-                      t: t,
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _BattlePainter(
+            animation: _animation.value,
+            player1Score: widget.player1Score,
+            player2Score: widget.player2Score,
+            isActive: widget.isActive,
+          ),
+        );
+      },
     );
   }
 }
 
-class _BattleLinePainter extends CustomPainter {
-  final double v, t, progress;
+class _BattlePainter extends CustomPainter {
+  final double animation;
+  final int player1Score;
+  final int player2Score;
+  final bool isActive;
 
-  static const double _stroke = _PreviewBattleLinesState._stroke;
-  static const double _rise = _PreviewBattleLinesState._riseAmount;
-
-  const _BattleLinePainter({
-    required this.v,
-    required this.t,
-    required this.progress,
+  const _BattlePainter({
+    required this.animation,
+    required this.player1Score,
+    required this.player2Score,
+    required this.isActive,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final mid = size.width / 2;
-    final baseY = size.height - _stroke / 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // Draw energy waves
+    if (isActive) {
+      _drawEnergyWaves(canvas, size, center);
+    }
+    
+    // Draw score orbs
+    _drawScoreOrbs(canvas, size, center);
+  }
 
-    final pinkPaint = Paint()
+  void _drawEnergyWaves(Canvas canvas, Size size, Offset center) {
+    final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = _stroke
-      ..strokeCap = StrokeCap.round
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFFF4081), Color(0xFFF50057)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, _stroke));
+      ..strokeWidth = 2;
 
-    final goldPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _stroke
-      ..strokeCap = StrokeCap.round
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFFFD700), Color(0xFFFFC107)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, _stroke));
+    // Player 1 energy (red)
+    final redPaint = paint
+      ..color = Colors.red.withOpacity(0.3 + animation * 0.4)
+      ..strokeWidth = 3;
+    
+    final redRadius = 50 + animation * 30;
+    canvas.drawCircle(
+      Offset(size.width * 0.25, center.dy),
+      redRadius,
+      redPaint,
+    );
 
-    final bubblePaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+    // Player 2 energy (blue)
+    final bluePaint = paint
+      ..color = Colors.blue.withOpacity(0.3 + animation * 0.4)
+      ..strokeWidth = 3;
+    
+    final blueRadius = 50 + animation * 30;
+    canvas.drawCircle(
+      Offset(size.width * 0.75, center.dy),
+      blueRadius,
+      bluePaint,
+    );
+
+    // Central clash effect
+    final clashPaint = Paint()
+      ..color = Colors.white.withOpacity(animation * 0.5)
+      ..style = PaintingStyle.fill;
+    
+    canvas.drawCircle(center, 20 + animation * 10, clashPaint);
+  }
+
+  void _drawScoreOrbs(Canvas canvas, Size size, Offset center) {
+    // Player 1 score orbs
+    _drawPlayerOrbs(
+      canvas,
+      Offset(size.width * 0.25, center.dy),
+      player1Score,
+      Colors.red,
+    );
+
+    // Player 2 score orbs
+    _drawPlayerOrbs(
+      canvas,
+      Offset(size.width * 0.75, center.dy),
+      player2Score,
+      Colors.blue,
+    );
+  }
+
+  void _drawPlayerOrbs(Canvas canvas, Offset center, int score, Color color) {
+    final paint = Paint()
+      ..color = color
       ..style = PaintingStyle.fill;
 
-    final rnd = Random((t * 1000).toInt());
-
-    canvas.drawLine(Offset(0, baseY), Offset(mid, baseY), pinkPaint);
-    canvas.drawLine(Offset(size.width, baseY), Offset(mid, baseY), goldPaint);
-
-    final dyLeft = v * _rise * (1.0 + progress * 0.5);
-    final dyRight = v * _rise * (0.5 + progress * 0.5);
-    final leftTip = Offset(mid - _stroke / 2, baseY - dyLeft);
-    final rightTip = Offset(mid + _stroke / 2, baseY - dyRight);
-    canvas.drawLine(Offset(mid - _stroke / 2, baseY), leftTip, pinkPaint);
-    canvas.drawLine(Offset(mid + _stroke / 2, baseY), rightTip, goldPaint);
+    final shadowPaint = Paint()
+      ..color = color.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 
     for (int i = 0; i < 5; i++) {
-      final t1 = rnd.nextDouble();
-      final x1 = leftTip.dx + (rnd.nextDouble() - 0.5) * _stroke * 0.6;
-      final y1 = baseY - dyLeft * t1 + (rnd.nextDouble() - 0.5) * _stroke * 0.4;
-      final r1 = _stroke * (rnd.nextDouble() * 0.3 + 0.2);
-      canvas.drawCircle(Offset(x1, y1), r1, bubblePaint);
+      final angle = (i * 2 * pi / 5) - pi / 2;
+      final orbCenter = center + Offset(
+        cos(angle) * 40,
+        sin(angle) * 40,
+      );
 
-      final t2 = rnd.nextDouble();
-      final x2 = rightTip.dx + (rnd.nextDouble() - 0.5) * _stroke * 0.6;
-      final y2 = baseY - dyRight * t2 + (rnd.nextDouble() - 0.5) * _stroke * 0.4;
-      final r2 = _stroke * (rnd.nextDouble() * 0.3 + 0.2);
-      canvas.drawCircle(Offset(x2, y2), r2, bubblePaint);
-    }
+      final orbRadius = i < score ? 8.0 : 4.0;
+      final orbOpacity = i < score ? 1.0 : 0.3;
 
-    const sparkleSize = _stroke * 1.5;
-    _drawSparkle(canvas, leftTip, sparkleSize, t, [
-      const Color(0xFFF50057),
-      const Color(0xFFFF4081),
-    ]);
-    _drawSparkle(canvas, rightTip, sparkleSize, t, [
-      const Color(0xFFFFD700),
-      const Color(0xFFFFC107),
-    ]);
-  }
+      // Draw shadow
+      canvas.drawCircle(orbCenter, orbRadius + 2, shadowPaint);
+      
+      // Draw orb
+      final orbPaint = paint..color = color.withOpacity(orbOpacity);
+      canvas.drawCircle(orbCenter, orbRadius, orbPaint);
 
-  void _drawSparkle(
-      Canvas canvas, Offset c, double s, double t, List<Color> colors) {
-    final glowPaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6)
-      ..style = PaintingStyle.fill;
-
-    final sparklePaint = Paint()
-      ..shader = RadialGradient(colors: colors)
-          .createShader(Rect.fromCircle(center: c, radius: s))
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 6; i++) {
-      final angle = 2 * pi * i / 6 + t * 2 * pi;
-      final scale = 0.5 + 0.3 * sin(t * 4 + i);
-      final offset = Offset(cos(angle), sin(angle)) * s * scale;
-      final particle = c + offset;
-      final r = s * 0.2 * (1 + 0.3 * sin(t * 6 + i));
-      canvas.drawCircle(particle, r, glowPaint);
-      canvas.drawCircle(particle, r * 0.6, sparklePaint);
+      if (i < score) {
+        // Add sparkle effect
+        final sparklePaint = Paint()
+          ..color = Colors.white.withOpacity(0.8)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(orbCenter, 3, sparklePaint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _BattleLinePainter old) => true;
+  bool shouldRepaint(covariant _BattlePainter oldDelegate) => true;
 }
 
-class _ScorePainter extends CustomPainter {
-  final int pink, gold;
-  final double t;
+class ScoreDisplay extends StatelessWidget {
+  final int player1Score;
+  final int player2Score;
+  final String player1Name;
+  final String player2Name;
 
-  const _ScorePainter({
-    required this.pink,
-    required this.gold,
-    required this.t,
+  const ScoreDisplay({
+    super.key,
+    required this.player1Score,
+    required this.player2Score,
+    this.player1Name = 'Player 1',
+    this.player2Name = 'Player 2',
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = _PreviewBattleLinesState._stroke;
-    final baseY = size.height - stroke / 2;
-
-    void _flames(Offset c) {
-      for (int i = 0; i < 6; i++) {
-        final ang = 2 * pi * i / 6 + t * 2 * pi;
-        final off = Offset(cos(ang), sin(ang)) * (30 + sin(t * 8 + i) * 6);
-        canvas.drawCircle(
-          c + off,
-          6 + sin(t * 12 + i) * 3,
-          Paint()
-            ..color = Color.lerp(
-                Colors.yellow, Colors.red, (sin(t * 8 + i) + 1) / 2)!
-            ..style = PaintingStyle.fill
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-        );
-      }
-    }
-
-    void _box(Offset c, String label, List<Color> grad) {
-      final tp = TextPainter(
-        text: TextSpan(
-          text: label,
-          style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      final w = tp.width + 12;
-      final h = tp.height + 8;
-      final rect = Rect.fromCenter(center: c, width: w, height: h);
-      final paint = Paint()
-        ..shader = LinearGradient(colors: grad).createShader(rect);
-      _flames(c);
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(rect, const Radius.circular(6)), paint);
-      tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
-    }
-
-    _box(Offset(size.width * 0.25, baseY), '$pink puncte',
-        [const Color(0xFFFF4081), const Color(0xFFF50057)]);
-    _box(Offset(size.width * 0.75, baseY), '$gold puncte',
-        [const Color(0xFFFFD700), Color(0xFFFFC107)]);
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildPlayerScore(player1Name, player1Score, Colors.red),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            width: 2,
+            height: 30,
+            color: Colors.white24,
+          ),
+          _buildPlayerScore(player2Name, player2Score, Colors.blue),
+        ],
+      ),
+    );
   }
 
+  Widget _buildPlayerScore(String name, int score, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          name,
+          style: GoogleFonts.montserrat(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          score.toString(),
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class QuestionProgressBar extends StatelessWidget {
+  final int currentQuestion;
+  final int totalQuestions;
+
+  const QuestionProgressBar({
+    super.key,
+    required this.currentQuestion,
+    required this.totalQuestions,
+  });
+
   @override
-  bool shouldRepaint(covariant _ScorePainter old) => true;
+  Widget build(BuildContext context) {
+    final progress = currentQuestion / totalQuestions;
+    
+    return Container(
+      width: double.infinity,
+      height: 8,
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            width: MediaQuery.of(context).size.width * progress,
+            height: 8,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.purple, Colors.blue],
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          // Question markers
+          ...List.generate(totalQuestions, (index) {
+            final isCompleted = index < currentQuestion;
+            final isCurrent = index == currentQuestion;
+            final markerPosition = (index + 1) / totalQuestions;
+            
+            return Positioned(
+              left: MediaQuery.of(context).size.width * markerPosition - 6,
+              top: -2,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: isCompleted 
+                      ? Colors.green 
+                      : isCurrent 
+                          ? Colors.orange 
+                          : Colors.white24,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: Center(
+                  child: isCompleted 
+                      ? const Icon(Icons.check, size: 8, color: Colors.white)
+                      : null,
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 }
