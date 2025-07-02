@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'meciuri_combined.dart';
 
 class LightningPainter extends CustomPainter {
   final Animation<double> animation;
@@ -179,7 +180,10 @@ class MeciuriPage extends StatefulWidget {
 
   static Widget buildFindAdversaryButton(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MeciuriPage())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MeciuriCombinedPage()),
+      ),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 150),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
