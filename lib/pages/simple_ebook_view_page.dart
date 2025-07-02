@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:epub_view/epub_view.dart';
 import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 
 class SimpleEbookViewPage extends StatefulWidget {
   final String title;
@@ -12,17 +13,24 @@ class SimpleEbookViewPage extends StatefulWidget {
 }
 
 class _SimpleEbookViewPageState extends State<SimpleEbookViewPage> {
-  late final EpubController _controller;
+  EpubController? _controller;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _controller = EpubController(
-      document: EpubDocument.openData(_loadEpub()),
-    );
+    _initController();
   }
 
-  Future<List<int>> _loadEpub() async {
+  Future<void> _initController() async {
+    final bytes = await _loadEpub();
+    _controller = EpubController(
+      document: EpubDocument.openData(bytes),
+    );
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<Uint8List> _loadEpub() async {
     final response = await http.get(Uri.parse(widget.url));
     if (response.statusCode == 200) return response.bodyBytes;
     throw Exception('Failed to load ebook');
@@ -30,7 +38,7 @@ class _SimpleEbookViewPageState extends State<SimpleEbookViewPage> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -40,9 +48,11 @@ class _SimpleEbookViewPageState extends State<SimpleEbookViewPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: EpubView(
-        controller: _controller,
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : EpubView(
+              controller: _controller!,
+            ),
     );
   }
 }
