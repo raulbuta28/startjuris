@@ -138,10 +138,20 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
       _selectedAnswers = decoded
           .map<List<String>>((e) => List<String>.from(e as List))
           .toList();
+
+      // Ensure the loaded answers list matches the current number of questions
+      if (_selectedAnswers.length < widget.questions.length) {
+        _selectedAnswers.addAll(List.generate(
+            widget.questions.length - _selectedAnswers.length, (_) => []));
+      } else if (_selectedAnswers.length > widget.questions.length) {
+        _selectedAnswers =
+            _selectedAnswers.sublist(0, widget.questions.length);
+      }
+
       _answeredQuestions =
           _selectedAnswers.map((e) => e.isNotEmpty).toList();
-      _progress =
-          _selectedAnswers.where((a) => a.isNotEmpty).length / widget.questions.length;
+      _progress = _selectedAnswers.where((a) => a.isNotEmpty).length /
+          widget.questions.length;
     }
 
     if (completed) {
@@ -756,16 +766,20 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(Icons.info_outline,
                             size: 14, color: secondaryTextColor),
                         const SizedBox(width: 4),
-                        Text(
-                          'Nota: ${question.note}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: secondaryTextColor,
+                        Expanded(
+                          child: Text(
+                            'Nota: ${question.note}',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: secondaryTextColor,
+                            ),
+                            maxLines: 2,
                           ),
                         ),
                       ],
