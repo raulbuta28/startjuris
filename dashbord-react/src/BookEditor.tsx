@@ -24,16 +24,53 @@ export default function BookEditor({ book, onSave, onCancel }: EditorProps) {
   const handleBookFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setUploading(true);
+    let cover = form.image;
+
+    if (file.type === 'application/pdf') {
+      try {
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
+        pdfjs.GlobalWorkerOptions.workerSrc =
+          `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
+        const buf = await file.arrayBuffer();
+        const doc = await pdfjs.getDocument({ data: buf }).promise;
+        const page = await doc.getPage(1);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          const blob: Blob | null = await new Promise((res) =>
+            canvas.toBlob(res, 'image/png')
+          );
+          if (blob) {
+            const fd = new FormData();
+            fd.append('image', blob, 'cover.png');
+            const up = await fetch('/api/books/upload-image', {
+              method: 'POST',
+              body: fd,
+            });
+            const d = await up.json();
+            if (d.url) cover = d.url;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to extract PDF cover', err);
+      }
+    }
+
     const fd = new FormData();
     fd.append('file', file);
-    setUploading(true);
     try {
       const res = await fetch('/api/books/upload-file', {
         method: 'POST',
         body: fd,
       });
       const data = await res.json();
-      setForm({ ...form, file: data.fileUrl || '', image: data.coverUrl || form.image });
+      setForm({ ...form, file: data.fileUrl || '', image: cover || form.image });
     } finally {
       setUploading(false);
     }
