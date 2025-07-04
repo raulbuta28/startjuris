@@ -38,6 +38,7 @@ type Question = {
   correct: number[];
   note: string;
   explanation?: string;
+  section?: string;
   categories?: string[];
   verified?: boolean;
 };
@@ -56,6 +57,7 @@ export default function Grile() {
   const [editingQuestions, setEditingQuestions] = useState<Record<number, string>>({});
   const [editingExplanations, setEditingExplanations] = useState<Record<number, string>>({});
   const [addingAnswer, setAddingAnswer] = useState<Record<number, string>>({});
+  const [sectionInputs, setSectionInputs] = useState<Record<number, string>>({});
   const [selectedSubject, setSelectedSubject] = useState("");
   const [savedTests, setSavedTests] = useState<Test[]>([]);
   const [testsLoaded, setTestsLoaded] = useState(false);
@@ -109,6 +111,7 @@ export default function Grile() {
             ...q,
             categories: q.categories ?? ['INM', 'Barou', 'INR'],
             verified: q.verified ?? false,
+            section: q.section ?? '',
           })),
         }));
         setSavedTests(withDefaults);
@@ -128,6 +131,7 @@ export default function Grile() {
                 ...q,
                 categories: q.categories ?? ['INM', 'Barou', 'INR'],
                 verified: q.verified ?? false,
+                section: q.section ?? '',
               })),
             }));
             setSavedTests(withDefaults);
@@ -234,6 +238,7 @@ export default function Grile() {
           explanation: "",
           categories: [...categoryOptions],
           verified: false,
+          section: '',
         };
         continue;
       }
@@ -249,6 +254,7 @@ export default function Grile() {
           explanation: "",
           categories: [...categoryOptions],
           verified: false,
+          section: '',
         };
         continue;
       }
@@ -264,6 +270,7 @@ export default function Grile() {
             explanation: "",
             categories: [...categoryOptions],
             verified: false,
+            section: '',
           };
         }
         current.answers.push(aMatch[2] || aMatch[1]);
@@ -412,6 +419,7 @@ export default function Grile() {
       correct: [],
       note: "",
       explanation: "",
+      section: '',
       categories: [...categoryOptions],
       verified: false,
     };
@@ -459,6 +467,7 @@ export default function Grile() {
       correct,
       note: '',
       explanation: manualExplanation.trim(),
+      section: '',
       categories: [...categoryOptions],
       verified: false,
     };
@@ -563,6 +572,47 @@ export default function Grile() {
         return { ...t, categories: updated };
       })
     );
+  };
+
+  const moveSavedQuestion = (qi: number, dir: number) => {
+    if (!selectedTestId) return;
+    setSavedTests((prev) => {
+      const idx = prev.findIndex((t) => t.id === selectedTestId);
+      if (idx === -1) return prev;
+      const test = { ...prev[idx], questions: [...prev[idx].questions] };
+      const ni = qi + dir;
+      if (ni < 0 || ni >= test.questions.length) return prev;
+      const tmp = test.questions[qi];
+      test.questions[qi] = test.questions[ni];
+      test.questions[ni] = tmp;
+      const arr = [...prev];
+      arr[idx] = test;
+      return arr;
+    });
+  };
+
+  const setQuestionSection = (
+    qi: number,
+    section: string,
+    isEditing = false
+  ) => {
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        const qs = [...prev.questions];
+        qs[qi] = { ...qs[qi], section };
+        return { ...prev, questions: qs };
+      });
+    } else if (selectedTestId) {
+      setSavedTests((prev) =>
+        prev.map((t) => {
+          if (t.id !== selectedTestId) return t;
+          const qs = [...t.questions];
+          qs[qi] = { ...qs[qi], section };
+          return { ...t, questions: qs };
+        })
+      );
+    }
   };
 
   const renderTab = () => {
@@ -1138,11 +1188,53 @@ export default function Grile() {
                   </div>
                   {savedTests
                     .find((t) => t.id === selectedTestId)
-                    ?.questions.map((q, qi) => (
+                    ?.questions.map((q, qi, arr) => (
                       <div key={qi} className="border-t pt-4 space-y-1">
+                        {sectionInputs[qi] !== undefined ? (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              className="border p-1 rounded flex-1"
+                              value={sectionInputs[qi]}
+                              onChange={(e) =>
+                                setSectionInputs((s) => ({
+                                  ...s,
+                                  [qi]: e.target.value,
+                                }))
+                              }
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setQuestionSection(qi, sectionInputs[qi]);
+                                setSectionInputs((s) => {
+                                  const copy = { ...s };
+                                  delete copy[qi];
+                                  return copy;
+                                });
+                              }}
+                            >
+                              Salvează
+                            </Button>
+                          </div>
+                        ) : q.section ? (
+                          <div className="inline-block border border-black bg-white px-2 py-1 text-sm">
+                            {q.section}
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="mb-1"
+                            onClick={() =>
+                              setSectionInputs((s) => ({ ...s, [qi]: '' }))
+                            }
+                          >
+                            Adaugă secțiunea
+                          </Button>
+                        )}
                         <div className="flex items-start">
                           <p className="flex-1 font-bold leading-tight">
-                            {qi + 1}. {q.text}{" "}
+                            {qi + 1}. {q.text}{' '}
                             {q.verified && (
                               <span className="text-green-600 ml-1">✓</span>
                             )}
@@ -1153,6 +1245,22 @@ export default function Grile() {
                             checked={q.verified || false}
                             onChange={() => toggleVerified(qi)}
                           />
+                          <div className="flex flex-col border-l ml-2 pl-2">
+                            <button
+                              onClick={() => moveSavedQuestion(qi, -1)}
+                              disabled={qi === 0}
+                              className="text-2xl leading-none"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => moveSavedQuestion(qi, 1)}
+                              disabled={qi === arr.length - 1}
+                              className="text-2xl leading-none"
+                            >
+                              ↓
+                            </button>
+                          </div>
                         </div>
                         {q.answers.map((a, ai) => (
                           <p key={ai} className="pl-4 leading-tight">
@@ -1271,8 +1379,48 @@ export default function Grile() {
                       Adaugă grilă
                     </Button>
                   </div>
-                  {editingTest.questions.map((q, qi) => (
+                  {editingTest.questions.map((q, qi, arr) => (
                     <div key={qi} className="border-t pt-4 space-y-1">
+                      {sectionInputs[qi] !== undefined ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            className="border p-1 rounded flex-1"
+                            value={sectionInputs[qi]}
+                            onChange={(e) =>
+                              setSectionInputs((s) => ({
+                                ...s,
+                                [qi]: e.target.value,
+                              }))
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setQuestionSection(qi, sectionInputs[qi], true);
+                              setSectionInputs((s) => {
+                                const copy = { ...s };
+                                delete copy[qi];
+                                return copy;
+                              });
+                            }}
+                          >
+                            Salvează
+                          </Button>
+                        </div>
+                      ) : q.section ? (
+                        <div className="inline-block border border-black bg-white px-2 py-1 text-sm">
+                          {q.section}
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="mb-1"
+                          onClick={() => setSectionInputs((s) => ({ ...s, [qi]: '' }))}
+                        >
+                          Adaugă secțiunea
+                        </Button>
+                      )}
                       {editingQuestions[qi] !== undefined ? (
                         <div className="flex items-center space-x-2">
                           <input
