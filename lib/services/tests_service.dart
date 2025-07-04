@@ -23,6 +23,10 @@ class FetchedTest {
   });
 
   factory FetchedTest.fromJson(Map<String, dynamic> json) {
+    final sections = (json['sections'] as List? ?? [])
+        .map((e) => e.toString())
+        .toList();
+    String currentSection = '';
     final questions = (json['questions'] as List? ?? [])
         .asMap()
         .entries
@@ -41,6 +45,13 @@ class FetchedTest {
           .toList();
       final correctLetters =
           correctIndexes.map((i) => String.fromCharCode(65 + i)).toList();
+      String section = q['section']?.toString() ?? '';
+      if (section.isNotEmpty) {
+        currentSection = section;
+      } else if (currentSection.isEmpty && sections.isNotEmpty) {
+        // If no section specified yet, fall back to first provided section
+        currentSection = sections.first;
+      }
       return Question(
         id: entry.key + 1,
         text: q['text'] ?? '',
@@ -51,7 +62,7 @@ class FetchedTest {
         categories: (q['categories'] as List? ?? ['INM', 'Barou', 'INR'])
             .map((e) => e.toString())
             .toList(),
-        section: q['section']?.toString() ?? '',
+        section: section.isNotEmpty ? section : currentSection,
       );
     }).toList();
 
