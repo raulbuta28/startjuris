@@ -77,9 +77,13 @@ export default function Grile() {
   const [manualExplanation, setManualExplanation] = useState('');
   const [manualTestId, setManualTestId] = useState('');
 
-  // Move question between themes
+  // Move question between sections
   const [moveIndex, setMoveIndex] = useState<number | null>(null);
   const [moveTargetId, setMoveTargetId] = useState('');
+
+  // Move question to another theme
+  const [moveThemeIndex, setMoveThemeIndex] = useState<number | null>(null);
+  const [moveThemeTargetId, setMoveThemeTargetId] = useState('');
 
   // Sections
   const [addingSection, setAddingSection] = useState(false);
@@ -772,6 +776,56 @@ export default function Grile() {
             onClick={() => setMoveIndex(qi)}
           >
             Mutare grilă
+          </Button>
+        );
+      })()}
+      {(() => {
+        if (!selectedTestId) return null;
+        const tests = savedTests.filter((t) => t.id !== selectedTestId);
+        if (tests.length === 0) return null;
+        return moveThemeIndex === qi ? (
+          <div className="pl-4 flex items-center space-x-2 mt-2">
+            <select
+              className="border p-1 rounded flex-1"
+              value={moveThemeTargetId}
+              onChange={(e) => setMoveThemeTargetId(e.target.value)}
+            >
+              <option value="">Selectează tema</option>
+              {tests.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} - {t.subject}
+                </option>
+              ))}
+            </select>
+            <Button
+              size="sm"
+              onClick={() => {
+                moveQuestionToTest(selectedTestId, qi, moveThemeTargetId);
+                setMoveThemeIndex(null);
+                setMoveThemeTargetId('');
+              }}
+            >
+              Trimite
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setMoveThemeIndex(null);
+                setMoveThemeTargetId('');
+              }}
+            >
+              Renunță
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="ml-4 mt-2"
+            onClick={() => setMoveThemeIndex(qi)}
+          >
+            Mutare grilă în temă
           </Button>
         );
       })()}
@@ -1839,6 +1893,55 @@ export default function Grile() {
                             onClick={() => setMoveIndex(qi)}
                           >
                             Mutare grilă
+                          </Button>
+                        );
+                      })()}
+                      {(() => {
+                        const tests = savedTests.filter((t) => t.id !== editingTest?.id);
+                        if (tests.length === 0 || !editingTest) return null;
+                        return moveThemeIndex === qi ? (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <select
+                              className="border p-1 rounded flex-1"
+                              value={moveThemeTargetId}
+                              onChange={(e) => setMoveThemeTargetId(e.target.value)}
+                            >
+                              <option value="">Selectează tema</option>
+                              {tests.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name} - {t.subject}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                moveQuestionToTest(editingTest.id, qi, moveThemeTargetId);
+                                setMoveThemeIndex(null);
+                                setMoveThemeTargetId('');
+                              }}
+                            >
+                              Trimite
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setMoveThemeIndex(null);
+                                setMoveThemeTargetId('');
+                              }}
+                            >
+                              Renunță
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => setMoveThemeIndex(qi)}
+                          >
+                            Mutare grilă în temă
                           </Button>
                         );
                       })()}
