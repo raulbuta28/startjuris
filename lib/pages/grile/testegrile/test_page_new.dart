@@ -277,15 +277,46 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
                     controller: _scrollController,
                     padding: const EdgeInsets.only(bottom: 100),
                     itemCount: widget.questions.length + (_showExplanations ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_showExplanations && index == 0) {
-                        return _buildTestResults();
-                      }
-                      final qIndex = _showExplanations ? index - 1 : index;
-                      return _buildQuestionCard(widget.questions[qIndex], qIndex);
-                    },
-                  ),
+                  itemBuilder: (context, index) {
+                    if (_showExplanations && index == 0) {
+                      return _buildTestResults();
+                    }
+                    final qIndex = _showExplanations ? index - 1 : index;
+                    final question = widget.questions[qIndex];
+                    final card = _buildQuestionCard(question, qIndex);
+                    if (question.section.isNotEmpty &&
+                        (qIndex == 0 ||
+                            widget.questions[qIndex - 1].section !=
+                                question.section)) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: Colors.black, width: 1),
+                            ),
+                            child: Center(
+                              child: Text(
+                                question.section,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                          card,
+                        ],
+                      );
+                    }
+                    return card;
+                  },
                 ),
+              ),
               ],
             ),
             if (_showTools) _buildToolsOverlay(),
