@@ -119,6 +119,7 @@ export default function Grile() {
           sections: t.sections ?? [],
           questions: (t.questions ?? []).map((q: any) => ({
             ...q,
+            text: stripQuestionNumber(q.text ?? ''),
             categories: q.categories ?? ['INM', 'Barou', 'INR'],
             verified: q.verified ?? false,
             section: q.section ?? '',
@@ -140,6 +141,7 @@ export default function Grile() {
               sections: t.sections ?? [],
               questions: (t.questions ?? []).map((q: any) => ({
                 ...q,
+                text: stripQuestionNumber(q.text ?? ''),
                 categories: q.categories ?? ['INM', 'Barou', 'INR'],
                 verified: q.verified ?? false,
                 section: q.section ?? '',
@@ -184,7 +186,7 @@ export default function Grile() {
   };
 
   const stripQuestionNumber = (t: string) =>
-    t.replace(/^\s*(?:\d+[.)]?\s*)+/, '').trim();
+    t.replace(/^\s*(?:\d+[.)-]?\s*)+/, '').trim();
 
   const lettersToIndexes = (letters: string): number[] =>
     letters
@@ -476,7 +478,7 @@ export default function Grile() {
     if (!manualTestId || !manualQuestion.trim() || manualAnswers.every((a) => !a.trim())) return;
     const correct = lettersToIndexes(manualCorrect);
     const newQ: Question = {
-      text: manualQuestion.trim(),
+      text: stripQuestionNumber(manualQuestion.trim()),
       answers: manualAnswers.map((a) => a.trim()).filter((a) => a),
       correct,
       note: '',
@@ -961,7 +963,9 @@ export default function Grile() {
                           onClick={() => {
                             updateQuestionsState((prev) => {
                               const copy = [...prev];
-                              copy[qi].text = editingQuestions[qi].trim() || copy[qi].text;
+                              copy[qi].text =
+                                stripQuestionNumber(editingQuestions[qi].trim()) ||
+                                copy[qi].text;
                               return copy;
                             }, !!editingTest);
                             setEditingQuestions({});
@@ -1617,7 +1621,9 @@ export default function Grile() {
                               setEditingTest((prev) => {
                                 if (!prev) return prev;
                                 const copy = { ...prev, questions: [...prev.questions] };
-                                copy.questions[qi].text = editingQuestions[qi].trim() || copy.questions[qi].text;
+                                copy.questions[qi].text =
+                                  stripQuestionNumber(editingQuestions[qi].trim()) ||
+                                  copy.questions[qi].text;
                                 return copy;
                               });
                               setEditingQuestions({});
