@@ -1478,6 +1478,40 @@ export default function Grile() {
                       >
                         Eliminare secțiuni
                       </Button>
+                      {addingSection ? (
+                        <div className="inline-flex items-center space-x-2">
+                          <input
+                            className="border p-1 rounded flex-1"
+                            value={newSectionName}
+                            onChange={(e) => setNewSectionName(e.target.value)}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              addSectionToTest(newSectionName);
+                              setNewSectionName('');
+                              setAddingSection(false);
+                            }}
+                          >
+                            Salvează
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setAddingSection(false)}
+                          >
+                            Renunță
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setAddingSection(true)}
+                        >
+                          Creează secțiune
+                        </Button>
+                      )}
                       <Button
                         onClick={() =>
                           setEditingTest(() => {
@@ -1527,34 +1561,6 @@ export default function Grile() {
                         </>
                       );
                     })()}
-                    {addingSection ? (
-                      <div className="flex items-center space-x-2 mb-2">
-                        <input
-                          className="border p-1 rounded flex-1"
-                          value={newSectionName}
-                          onChange={(e) => setNewSectionName(e.target.value)}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            addSectionToTest(newSectionName);
-                            setNewSectionName('');
-                            setAddingSection(false);
-                          }}
-                        >
-                          Salvează
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="mb-2"
-                        onClick={() => setAddingSection(true)}
-                      >
-                        Adaugă secțiune
-                      </Button>
-                    )}
                   </div>
                 </>
               )}
