@@ -885,6 +885,31 @@ export default function Grile() {
     }
   };
 
+  const clearSectionsFromTest = (isEditing = false) => {
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: [],
+          questions: prev.questions.map((q) => ({ ...q, section: '' })),
+        };
+      });
+    } else if (selectedTestId) {
+      setSavedTests((prev) =>
+        prev.map((t) =>
+          t.id === selectedTestId
+            ? {
+                ...t,
+                sections: [],
+                questions: t.questions.map((q) => ({ ...q, section: '' })),
+              }
+            : t
+        )
+      );
+    }
+  };
+
   const renderTab = () => {
     switch (active) {
       case "creare":
@@ -1448,6 +1473,12 @@ export default function Grile() {
                         Șterge test
                       </Button>
                       <Button
+                        variant="secondary"
+                        onClick={() => clearSectionsFromTest()}
+                      >
+                        Eliminare secțiuni
+                      </Button>
+                      <Button
                         onClick={() =>
                           setEditingTest(() => {
                             const t = savedTests.find((x) => x.id === selectedTestId);
@@ -1559,9 +1590,16 @@ export default function Grile() {
                       </label>
                     ))}
                   </div>
-                  <div className="mb-4 text-right">
+                  <div className="mb-4 text-right space-x-2">
                     <Button size="sm" variant="secondary" onClick={() => addQuestion(true)}>
                       Adaugă grilă
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => clearSectionsFromTest(true)}
+                    >
+                      Eliminare secțiuni
                     </Button>
                   </div>
                   {editingTest.questions.map((q, qi, arr) => (
