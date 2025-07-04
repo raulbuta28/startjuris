@@ -174,6 +174,7 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
           explanation: q.explanation,
           note: q.note,
           categories: q.categories,
+          section: q.section,
         );
       }).toList();
 

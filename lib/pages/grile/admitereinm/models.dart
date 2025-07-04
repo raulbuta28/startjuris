@@ -16,6 +16,7 @@ class Question {
   final String explanation;
   final String note;
   final List<String> categories;
+  final String section;
 
   const Question({
     required this.id,
@@ -25,6 +26,7 @@ class Question {
     required this.explanation,
     this.note = '',
     this.categories = const ['INM', 'Barou', 'INR'],
+    this.section = '',
   });
 }
 
