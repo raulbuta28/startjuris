@@ -183,6 +183,9 @@ export default function Grile() {
     return m ? m[1] : t.trim();
   };
 
+  const stripQuestionNumber = (t: string) =>
+    t.replace(/^\s*(?:\d+[.)]?\s*)+/, '').trim();
+
   const lettersToIndexes = (letters: string): number[] =>
     letters
       .toUpperCase()
@@ -677,7 +680,7 @@ export default function Grile() {
       )}
       <div className="flex items-start">
         <p className="flex-1 font-bold leading-tight">
-          {qi + 1}. {q.text}{' '}
+          {qi + 1}. {stripQuestionNumber(q.text)}{' '}
           {q.verified && <span className="text-green-600 ml-1">✓</span>}
         </p>
         <input
@@ -970,7 +973,7 @@ export default function Grile() {
                     ) : (
                       <div className="flex items-center space-x-2">
                         <p className="flex-1 font-bold leading-tight">
-                          {qi + 1}. {q.text}
+                          {qi + 1}. {stripQuestionNumber(q.text)}
                         </p>
                         <Button
                           size="sm"
@@ -1116,7 +1119,7 @@ export default function Grile() {
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
                     <p className="font-bold leading-tight">
-                      {qi + 1}. {q.text}
+                      {qi + 1}. {stripQuestionNumber(q.text)}
                     </p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4 leading-tight">
@@ -1156,7 +1159,7 @@ export default function Grile() {
                   <div key={qi} className="border-t pt-4 space-y-1">
                     <div className="flex justify-between items-center">
                       <p className="font-bold leading-tight">
-                        {qi + 1}. {q.text}
+                        {qi + 1}. {stripQuestionNumber(q.text)}
                       </p>
                       <Button
                         size="sm"
@@ -1237,7 +1240,7 @@ export default function Grile() {
                 {questions.map((q, qi) => (
                   <div key={qi} className="border-t pt-4 space-y-1">
                     <p className="font-bold leading-tight">
-                      {qi + 1}. {q.text}
+                      {qi + 1}. {stripQuestionNumber(q.text)}
                     </p>
                     {q.answers.map((a, ai) => (
                       <p key={ai} className="pl-4 leading-tight">
@@ -1626,7 +1629,7 @@ export default function Grile() {
                       ) : (
                         <div className="flex items-center space-x-2">
                           <p className="flex-1 font-bold leading-tight">
-                            {qi + 1}. {q.text}{" "}
+                            {qi + 1}. {stripQuestionNumber(q.text)}{" "}
                             {q.verified && (
                               <span className="text-green-600 ml-1">✓</span>
                             )}
