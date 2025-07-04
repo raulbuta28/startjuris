@@ -15,6 +15,7 @@ interface Test {
   questions: Question[];
   categories?: string[];
   order?: number;
+  sections?: string[];
 }
 
 const tabs: Tab[] = [
@@ -80,6 +81,10 @@ export default function Grile() {
   const [moveIndex, setMoveIndex] = useState<number | null>(null);
   const [moveTargetId, setMoveTargetId] = useState('');
 
+  // Sections
+  const [addingSection, setAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+
 
   const toggleQuestionCategory = (
     qi: number,
@@ -107,6 +112,7 @@ export default function Grile() {
           ...t,
           categories: t.categories ?? ['INM', 'Barou', 'INR'],
           order: t.order ?? i,
+          sections: t.sections ?? [],
           questions: (t.questions ?? []).map((q: any) => ({
             ...q,
             categories: q.categories ?? ['INM', 'Barou', 'INR'],
@@ -127,6 +133,7 @@ export default function Grile() {
               ...t,
               categories: t.categories ?? ['INM', 'Barou', 'INR'],
               order: t.order ?? i,
+              sections: t.sections ?? [],
               questions: (t.questions ?? []).map((q: any) => ({
                 ...q,
                 categories: q.categories ?? ['INM', 'Barou', 'INR'],
@@ -515,6 +522,7 @@ export default function Grile() {
     const withCategories = {
       ...editingTest,
       categories: Array.from(new Set(editingTest.categories ?? [...categoryOptions])),
+      sections: Array.from(new Set(editingTest.sections ?? [])),
     };
 
     setSavedTests((prev) =>
@@ -610,6 +618,199 @@ export default function Grile() {
           const qs = [...t.questions];
           qs[qi] = { ...qs[qi], section };
           return { ...t, questions: qs };
+        })
+      );
+    }
+  };
+
+  const renderQuestionView = (q: Question, qi: number, arr: Question[]) => (
+    <div key={qi} className="border-t pt-4 space-y-1">
+      {sectionInputs[qi] !== undefined ? (
+        <div className="flex items-center space-x-2">
+          <input
+            className="border p-1 rounded flex-1"
+            value={sectionInputs[qi]}
+            onChange={(e) =>
+              setSectionInputs((s) => ({
+                ...s,
+                [qi]: e.target.value,
+              }))
+            }
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              setQuestionSection(qi, sectionInputs[qi]);
+              setSectionInputs((s) => {
+                const copy = { ...s };
+                delete copy[qi];
+                return copy;
+              });
+            }}
+          >
+            Salvează
+          </Button>
+        </div>
+      ) : q.section ? (
+        <div className="inline-flex items-center border border-black bg-white px-2 py-1 text-sm">
+          <span>{q.section}</span>
+          <button
+            className="ml-1 text-red-600"
+            onClick={() => setQuestionSection(qi, '')}
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="mb-1"
+          onClick={() => setSectionInputs((s) => ({ ...s, [qi]: '' }))}
+        >
+          Adaugă secțiunea
+        </Button>
+      )}
+      <div className="flex items-start">
+        <p className="flex-1 font-bold leading-tight">
+          {qi + 1}. {q.text}{' '}
+          {q.verified && <span className="text-green-600 ml-1">✓</span>}
+        </p>
+        <input
+          type="checkbox"
+          className="mt-1 mr-2"
+          checked={q.verified || false}
+          onChange={() => toggleVerified(qi)}
+        />
+        <div className="flex flex-col border-l ml-2 pl-2">
+          <button
+            onClick={() => moveSavedQuestion(qi, -1)}
+            disabled={qi === 0}
+            className="text-2xl leading-none"
+          >
+            ↑
+          </button>
+          <button
+            onClick={() => moveSavedQuestion(qi, 1)}
+            disabled={qi === arr.length - 1}
+            className="text-2xl leading-none"
+          >
+            ↓
+          </button>
+        </div>
+      </div>
+      {q.answers.map((a, ai) => (
+        <p key={ai} className="pl-4 leading-tight">
+          {String.fromCharCode(65 + ai)}. {a}
+        </p>
+      ))}
+      <p className="text-sm italic">
+        Răspuns corect:{' '}
+        {q.correct.map((c) => String.fromCharCode(65 + c)).join(', ')}
+      </p>
+      {q.note && <p className="text-sm text-gray-600">Nota: {q.note}</p>}
+      {q.explanation && (
+        <div className="text-sm space-y-1">
+          <p className="font-medium">Explicație:</p>
+          {q.explanation
+            .split(/\n+/)
+            .filter((p) => p.trim())
+            .map((p, i) => (
+              <p key={i} className="indent-4">
+                {p}
+              </p>
+            ))}
+        </div>
+      )}
+      {moveIndex === qi ? (
+        <div className="pl-4 flex items-center space-x-2">
+          <select
+            className="border p-1 rounded flex-1"
+            value={moveTargetId}
+            onChange={(e) => setMoveTargetId(e.target.value)}
+          >
+            <option value="">Selectează tema</option>
+            {savedTests
+              .filter((t) => t.id !== selectedTestId)
+              .map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} - {t.subject}
+                </option>
+              ))}
+          </select>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (!moveTargetId || selectedTestId === null) return;
+              moveQuestionToTest(selectedTestId, qi, moveTargetId);
+              setMoveIndex(null);
+              setMoveTargetId('');
+            }}
+          >
+            Trimite
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setMoveIndex(null);
+              setMoveTargetId('');
+            }}
+          >
+            Renunță
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="ml-4"
+          onClick={() => setMoveIndex(qi)}
+        >
+          Mutare grilă
+        </Button>
+      )}
+    </div>
+  );
+
+  const addSectionToTest = (name: string, isEditing = false) => {
+    if (!name.trim()) return;
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        const secs = Array.from(new Set([...(prev.sections ?? []), name.trim()]));
+        return { ...prev, sections: secs };
+      });
+    } else if (selectedTestId) {
+      setSavedTests((prev) =>
+        prev.map((t) =>
+          t.id === selectedTestId
+            ? { ...t, sections: Array.from(new Set([...(t.sections ?? []), name.trim()])) }
+            : t
+        )
+      );
+    }
+  };
+
+  const deleteSectionFromTest = (name: string, isEditing = false) => {
+    if (isEditing && editingTest) {
+      setEditingTest((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          sections: (prev.sections ?? []).filter((s) => s !== name),
+          questions: prev.questions.map((q) => (q.section === name ? { ...q, section: '' } : q)),
+        };
+      });
+    } else if (selectedTestId) {
+      setSavedTests((prev) =>
+        prev.map((t) => {
+          if (t.id !== selectedTestId) return t;
+          return {
+            ...t,
+            sections: (t.sections ?? []).filter((s) => s !== name),
+            questions: t.questions.map((q) => (q.section === name ? { ...q, section: '' } : q)),
+          };
         })
       );
     }
@@ -1101,6 +1302,7 @@ export default function Grile() {
                             questions: [],
                             categories: [...categoryOptions],
                             order,
+                            sections: [],
                           };
                           setSavedTests((prev) => [...prev, test]);
                           setAddingTestSubject(null);
@@ -1178,7 +1380,13 @@ export default function Grile() {
                         onClick={() =>
                           setEditingTest(() => {
                             const t = savedTests.find((x) => x.id === selectedTestId);
-                            return t ? { ...t, categories: t.categories ?? ['INM', 'Barou', 'INR'] } : null;
+                            return t
+                              ? {
+                                  ...t,
+                                  categories: t.categories ?? ['INM', 'Barou', 'INR'],
+                                  sections: t.sections ?? [],
+                                }
+                              : null;
                           })
                       }
                       >
@@ -1186,160 +1394,61 @@ export default function Grile() {
                       </Button>
                     </div>
                   </div>
+                  <div className="mb-4">
+                    {savedTests
+                      .find((t) => t.id === selectedTestId)
+                      ?.sections.map((sec) => (
+                        <div key={sec} className="border border-black p-2 mb-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold">{sec}</span>
+                            <button
+                              className="text-red-600"
+                              onClick={() => deleteSectionFromTest(sec)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          {savedTests
+                            .find((t) => t.id === selectedTestId)
+                            ?.questions.map((q, qi, arr) =>
+                              q.section === sec ? renderQuestionView(q, qi, arr) : null
+                            )}
+                        </div>
+                      ))}
+                    {addingSection ? (
+                      <div className="flex items-center space-x-2 mb-2">
+                        <input
+                          className="border p-1 rounded flex-1"
+                          value={newSectionName}
+                          onChange={(e) => setNewSectionName(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            addSectionToTest(newSectionName);
+                            setNewSectionName('');
+                            setAddingSection(false);
+                          }}
+                        >
+                          Salvează
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="mb-2"
+                        onClick={() => setAddingSection(true)}
+                      >
+                        Adaugă secțiune
+                      </Button>
+                    )}
+                  </div>
                   {savedTests
                     .find((t) => t.id === selectedTestId)
-                    ?.questions.map((q, qi, arr) => (
-                      <div key={qi} className="border-t pt-4 space-y-1">
-                        {sectionInputs[qi] !== undefined ? (
-                          <div className="flex items-center space-x-2">
-                            <input
-                              className="border p-1 rounded flex-1"
-                              value={sectionInputs[qi]}
-                              onChange={(e) =>
-                                setSectionInputs((s) => ({
-                                  ...s,
-                                  [qi]: e.target.value,
-                                }))
-                              }
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                setQuestionSection(qi, sectionInputs[qi]);
-                                setSectionInputs((s) => {
-                                  const copy = { ...s };
-                                  delete copy[qi];
-                                  return copy;
-                                });
-                              }}
-                            >
-                              Salvează
-                            </Button>
-                          </div>
-                        ) : q.section ? (
-                          <div className="inline-block border border-black bg-white px-2 py-1 text-sm">
-                            {q.section}
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="mb-1"
-                            onClick={() =>
-                              setSectionInputs((s) => ({ ...s, [qi]: '' }))
-                            }
-                          >
-                            Adaugă secțiunea
-                          </Button>
-                        )}
-                        <div className="flex items-start">
-                          <p className="flex-1 font-bold leading-tight">
-                            {qi + 1}. {q.text}{' '}
-                            {q.verified && (
-                              <span className="text-green-600 ml-1">✓</span>
-                            )}
-                          </p>
-                          <input
-                            type="checkbox"
-                            className="mt-1 mr-2"
-                            checked={q.verified || false}
-                            onChange={() => toggleVerified(qi)}
-                          />
-                          <div className="flex flex-col border-l ml-2 pl-2">
-                            <button
-                              onClick={() => moveSavedQuestion(qi, -1)}
-                              disabled={qi === 0}
-                              className="text-2xl leading-none"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              onClick={() => moveSavedQuestion(qi, 1)}
-                              disabled={qi === arr.length - 1}
-                              className="text-2xl leading-none"
-                            >
-                              ↓
-                            </button>
-                          </div>
-                        </div>
-                        {q.answers.map((a, ai) => (
-                          <p key={ai} className="pl-4 leading-tight">
-                            {String.fromCharCode(65 + ai)}. {a}
-                          </p>
-                        ))}
-                        <p className="text-sm italic">
-                          Răspuns corect:{" "}
-                          {q.correct
-                            .map((c) => String.fromCharCode(65 + c))
-                            .join(", ")}
-                        </p>
-                        {q.note && (
-                          <p className="text-sm text-gray-600">Nota: {q.note}</p>
-                        )}
-                        {q.explanation && (
-                          <div className="text-sm space-y-1">
-                            <p className="font-medium">Explicație:</p>
-                            {q.explanation
-                              .split(/\n+/)
-                              .filter((p) => p.trim())
-                              .map((p, i) => (
-                                <p key={i} className="indent-4">
-                                  {p}
-                                </p>
-                              ))}
-                          </div>
-                        )}
-                        {moveIndex === qi ? (
-                          <div className="pl-4 flex items-center space-x-2">
-                            <select
-                              className="border p-1 rounded flex-1"
-                              value={moveTargetId}
-                              onChange={(e) => setMoveTargetId(e.target.value)}
-                            >
-                              <option value="">Selectează tema</option>
-                              {savedTests
-                                .filter((t) => t.id !== selectedTestId)
-                                .map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.name} - {t.subject}
-                                  </option>
-                                ))}
-                            </select>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                if (!moveTargetId || selectedTestId === null)
-                                  return;
-                                moveQuestionToTest(selectedTestId, qi, moveTargetId);
-                                setMoveIndex(null);
-                                setMoveTargetId('');
-                              }}
-                            >
-                              Trimite
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setMoveIndex(null);
-                                setMoveTargetId('');
-                              }}
-                            >
-                              Renunță
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="ml-4"
-                            onClick={() => setMoveIndex(qi)}
-                          >
-                            Mutare grilă
-                          </Button>
-                        )}
-                      </div>
-                    ))}
+                    ?.questions.map((q, qi, arr) =>
+                      q.section ? null : renderQuestionView(q, qi, arr)
+                    )}
                 </>
               )}
               {editingTest && (
@@ -1408,8 +1517,14 @@ export default function Grile() {
                           </Button>
                         </div>
                       ) : q.section ? (
-                        <div className="inline-block border border-black bg-white px-2 py-1 text-sm">
-                          {q.section}
+                        <div className="inline-flex items-center border border-black bg-white px-2 py-1 text-sm">
+                          <span>{q.section}</span>
+                          <button
+                            className="ml-1 text-red-600"
+                            onClick={() => setQuestionSection(qi, '', true)}
+                          >
+                            ×
+                          </button>
                         </div>
                       ) : (
                         <Button
