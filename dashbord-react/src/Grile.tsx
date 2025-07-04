@@ -722,54 +722,59 @@ export default function Grile() {
             ))}
         </div>
       )}
-      {moveIndex === qi ? (
-        <div className="pl-4 flex items-center space-x-2">
-          <select
-            className="border p-1 rounded flex-1"
-            value={moveTargetId}
-            onChange={(e) => setMoveTargetId(e.target.value)}
-          >
-            <option value="">Selectează tema</option>
-            {savedTests
-              .filter((t) => t.id !== selectedTestId)
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} - {t.subject}
+      {(() => {
+        const sections =
+          selectedTestId
+            ? savedTests.find((t) => t.id === selectedTestId)?.sections ?? []
+            : [];
+        if (sections.length === 0) return null;
+        return moveIndex === qi ? (
+          <div className="pl-4 flex items-center space-x-2">
+            <select
+              className="border p-1 rounded flex-1"
+              value={moveTargetId}
+              onChange={(e) => setMoveTargetId(e.target.value)}
+            >
+              <option value="">Selectează secțiunea</option>
+              {sections.map((sec) => (
+                <option key={sec} value={sec}>
+                  {sec}
                 </option>
               ))}
-          </select>
+            </select>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!moveTargetId) return;
+                setQuestionSection(qi, moveTargetId);
+                setMoveIndex(null);
+                setMoveTargetId('');
+              }}
+            >
+              Trimite
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setMoveIndex(null);
+                setMoveTargetId('');
+              }}
+            >
+              Renunță
+            </Button>
+          </div>
+        ) : (
           <Button
+            variant="secondary"
             size="sm"
-            onClick={() => {
-              if (!moveTargetId || selectedTestId === null) return;
-              moveQuestionToTest(selectedTestId, qi, moveTargetId);
-              setMoveIndex(null);
-              setMoveTargetId('');
-            }}
+            className="ml-4"
+            onClick={() => setMoveIndex(qi)}
           >
-            Trimite
+            Mutare grilă
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setMoveIndex(null);
-              setMoveTargetId('');
-            }}
-          >
-            Renunță
-          </Button>
-        </div>
-      ) : (
-        <Button
-          variant="secondary"
-          size="sm"
-          className="ml-4"
-          onClick={() => setMoveIndex(qi)}
-        >
-          Mutare grilă
-        </Button>
-      )}
+        );
+      })()}
     </div>
   );
 
@@ -1787,54 +1792,56 @@ export default function Grile() {
                           </label>
                         ))}
                       </div>
-                      {moveIndex === qi ? (
-                        <div className="flex items-center space-x-2 mt-2">
-                          <select
-                            className="border p-1 rounded flex-1"
-                            value={moveTargetId}
-                            onChange={(e) => setMoveTargetId(e.target.value)}
-                          >
-                            <option value="">Selectează tema</option>
-                            {savedTests
-                              .filter((t) => t.id !== editingTest!.id)
-                              .map((t) => (
-                                <option key={t.id} value={t.id}>
-                                  {t.name} - {t.subject}
+                      {(() => {
+                        const sections = editingTest?.sections ?? [];
+                        if (sections.length === 0) return null;
+                        return moveIndex === qi ? (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <select
+                              className="border p-1 rounded flex-1"
+                              value={moveTargetId}
+                              onChange={(e) => setMoveTargetId(e.target.value)}
+                            >
+                              <option value="">Selectează secțiunea</option>
+                              {sections.map((sec) => (
+                                <option key={sec} value={sec}>
+                                  {sec}
                                 </option>
                               ))}
-                          </select>
+                            </select>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (!moveTargetId) return;
+                                setQuestionSection(qi, moveTargetId, true);
+                                setMoveIndex(null);
+                                setMoveTargetId('');
+                              }}
+                            >
+                              Trimite
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setMoveIndex(null);
+                                setMoveTargetId('');
+                              }}
+                            >
+                              Renunță
+                            </Button>
+                          </div>
+                        ) : (
                           <Button
+                            variant="secondary"
                             size="sm"
-                            onClick={() => {
-                              if (!moveTargetId) return;
-                              moveQuestionToTest(editingTest!.id, qi, moveTargetId);
-                              setMoveIndex(null);
-                              setMoveTargetId('');
-                            }}
+                            className="mt-2"
+                            onClick={() => setMoveIndex(qi)}
                           >
-                            Trimite
+                            Mutare grilă
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setMoveIndex(null);
-                              setMoveTargetId('');
-                            }}
-                          >
-                            Renunță
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => setMoveIndex(qi)}
-                        >
-                          Mutare grilă
-                        </Button>
-                      )}
+                        );
+                      })()}
                     </div>
                   ))}
                   <div className="text-right">
