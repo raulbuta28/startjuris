@@ -632,7 +632,12 @@ export default function Grile() {
     }
   };
 
-  const renderQuestionView = (q: Question, qi: number, arr: Question[]) => (
+  const renderQuestionView = (
+    q: Question,
+    qi: number,
+    arr: Question[],
+    di: number
+  ) => (
     <div key={qi} className="border-t pt-4 space-y-1">
       {sectionInputs[qi] !== undefined ? (
         <div className="flex items-center space-x-2">
@@ -682,7 +687,7 @@ export default function Grile() {
       )}
       <div className="flex items-start">
         <p className="flex-1 font-bold leading-tight">
-          {qi + 1}. {stripQuestionNumber(q.text)}{' '}
+          {di + 1}. {stripQuestionNumber(q.text)}{' '}
           {q.verified && <span className="text-green-600 ml-1">✓</span>}
         </p>
         <input
@@ -1461,26 +1466,36 @@ export default function Grile() {
                     </div>
                   </div>
                   <div className="mb-4">
-                    {savedTests
-                      .find((t) => t.id === selectedTestId)
-                      ?.sections.map((sec) => (
-                        <div key={sec} className="border border-black p-2 mb-2">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold">{sec}</span>
-                            <button
-                              className="text-red-600"
-                              onClick={() => deleteSectionFromTest(sec)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                          {savedTests
-                            .find((t) => t.id === selectedTestId)
-                            ?.questions.map((q, qi, arr) =>
-                              q.section === sec ? renderQuestionView(q, qi, arr) : null
-                            )}
-                        </div>
-                      ))}
+                    {(() => {
+                      const test = savedTests.find((t) => t.id === selectedTestId);
+                      if (!test) return null;
+                      let di = 0;
+                      return (
+                        <>
+                          {test.sections.map((sec) => (
+                            <div key={sec} className="border border-black p-2 mb-2">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="font-semibold">{sec}</span>
+                                <button
+                                  className="text-red-600"
+                                  onClick={() => deleteSectionFromTest(sec)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              {test.questions.map((q, qi, arr) =>
+                                q.section === sec
+                                  ? renderQuestionView(q, qi, arr, di++)
+                                  : null
+                              )}
+                            </div>
+                          ))}
+                          {test.questions.map((q, qi, arr) =>
+                            q.section ? null : renderQuestionView(q, qi, arr, di++)
+                          )}
+                        </>
+                      );
+                    })()}
                     {addingSection ? (
                       <div className="flex items-center space-x-2 mb-2">
                         <input
@@ -1510,11 +1525,6 @@ export default function Grile() {
                       </Button>
                     )}
                   </div>
-                  {savedTests
-                    .find((t) => t.id === selectedTestId)
-                    ?.questions.map((q, qi, arr) =>
-                      q.section ? null : renderQuestionView(q, qi, arr)
-                    )}
                 </>
               )}
               {editingTest && (
