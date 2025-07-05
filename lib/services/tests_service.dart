@@ -3,6 +3,11 @@ import 'package:http/http.dart' as http;
 import '../pages/backend/services/api_service.dart';
 import '../pages/grile/admitereinm/models.dart';
 
+String _cleanQuestionText(String text) {
+  final reg = RegExp(r'^\s*\d{1,3}\s*[\.\)\-:]\s*');
+  return text.replaceFirst(reg, '');
+}
+
 class FetchedTest {
   final String id;
   final String name;
@@ -54,7 +59,7 @@ class FetchedTest {
       }
       return Question(
         id: entry.key + 1,
-        text: q['text'] ?? '',
+        text: _cleanQuestionText(q['text']?.toString() ?? ''),
         answers: answers,
         correctAnswers: correctLetters,
         explanation: q['explanation'] ?? '',
