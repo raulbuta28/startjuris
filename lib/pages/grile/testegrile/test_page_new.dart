@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,12 @@ import '../admitereinm/models.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+
+class _SectionGroup {
+  final String name;
+  final List<int> indices;
+  _SectionGroup(this.name, this.indices);
+}
 
 class TestPage extends StatefulWidget {
   final String testTitle;
@@ -40,6 +47,8 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
   bool _isDarkMode = false;
   int _selectedTheme = 0;
   bool _hasSavedProgress = false;
+
+  late List<_SectionGroup> _sectionGroups;
 
   final List<List<Color>> themeColors = [
     [Colors.purple.shade200, Colors.pink.shade200], // Default
@@ -212,6 +221,17 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     });
   }
 
+  void _prepareSections() {
+    final map = LinkedHashMap<String, List<int>>();
+    for (var i = 0; i < widget.questions.length; i++) {
+      final s = widget.questions[i].section;
+      map.putIfAbsent(s, () => []).add(i);
+    }
+    _sectionGroups = map.entries
+        .map((e) => _SectionGroup(e.key, e.value))
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -223,6 +243,7 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
     _answeredQuestions = List.filled(widget.questions.length, false);
     _selectedAnswers = List.generate(widget.questions.length, (_) => []);
     _questionKeys = List.generate(widget.questions.length, (_) => GlobalKey());
+    _prepareSections();
     _progress = 0.0;
     _loadSavedProgress();
   }
@@ -273,50 +294,12 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView(
                     controller: _scrollController,
                     padding: const EdgeInsets.only(bottom: 100),
-                    itemCount: widget.questions.length + (_showExplanations ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (_showExplanations && index == 0) {
-                      return _buildTestResults();
-                    }
-                    final qIndex = _showExplanations ? index - 1 : index;
-                    final question = widget.questions[qIndex];
-                    final card = _buildQuestionCard(question, qIndex);
-                    if (question.section.isNotEmpty &&
-                        (qIndex == 0 ||
-                            widget.questions[qIndex - 1].section !=
-                                question.section)) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.black, width: 1),
-                            ),
-                            child: Center(
-                              child: Text(
-                                question.section,
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                          card,
-                        ],
-                      );
-                    }
-                    return card;
-                  },
+                    children: _buildQuestionList(),
+                  ),
                 ),
-              ),
               ],
             ),
             if (_showTools) _buildToolsOverlay(),
@@ -630,6 +613,40 @@ class _TestPageState extends State<TestPage> with SingleTickerProviderStateMixin
         ),
       ),
     );
+  }
+
+  List<Widget> _buildQuestionList() {
+    final List<Widget> items = [];
+    if (_showExplanations) {
+      items.add(_buildTestResults());
+    }
+    for (final group in _sectionGroups) {
+      if (group.name.isNotEmpty) {
+        items.add(
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black, width: 1),
+            ),
+            child: Center(
+              child: Text(
+                group.name,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      for (final idx in group.indices) {
+        items.add(_buildQuestionCard(widget.questions[idx], idx));
+      }
+    }
+    return items;
   }
 
   Widget _buildQuestionCard(Question question, int index) {
