@@ -67,6 +67,16 @@ class TemaItem {
   const TemaItem({required this.title, required this.questions, required this.order});
 }
 
+String _cleanTitle(String title) {
+  final reg = RegExp(r'^Tema\\s+\\d+\\s*-\\s*');
+  return title.replaceFirst(reg, '');
+}
+
+String _renumberTitle(int index, String originalTitle) {
+  final clean = _cleanTitle(originalTitle);
+  return 'Tema $index - $clean';
+}
+
 const _sampleQuestions = [
   Question(
     id: 1,
@@ -211,11 +221,14 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
     final Map<String, Map<String, dynamic>> data = {};
     for (final tema in _teme) {
       final sub = tema['subheaders'] as List<dynamic>;
+      int counter = 0;
       for (final sh in sub) {
         final themes = sh['themes'] as List<TemaItem>;
         for (final t in themes) {
-          final titleKey = t.title.replaceAll(' ', '_');
-          data[t.title] = {
+          counter++;
+          final renTitle = _renumberTitle(counter, t.title);
+          final titleKey = renTitle.replaceAll(' ', '_');
+          data[renTitle] = {
             'progress': prefs.getInt('test_${titleKey}_index') ?? 0,
             'completed': prefs.getBool('test_${titleKey}_completed') ?? false,
             'score': prefs.getDouble('test_${titleKey}_score') ?? 0.0,
@@ -296,11 +309,12 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
     for (var subheader in subheaders) {
       final themesList = subheader['themes'] as List<TemaItem>;
       for (var theme in themesList) {
-        final prog = _progressData[theme.title] ?? {};
         counter++;
+        final renTitle = _renumberTitle(counter, theme.title);
+        final prog = _progressData[renTitle] ?? {};
         themes.add({
           'index': counter,
-          'title': theme.title,
+          'title': renTitle,
           'questions': theme.questions,
           'progress': prog['progress'] ?? 0,
           'completed': prog['completed'] ?? false,
