@@ -156,12 +156,13 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
 
   Future<void> _loadTests() async {
     final fetched = await TestsService.fetchTests();
-    final filtered = fetched.where((t) => t.categories.contains(widget.exam)).toList();
-    final Map<String, List<TemaItem>> bySubject = {};
+    final filtered =
+        fetched.where((t) => t.categories.contains(widget.exam)).toList();
+    final Map<String, Map<String, List<TemaItem>>> bySubject = {};
+
     for (final t in filtered) {
-      final qFiltered = t.questions
-          .where((q) => q.categories.contains(widget.exam))
-          .toList();
+      final qFiltered =
+          t.questions.where((q) => q.categories.contains(widget.exam)).toList();
       if (qFiltered.isEmpty) continue;
 
       final renumbered = qFiltered.asMap().entries.map<Question>((e) {
@@ -180,18 +181,32 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
 
       final item =
           TemaItem(title: t.name, questions: renumbered, order: t.order);
-      bySubject.putIfAbsent(t.subject, () => []).add(item);
+      final subjectMap = bySubject.putIfAbsent(t.subject, () => {});
+      if (t.sections.isEmpty) {
+        subjectMap.putIfAbsent('', () => []).add(item);
+      } else {
+        for (final sec in t.sections) {
+          subjectMap.putIfAbsent(sec, () => []).add(item);
+        }
+      }
     }
-    for (final list in bySubject.values) {
-      list.sort((a, b) => a.order.compareTo(b.order));
+
+    for (final subjectMap in bySubject.values) {
+      for (final list in subjectMap.values) {
+        list.sort((a, b) => a.order.compareTo(b.order));
+      }
     }
+
     setState(() {
       _teme = bySubject.entries
           .map((e) => {
                 'header': e.key,
-                'subheaders': [
-                  {'title': null, 'themes': e.value}
-                ],
+                'subheaders': e.value.entries
+                    .map((s) => {
+                          'title': s.key.isEmpty ? null : s.key,
+                          'themes': s.value,
+                        })
+                    .toList(),
               })
           .toList();
       _tabController = TabController(length: _teme.length, vsync: this);
@@ -287,12 +302,28 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildThemeSection(Map<String, dynamic> tema) {
-    final List<Map<String, dynamic>> themes = [];
     final subheaders = tema['subheaders'] as List<Map<String, dynamic>>;
     int counter = 0;
+    final List<Widget> slivers = [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Text(
+            tema['header'] as String,
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ),
+    ];
 
-    for (var subheader in subheaders) {
+    for (final subheader in subheaders) {
+      final title = subheader['title'] as String?;
       final themesList = subheader['themes'] as List<TemaItem>;
+      final List<Map<String, dynamic>> themes = [];
       for (var theme in themesList) {
         final prog = _progressData[theme.title] ?? {};
         counter++;
@@ -306,24 +337,26 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
           'completedAt': prog['completedAt'],
         });
       }
-    }
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-            child: Text(
-              tema['header'] as String,
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      if (title != null && title.isNotEmpty) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ),
-        ),
+        );
+      }
+
+      slivers.add(
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
@@ -338,20 +371,23 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
                 final theme = themes[index];
                 return _ThemeCard(
                   theme: theme,
-                  color: _getThemeColor(index),
+                  color: _getThemeColor((theme['index'] as int) - 1),
                   onTap: () async {
                     HapticFeedback.mediumImpact();
                     await Navigator.of(context).push(
                       PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => TestPage(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            TestPage(
                           testTitle: theme['title'],
                           questions: theme['questions'],
                         ),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
                           const begin = Offset(0.0, 1.0);
                           const end = Offset.zero;
                           const curve = Curves.easeOutCubic;
-                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          var tween =
+                              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
                           var offsetAnimation = animation.drive(tween);
                           return SlideTransition(position: offsetAnimation, child: child);
                         },
@@ -365,8 +401,14 @@ class _TemePageState extends State<TemePage> with SingleTickerProviderStateMixin
             ),
           ),
         ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 20)),
-      ],
+      );
+    }
+
+    slivers.add(const SliverPadding(padding: EdgeInsets.only(bottom: 20)));
+
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: slivers,
     );
   }
 
